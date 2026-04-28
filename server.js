@@ -1,14 +1,5 @@
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 10000;
+const path = require('path');
 
 app.get('/', (req, res) => {
-  res.send(`
-    <h1>🚀 Sales Dashboard працює</h1>
-    <p>Сервер запущений успішно</p>
-  `);
-});
-
-app.listen(PORT, () => {
-  console.log('Server running on port ' + PORT);
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
