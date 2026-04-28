@@ -1,10 +1,58 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+  <base target="_top">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sales Dashboard System</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+(function(){
+  function callRpc(name, args, ok, fail){
+    fetch('/api/rpc/' + encodeURIComponent(name), {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({args: args || []})
+    })
+    .then(function(res){
+      return res.json().then(function(data){
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || ('HTTP ' + res.status));
+        }
+        return Object.prototype.hasOwnProperty.call(data, 'result') ? data.result : data;
+      });
+    })
+    .then(function(result){ if (typeof ok === 'function') ok(result); })
+    .catch(function(err){
+      console.error('RPC error:', name, err);
+      if (typeof fail === 'function') fail(err);
+    });
+  }
+
+  function createRunner(successHandler, failureHandler){
+    return new Proxy({}, {
+      get: function(target, prop){
+        if (prop === 'withSuccessHandler') {
+          return function(fn){ return createRunner(fn, failureHandler); };
+        }
+        if (prop === 'withFailureHandler') {
+          return function(fn){ return createRunner(successHandler, fn); };
+        }
+        return function(){
+          callRpc(String(prop), Array.prototype.slice.call(arguments), successHandler, failureHandler);
+          return createRunner(successHandler, failureHandler);
+        };
+      }
+    });
+  }
+
+  if (!window.google) window.google = {};
+  if (!window.google.script) window.google.script = {};
+  window.google.script.run = createRunner(null, null);
+})();
+</script>
+
   <style>
     :root{
       --bg:#f4f7fb;--card:#ffffff;--text:#1f2937;--muted:#64748b;--blue:#3b82f6;--green:#22c55e;
@@ -8761,19 +8809,13 @@ html, body{
     const kpiDetailValueHead = document.getElementById('kpiDetailValueHead');
     const kpiDetailBody = document.getElementById('kpiDetailBody');
 
-    async function serverCall(methodName, ...args) {
-      const response = await fetch('/api/rpc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: methodName, args })
+    function serverCall(methodName, ...args) {
+      return new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(err => reject(new Error(err && err.message ? err.message : 'Server error')))
+          [methodName](...args);
       });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.ok) {
-        throw new Error((payload && payload.error) ? payload.error : 'Server error');
-      }
-
-      return payload.result;
     }
 
     function setLoading(percent, text) {

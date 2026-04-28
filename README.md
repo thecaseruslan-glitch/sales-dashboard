@@ -1,17 +1,17 @@
-# Sales Dashboard Render Project
+# Sales Dashboard on Render
 
-Це готовий стартовий проєкт для Render.
+## Required Render Environment Variables
 
-## Структура
-- `server.js` — Node.js сервер
-- `public/index.html` — фронтенд дашборду
-- `data/dashboard-data.json` — тимчасове сховище даних
-- `legacy/Code.gs` — старий Apps Script код для переносу логіки
+MOYSKLAD_TOKEN
+MOYSKLAD_API_BASE
+GOOGLE_SHEET_ID
+GOOGLE_CLIENT_EMAIL
+GOOGLE_PRIVATE_KEY
 
-## Тестовий логін
-- Email: `admin@example.com`
-- Password: `admin123`
+## Endpoints
 
-## Важливо
-Це перший робочий перенос фронту на Render. Дані поки беруться з `data/dashboard-data.json`.
-Наступний крок — перенести реальне оновлення з MoySklad/Google Sheets у `server.js` або окремі service-файли.
+GET /health
+GET /api/dashboard
+POST /api/refresh/products
+POST /api/refresh/sales
+POST /api/rpc/:fn
