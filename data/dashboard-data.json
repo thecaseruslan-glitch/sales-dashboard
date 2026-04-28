@@ -1,0 +1,43 @@
+{
+  "users": [
+    {
+      "email": "admin@example.com",
+      "password": "admin123",
+      "role": "admin",
+      "display_name": "Admin",
+      "manager_tag": "",
+      "active": true
+    }
+  ],
+  "archive": [],
+  "current": [],
+  "balances_current": [],
+  "admin": {
+    "client_manager_map": [],
+    "client_alias_map": [],
+    "client_status_map": [],
+    "client_tag_map": [],
+    "product_manual_map": [],
+    "product_stock": [],
+    "product_options": {
+      "brands": [],
+      "categories": [],
+      "groups": []
+    },
+    "technical_tags_master": [],
+    "brand_settings": {
+      "brands": []
+    },
+    "bonuses_log": [],
+    "bonuses_config": {}
+  },
+  "okr": {
+    "plans": []
+  },
+  "meta": {
+    "sales_last_refresh": "",
+    "client_tag_map_last_refresh": "",
+    "client_balances_last_refresh": "",
+    "product_stock_last_refresh": ""
+  }
+}
