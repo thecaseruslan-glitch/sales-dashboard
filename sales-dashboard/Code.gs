@@ -90,6 +90,12 @@ function RUN_18_setupClientAliasMapOnly() {
   return result;
 }
 
+function RUN_29_backfillSalesCounterpartyIdsNow() {
+  const result = backfillSalesCounterpartyIdsNow();
+  Logger.log('RUN_29_backfillSalesCounterpartyIdsNow -> ' + JSON.stringify(result));
+  return result;
+}
+
 function RUN_19_setupClientStatusMapOnly() {
   const result = ensureClientStatusMapSheet();
   Logger.log('RUN_19_setupClientStatusMapOnly -> ' + JSON.stringify(result));
@@ -123,6 +129,387 @@ function RUN_resetProjectStateSafe() {
   Logger.log('RUN_resetProjectStateSafe -> %s', JSON.stringify(result));
   return result;
 }
+function RUN_27_ensureClientLtvMetaSheet() {
+  const result = ensureClientLtvMetaSheet();
+  Logger.log('RUN_27_ensureClientLtvMetaSheet -> %s', JSON.stringify(result));
+  return result;
+}
+
+function RUN_28_refreshClientLtvMetaFromApi() {
+  const result = RUN_refreshClientLtvMetaFromApi();
+  Logger.log('RUN_28_refreshClientLtvMetaFromApi -> %s', JSON.stringify(result));
+  return result;
+}
+
+function ensureClientLtvMetaSheet() {
+  return ensureSystemSheet(getSpreadsheet(), SHEET_CLIENT_LTV_META, CLIENT_LTV_META_HEADERS);
+}
+
+function getClientLtvMetaRowsForAdmin_() {
+  ensureClientLtvMetaSheet();
+  return getSheetObjects(SHEET_CLIENT_LTV_META)
+    .map(function(row, index) {
+      return {
+        row_number: index + 2,
+        client_id: normalizeCell(row.client_id),
+        client_name: normalizeCell(row.client_name),
+        first_order_date: formatSheetDateValue_(row.first_order_date, 'yyyy-MM-dd'),
+        source: normalizeCell(row.source).toLowerCase(),
+        updated_at: formatSheetDateValue_(row.updated_at, 'yyyy-MM-dd HH:mm:ss'),
+        comment: normalizeCell(row.comment),
+        baseline_revenue_total: normalizeCell(row.baseline_revenue_total),
+        baseline_revenue_source: normalizeCell(row.baseline_revenue_source).toLowerCase(),
+        baseline_revenue_as_of: formatSheetDateValue_(row.baseline_revenue_as_of, 'yyyy-MM-dd HH:mm:ss')
+      };
+    })
+    .filter(function(row) {
+      return row.client_id || row.client_name;
+    });
+}
+
+function getClientLtvMetaCacheSignature_() {
+  const rows = getClientLtvMetaRowsForAdmin_()
+    .slice()
+    .sort(function(a, b) {
+      const aKey = normalizeCell(a.client_id) || normalizeCell(a.client_name);
+      const bKey = normalizeCell(b.client_id) || normalizeCell(b.client_name);
+      return aKey.localeCompare(bKey);
+    });
+
+  let hash = 0;
+  rows.forEach(function(row, index) {
+    const text = [
+      normalizeCell(row.client_id),
+      normalizeCell(row.client_name),
+      normalizeCell(row.first_order_date),
+      normalizeCell(row.source),
+      normalizeCell(row.baseline_revenue_total),
+      normalizeCell(row.baseline_revenue_source),
+      normalizeCell(row.baseline_revenue_as_of),
+      normalizeCell(row.comment),
+      String(index)
+    ].join('|');
+
+    for (var i = 0; i < text.length; i++) {
+      hash = ((hash * 31) + text.charCodeAt(i)) >>> 0;
+    }
+  });
+
+  return rows.length + ':' + String(hash >>> 0);
+}
+
+function findClientLtvMetaRowIndex_(sheetValues, clientId, clientName) {
+  const cleanId = normalizeCell(clientId);
+  const cleanName = normalizeCell(clientName);
+
+  for (var i = 1; i < sheetValues.length; i++) {
+    const currentId = normalizeCell(sheetValues[i][0]);
+    const currentName = normalizeCell(sheetValues[i][1]);
+    if (cleanId && currentId && currentId === cleanId) return i + 1;
+    if (!cleanId && cleanName && currentName === cleanName) return i + 1;
+    if (cleanId && cleanName && !currentId && currentName === cleanName) return i + 1;
+  }
+
+  return 0;
+}
+
+function upsertClientLtvMetaRow_(payload, options) {
+  const opts = options || {};
+  ensureClientLtvMetaSheet();
+  const sheet = getSpreadsheet().getSheetByName(SHEET_CLIENT_LTV_META);
+  ensureHeadersForSheet(sheet, CLIENT_LTV_META_HEADERS);
+
+  const values = sheet.getDataRange().getValues();
+  const existingRowIndex = findClientLtvMetaRowIndex_(values, payload.client_id, payload.client_name);
+  const now = nowText();
+
+  if (existingRowIndex) {
+    const existing = values[existingRowIndex - 1] || [];
+    const existingFirstOrderSource = normalizeCell(existing[3]).toLowerCase();
+    const existingFirstOrderDate = normalizeCell(existing[2]);
+    const existingRevenueTotal = normalizeCell(existing[6]);
+    const existingRevenueSource = normalizeCell(existing[7]).toLowerCase();
+    const existingRevenueAsOf = normalizeCell(existing[8]);
+
+    const nextFirstOrderDate = normalizeCell(payload.first_order_date) || existingFirstOrderDate;
+    const nextFirstOrderSource = normalizeCell(payload.source) || existingFirstOrderSource;
+    const nextRevenueTotal = normalizeCell(payload.baseline_revenue_total) || existingRevenueTotal;
+    const nextRevenueSource = normalizeCell(payload.baseline_revenue_source) || existingRevenueSource;
+    const nextRevenueAsOf = normalizeCell(payload.baseline_revenue_as_of) || existingRevenueAsOf;
+
+    const preserveManualDate = opts.preserveManual && existingFirstOrderSource === 'manual' && existingFirstOrderDate;
+    const preserveManualRevenue = opts.preserveManual && existingRevenueSource === 'manual' && existingRevenueTotal;
+
+    const rowData = [
+      normalizeCell(payload.client_id) || normalizeCell(existing[0]),
+      normalizeCell(payload.client_name) || normalizeCell(existing[1]),
+      preserveManualDate ? existingFirstOrderDate : nextFirstOrderDate,
+      preserveManualDate ? existingFirstOrderSource : nextFirstOrderSource,
+      normalizeCell(payload.updated_at) || normalizeCell(existing[4]) || now,
+      normalizeCell(payload.comment) || normalizeCell(existing[5]),
+      preserveManualRevenue ? existingRevenueTotal : nextRevenueTotal,
+      preserveManualRevenue ? existingRevenueSource : nextRevenueSource,
+      preserveManualRevenue ? existingRevenueAsOf : nextRevenueAsOf
+    ];
+
+    sheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+    if (preserveManualDate && preserveManualRevenue) {
+      return { ok: true, action: 'updated_manual_preserved', row_number: existingRowIndex };
+    }
+    return { ok: true, action: 'updated', row_number: existingRowIndex };
+  }
+
+  const rowData = [
+    normalizeCell(payload.client_id),
+    normalizeCell(payload.client_name),
+    normalizeCell(payload.first_order_date),
+    normalizeCell(payload.source),
+    normalizeCell(payload.updated_at) || now,
+    normalizeCell(payload.comment),
+    normalizeCell(payload.baseline_revenue_total),
+    normalizeCell(payload.baseline_revenue_source),
+    normalizeCell(payload.baseline_revenue_as_of) || now
+  ];
+
+  const newRow = sheet.getLastRow() + 1;
+  sheet.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
+  return { ok: true, action: 'created', row_number: newRow };
+}
+
+function buildClientLtvApiQueue_() {
+  const seen = {};
+  return getClientTagMapRowsForAdmin_()
+    .filter(function(row) {
+      return normalizeCell(row.counterparty_id) && normalizeCell(row.client);
+    })
+    .filter(function(row) {
+      const key = normalizeCell(row.counterparty_id);
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    })
+    .map(function(row) {
+      return {
+        client_id: normalizeCell(row.counterparty_id),
+        client_name: normalizeCell(row.client)
+      };
+    })
+    .sort(function(a, b) {
+      return a.client_name.localeCompare(b.client_name, 'uk');
+    });
+}
+
+function normalizeIsoDateFromMoment_(momentValue) {
+  const raw = normalizeCell(momentValue);
+  const match = raw.match(/\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : '';
+}
+
+function extractDemandRevenueTotalForLtv_(demand) {
+  var sumValue = safeGet(demand, ['sum'], null);
+  if (sumValue !== null && sumValue !== '' && sumValue !== undefined) {
+    return round2(money(sumValue));
+  }
+
+  var positions = safeGet(demand, ['positions', 'rows'], []);
+  if (!Array.isArray(positions) || !positions.length) return 0;
+
+  var total = 0;
+  positions.forEach(function(pos) {
+    var quantity = Number(pos && pos.quantity || 0);
+    var unitPrice = round2(money(pos && pos.price || 0));
+    var discountPct = extractDiscountPct(pos);
+    total += extractRevenue(pos, quantity, unitPrice, discountPct);
+  });
+  return round2(total);
+}
+
+function fetchDemandLifetimeStatsByFilter_(filterText) {
+  var offset = 0;
+  var totalRevenue = 0;
+  var firstOrderDate = '';
+  var lastOrderDate = '';
+  var documents = 0;
+
+  while (true) {
+    var query = buildQuery({
+      limit: CLIENT_LTV_META_DEMAND_PAGE_LIMIT,
+      offset: offset,
+      order: 'moment,asc',
+      expand: 'positions',
+      filter: filterText
+    });
+    var url = getApiBase() + '/entity/demand?' + query;
+    var data = apiGet(url);
+    var rows = Array.isArray(data && data.rows) ? data.rows : [];
+    if (!rows.length) break;
+
+    rows.forEach(function(demand) {
+      var momentIso = normalizeIsoDateFromMoment_(demand && demand.moment);
+      var revenue = extractDemandRevenueTotalForLtv_(demand);
+      if (momentIso && (!firstOrderDate || momentIso < firstOrderDate)) firstOrderDate = momentIso;
+      if (momentIso && (!lastOrderDate || momentIso > lastOrderDate)) lastOrderDate = momentIso;
+      totalRevenue += Number(revenue || 0);
+      documents++;
+    });
+
+    if (rows.length < CLIENT_LTV_META_DEMAND_PAGE_LIMIT) break;
+    offset += CLIENT_LTV_META_DEMAND_PAGE_LIMIT;
+    Utilities.sleep(DEMAND_FETCH_SLEEP_MS);
+  }
+
+  return {
+    first_order_date: firstOrderDate,
+    last_order_date: lastOrderDate,
+    lifetime_revenue_total: round2(totalRevenue),
+    documents: documents
+  };
+}
+
+function fetchHistoricalRevenueBaselineByCounterpartyId_(counterpartyId) {
+  const stats = fetchClientLifetimeStatsByCounterpartyId_(counterpartyId);
+  return {
+    first_order_date: stats.first_order_date,
+    baseline_revenue_total: round2(stats.lifetime_revenue_total),
+    baseline_revenue_as_of: nowText(),
+    documents: stats.documents
+  };
+}
+
+function fetchClientLifetimeStatsByCounterpartyId_(counterpartyId) {
+  const cleanId = normalizeCell(counterpartyId);
+  if (!cleanId) {
+    return {
+      first_order_date: '',
+      last_order_date: '',
+      lifetime_revenue_total: 0,
+      documents: 0
+    };
+  }
+
+  const counterpartyHref = getApiBase() + '/entity/counterparty/' + encodeURIComponent(cleanId);
+  const filters = [
+    'agent=' + counterpartyHref + ';applicable=true',
+    'agent.id=' + cleanId + ';applicable=true'
+  ];
+
+  for (var i = 0; i < filters.length; i++) {
+    try {
+      const stats = fetchDemandLifetimeStatsByFilter_(filters[i]);
+      if (stats.documents > 0) {
+        return stats;
+      }
+    } catch (err) {
+      // try next filter variant
+    }
+  }
+
+  return {
+    first_order_date: '',
+    last_order_date: '',
+    lifetime_revenue_total: 0,
+    documents: 0
+  };
+}
+
+function RUN_refreshClientLtvMetaFromApi() {
+  ensureClientLtvMetaSheet();
+  const queue = buildClientLtvApiQueue_();
+  const total = queue.length;
+  const savedCursor = Math.max(0, Number(getSystemMetaValue(CLIENT_LTV_META_API_CURSOR_KEY) || 0));
+  const start = Math.min(savedCursor, total);
+  const end = Math.min(total, start + CLIENT_LTV_META_API_BATCH_LIMIT);
+  const batch = queue.slice(start, end);
+  const startedAtMs = Date.now();
+
+  let created = 0;
+  let updated = 0;
+  let skippedManual = 0;
+  let notFound = 0;
+  let failed = 0;
+  let processed = 0;
+  const errors = [];
+
+  batch.forEach(function(item, index) {
+    if (Date.now() - startedAtMs >= CLIENT_LTV_META_API_MAX_RUNTIME_MS) {
+      return;
+    }
+    try {
+      const baseline = fetchHistoricalRevenueBaselineByCounterpartyId_(item.client_id);
+      processed = index + 1;
+      if (!baseline.documents || !baseline.first_order_date) {
+        notFound++;
+        return;
+      }
+
+      const result = upsertClientLtvMetaRow_({
+        client_id: item.client_id,
+        client_name: item.client_name,
+        first_order_date: baseline.first_order_date,
+        source: 'api',
+        updated_at: nowText(),
+        comment: 'API MoySklad',
+        baseline_revenue_total: String(round2(baseline.baseline_revenue_total)),
+        baseline_revenue_source: 'api',
+        baseline_revenue_as_of: baseline.baseline_revenue_as_of
+      }, {
+        preserveManual: true
+      });
+
+      if (result.action === 'created') created++;
+      else if (result.action === 'updated') updated++;
+      else if (result.action === 'updated_manual_preserved') skippedManual++;
+    } catch (err) {
+      failed++;
+      errors.push({
+        client_id: item.client_id,
+        client_name: item.client_name,
+        error: String(err && err.message ? err.message : err)
+      });
+    }
+  });
+
+  const actualEnd = start + processed;
+  const nextCursor = actualEnd >= total ? 0 : actualEnd;
+  const completed = actualEnd >= total;
+  const stoppedByTimeLimit = processed < batch.length && !completed;
+  const statusText = completed
+    ? 'completed'
+    : stoppedByTimeLimit
+      ? 'paused_by_time_limit ' + actualEnd + '/' + total
+      : 'partial ' + actualEnd + '/' + total;
+
+  setSystemMetaValue(CLIENT_LTV_META_API_CURSOR_KEY, String(nextCursor));
+  setSystemMetaValue(CLIENT_LTV_META_API_LAST_RUN_KEY, nowText());
+  setSystemMetaValue(CLIENT_LTV_META_API_LAST_STATUS_KEY, statusText);
+  setSystemMetaValue(CLIENT_LTV_META_API_LAST_ERROR_KEY, errors.length ? JSON.stringify(errors.slice(0, 5)) : '');
+
+  return {
+    ok: true,
+    total_clients: total,
+    batch_start: start,
+    batch_end: actualEnd,
+    batch_size: batch.length,
+    processed: processed,
+    next_cursor: nextCursor,
+    completed: completed,
+    stopped_by_time_limit: stoppedByTimeLimit,
+    created: created,
+    updated: updated,
+    skipped_manual: skippedManual,
+    not_found: notFound,
+    failed: failed,
+    errors: errors.slice(0, 5)
+  };
+}
+
+function formatSheetDateValue_(value, pattern) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), pattern || 'yyyy-MM-dd');
+  }
+  return normalizeCell(value);
+}
+
 // --------------------------------------------------
 // CONFIG / PROPERTIES
 // --------------------------------------------------
@@ -144,7 +531,12 @@ function getApiBase() {
 }
 
 const DEMAND_LIMIT = 25;
+const DEMAND_FETCH_SLEEP_MS = 1200;
+const COUNTERPARTY_ID_BACKFILL_API_LIMIT_PER_RUN = 250;
+const COUNTERPARTY_ID_BACKFILL_MAX_MILLIS = 270000;
+const COUNTERPARTY_ID_BACKFILL_API_SLEEP_MS = 180;
 const PAYMENT_LIMIT = 50;
+const COUNTERPARTY_BALANCE_REPORT_LIMIT = 500;
 const COUNTERPARTY_LIMIT = 500;
 const CLIENT_TAG_MAP_REFRESH_LIMIT = 50;
 const CLIENT_TAG_MAP_MANUAL_PART_LIMIT = 500;
@@ -184,6 +576,7 @@ const SHEET_CLIENT_MANAGER_MAP = 'client_manager_map';
 const SHEET_CLIENT_ALIAS_MAP = 'client_alias_map';
 const SHEET_CLIENT_STATUS_MAP = 'client_status_map';
 const SHEET_CLIENT_TAG_MAP = 'client_tag_map';
+const SHEET_CLIENT_LTV_META = 'client_ltv_meta';
 const SHEET_CLIENT_BALANCES = 'client_balances';
 const SHEET_CLIENT_BALANCES_DEBUG = 'client_balances_debug';
 const SHEET_CLIENT_BALANCES_ACCOUNTS_DEBUG = 'client_balances_accounts_debug';
@@ -213,7 +606,8 @@ const HEADERS = [
   'unit_price',
   'discount_pct',
   'revenue',
-  'status'
+  'status',
+  'counterparty_id'
 ];
 
 // ===== PAYMENTS HEADERS =====
@@ -272,6 +666,18 @@ const CLIENT_TAG_MAP_HEADERS = [
   'exclude_tags',
   'all_tags',
   'updated_at'
+];
+
+const CLIENT_LTV_META_HEADERS = [
+  'client_id',
+  'client_name',
+  'first_order_date',
+  'source',
+  'updated_at',
+  'comment',
+  'baseline_revenue_total',
+  'baseline_revenue_source',
+  'baseline_revenue_as_of'
 ];
 
 const CLIENT_BALANCES_HEADERS = [
@@ -416,6 +822,14 @@ const BONUSES_LOG_HEADERS = [
 
 // --------------------------------------------------
 // HTML APP
+const CLIENT_LTV_META_API_BATCH_LIMIT = 10;
+const CLIENT_LTV_META_DEMAND_PAGE_LIMIT = 100;
+const CLIENT_LTV_META_API_MAX_RUNTIME_MS = 5 * 60 * 1000;
+const CLIENT_LTV_META_API_CURSOR_KEY = 'client_ltv_meta_api_cursor';
+const CLIENT_LTV_META_API_LAST_RUN_KEY = 'client_ltv_meta_api_last_run';
+const CLIENT_LTV_META_API_LAST_STATUS_KEY = 'client_ltv_meta_api_last_status';
+const CLIENT_LTV_META_API_LAST_ERROR_KEY = 'client_ltv_meta_api_last_error';
+
 // --------------------------------------------------
 
 function doGet() {
@@ -437,6 +851,7 @@ function setupDashboardSystem() {
   report.push(ensureSystemSheet(ss, SHEET_CLIENT_MANAGER_MAP, CLIENT_MANAGER_MAP_HEADERS));
   report.push(ensureSystemSheet(ss, SHEET_CLIENT_ALIAS_MAP, CLIENT_ALIAS_MAP_HEADERS));
   report.push(ensureSystemSheet(ss, SHEET_CLIENT_STATUS_MAP, CLIENT_STATUS_MAP_HEADERS));
+  report.push(ensureSystemSheet(ss, SHEET_CLIENT_LTV_META, CLIENT_LTV_META_HEADERS));
   report.push(ensureSystemSheet(ss, SHEET_CLASSIFICATION_RULES, CLASSIFICATION_RULES_HEADERS));
   report.push(ensureSystemSheet(ss, SHEET_MANAGER_CHANGE_SUGGESTIONS, MANAGER_CHANGE_SUGGESTIONS_HEADERS));
   report.push(ensureSystemSheet(ss, SHEET_PRODUCT_MANUAL_MAP, PRODUCT_MANUAL_MAP_HEADERS));
@@ -575,6 +990,24 @@ function getSystemMetaValue(key) {
     return normalizeCell(item.key) === cleanKey;
   });
   return row ? normalizeCell(row.value) : '';
+}
+
+function getSystemMetaMap_() {
+  ensureSystemMetaSheet();
+  const rows = getSheetObjects(SHEET_SYSTEM_META);
+  const map = {};
+  rows.forEach(function(item) {
+    const key = normalizeCell(item.key);
+    if (key) map[key] = normalizeCell(item.value);
+  });
+  return map;
+}
+
+function getSystemMetaValueFromMap_(metaMap, key) {
+  const cleanKey = normalizeCell(key);
+  return metaMap && Object.prototype.hasOwnProperty.call(metaMap, cleanKey)
+    ? normalizeCell(metaMap[cleanKey])
+    : '';
 }
 
 function setSalesLastRefreshNow() {
@@ -720,6 +1153,30 @@ function getBonusesLogRowsForAdmin_() {
   });
 }
 
+function getBonusLogCanonicalIdentityKey_(event) {
+  const client = normalizeCell(event && event.client).toLowerCase();
+  const eventDate = normalizeCell(event && (event.event_date || event.eventDate));
+  const category = normalizeCell(event && event.category).toLowerCase();
+  const kind = normalizeCell(event && event.kind).toLowerCase();
+  const currency = normalizeCell(event && event.currency).toUpperCase();
+  const source = normalizeCell(event && event.source).toLowerCase();
+  const value = Number(event && event.value) || 0;
+
+  if (
+    client &&
+    eventDate &&
+    source === 'manual_return_status' &&
+    category === 'return' &&
+    kind === 'fixed' &&
+    currency === 'UAH' &&
+    value === 500
+  ) {
+    return ['return_100_uah500', client, eventDate].join('|');
+  }
+
+  return '';
+}
+
 function serverUpsertBonusLogEvents(sessionToken, events) {
   const user = requireAuthorizedUserBySession(sessionToken);
   ensureBonusesLogSheet();
@@ -734,9 +1191,23 @@ function serverUpsertBonusLogEvents(sessionToken, events) {
 
   const values = sheet.getDataRange().getValues();
   const existingIds = {};
+  const existingCanonicalKeys = {};
   for (var i = 1; i < values.length; i++) {
     const id = normalizeCell(values[i][0]);
     if (id) existingIds[id] = true;
+
+    const canonicalKey = getBonusLogCanonicalIdentityKey_({
+      event_date: values[i][1],
+      client: values[i][2],
+      category: values[i][4],
+      kind: values[i][5],
+      value: values[i][8],
+      currency: values[i][9],
+      source: values[i][10]
+    });
+    if (canonicalKey && normalizeActiveFlag(values[i][13], true) !== false) {
+      existingCanonicalKeys[canonicalKey] = true;
+    }
   }
 
   const now = nowText();
@@ -755,9 +1226,18 @@ function serverUpsertBonusLogEvents(sessionToken, events) {
     const value = Number(event && event.value) || 0;
     const currency = normalizeCell(event && event.currency);
     const source = normalizeCell(event && event.source) || 'dashboard';
+    const canonicalKey = getBonusLogCanonicalIdentityKey_({
+      event_date: eventDate,
+      client: client,
+      category: category,
+      kind: kind,
+      value: value,
+      currency: currency,
+      source: source
+    });
 
     if (!eventId || !eventDate || !client || !category || !kind || !title || !value || !currency) return;
-    if (existingIds[eventId]) {
+    if (existingIds[eventId] || (canonicalKey && existingCanonicalKeys[canonicalKey])) {
       existing++;
       return;
     }
@@ -779,6 +1259,7 @@ function serverUpsertBonusLogEvents(sessionToken, events) {
       true
     ]);
     existingIds[eventId] = true;
+    if (canonicalKey) existingCanonicalKeys[canonicalKey] = true;
   });
 
   if (rowsToAppend.length) {
@@ -791,6 +1272,63 @@ function serverUpsertBonusLogEvents(sessionToken, events) {
     ok: true,
     created: rowsToAppend.length,
     existing: existing,
+    bonuses_log: getBonusesLogRowsForAdmin_()
+  };
+}
+
+function serverDeactivateManualReturnBonusForClient(sessionToken, client) {
+  const user = requireAdminBySession(sessionToken);
+  const cleanClient = normalizeCell(client);
+  if (!cleanClient) throw new Error('Не вказано client');
+
+  const updatedAt = nowText();
+  let statusChanged = false;
+  let logDeactivated = 0;
+
+  const statusSheet = getOrCreateSheet(SHEET_CLIENT_STATUS_MAP);
+  ensureHeadersForSheet(statusSheet, CLIENT_STATUS_MAP_HEADERS);
+  const statusValues = statusSheet.getDataRange().getValues();
+  for (var i = 1; i < statusValues.length; i++) {
+    const currentClient = normalizeCell(statusValues[i][0]);
+    const currentStatus = normalizeCell(statusValues[i][1]).toLowerCase();
+    const currentActive = normalizeActiveFlag(statusValues[i][4], true);
+    if (currentClient === cleanClient && currentStatus === 'return' && currentActive !== false) {
+      statusSheet.getRange(i + 1, 1, 1, CLIENT_STATUS_MAP_HEADERS.length).setValues([[
+        cleanClient,
+        'return',
+        user.email,
+        updatedAt,
+        false
+      ]]);
+      statusChanged = true;
+      break;
+    }
+  }
+
+  ensureBonusesLogSheet();
+  const logSheet = getSpreadsheet().getSheetByName(SHEET_BONUSES_LOG);
+  ensureExactHeaders(logSheet, BONUSES_LOG_HEADERS);
+  const logValues = logSheet.getDataRange().getValues();
+  for (var j = 1; j < logValues.length; j++) {
+    const currentClient = normalizeCell(logValues[j][2]);
+    const currentSource = normalizeCell(logValues[j][10]);
+    const currentActive = normalizeActiveFlag(logValues[j][13], true);
+    if (currentClient === cleanClient && currentSource === 'manual_return_status' && currentActive !== false) {
+      logSheet.getRange(j + 1, 12, 1, 3).setValues([[user.email, updatedAt, false]]);
+      logDeactivated++;
+    }
+  }
+
+  if (statusChanged || logDeactivated > 0) {
+    markDashboardServerSnapshotStale_('manual_return_bonus_deactivated');
+  }
+
+  return {
+    ok: true,
+    client: cleanClient,
+    status_deactivated: statusChanged,
+    bonuses_deactivated: logDeactivated,
+    client_status_map: getClientStatusMapRowsForAdmin_(),
     bonuses_log: getBonusesLogRowsForAdmin_()
   };
 }
@@ -1312,6 +1850,13 @@ function getProductManualMapRowsForAdmin_() {
 function getProductStockRowsForAdmin_() {
   return getSheetObjects(SHEET_PRODUCT_STOCK)
     .map(function(row, index) {
+      const rawGroup = normalizeCell(row.product_group);
+      const detectedGroup = toTitleCaseUkrGroup(normalizeProductGroupBusiness(rawGroup, row.product));
+      const productGroup = categoryByProductGroup(rawGroup) ? rawGroup : (detectedGroup || rawGroup);
+      const rawCategory = normalizeCell(row.category);
+      const category = isUnknownProductCategory_(rawCategory)
+        ? (categoryByProductGroup(productGroup) || '')
+        : rawCategory;
       return {
         row_number: index + 2,
         assortment_id: normalizeCell(row.assortment_id),
@@ -1319,8 +1864,8 @@ function getProductStockRowsForAdmin_() {
         sku: normalizeCell(row.sku),
         product: normalizeCell(row.product),
         brand: normalizeCell(row.brand),
-        category: normalizeCell(row.category),
-        product_group: normalizeCell(row.product_group),
+        category: category,
+        product_group: productGroup,
         stock: Number(row.stock || 0),
         reserve: Number(row.reserve || 0),
         in_transit: Number(row.in_transit || 0),
@@ -1351,10 +1896,15 @@ function getDashboardSnapshotParentFolder_() {
 }
 
 function getOrCreateDashboardSnapshotFile_() {
-  const storedFileId = normalizeCell(getSystemMetaValue(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY));
+  const props = PropertiesService.getScriptProperties();
+  const storedFileId = normalizeCell(
+    props.getProperty(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY) || getSystemMetaValue(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY)
+  );
   if (storedFileId) {
     try {
-      return DriveApp.getFileById(storedFileId);
+      const file = DriveApp.getFileById(storedFileId);
+      props.setProperty(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY, storedFileId);
+      return file;
     } catch (e) {}
   }
 
@@ -1366,6 +1916,7 @@ function getOrCreateDashboardSnapshotFile_() {
     : DriveApp.createFile(fileName, '', MimeType.PLAIN_TEXT);
 
   setSystemMetaValue(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY, file.getId());
+  props.setProperty(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY, file.getId());
   return file;
 }
 
@@ -1404,6 +1955,42 @@ function readDashboardServerSnapshot_() {
   }
 }
 
+function parseDashboardSnapshotFile_(file) {
+  let blob = file.getBlob();
+  const fileName = normalizeCell(file.getName()).toLowerCase();
+  const contentType = normalizeCell(blob.getContentType()).toLowerCase();
+
+  if (fileName.slice(-3) === '.gz' || contentType.indexOf('gzip') >= 0) {
+    blob = Utilities.ungzip(blob);
+  }
+
+  const raw = String(blob.getDataAsString() || '').trim();
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (!parsed || Number(parsed.snapshot_version) !== DASHBOARD_SNAPSHOT_VERSION) return null;
+  return parsed;
+}
+
+function readDashboardServerSnapshotFast_(metaMap) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const fileId = normalizeCell(
+      props.getProperty(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY) ||
+      getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_FILE_ID_META_KEY)
+    );
+
+    if (fileId) {
+      try {
+        return parseDashboardSnapshotFile_(DriveApp.getFileById(fileId));
+      } catch (e) {}
+    }
+
+    return readDashboardServerSnapshot_();
+  } catch (e) {
+    return null;
+  }
+}
+
 function writeDashboardServerSnapshot_(snapshot) {
   const oldFileId = normalizeCell(getSystemMetaValue(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY));
   const fileName = getDashboardSnapshotFileName_();
@@ -1416,6 +2003,7 @@ function writeDashboardServerSnapshot_(snapshot) {
     : DriveApp.createFile(gzipBlob);
 
   setSystemMetaValue(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY, file.getId());
+  PropertiesService.getScriptProperties().setProperty(DASHBOARD_SNAPSHOT_FILE_ID_META_KEY, file.getId());
 
   if (oldFileId && oldFileId !== file.getId()) {
     try {
@@ -1433,10 +2021,14 @@ function buildDashboardServerSnapshotPayload_() {
   current = enrichRowsWithManagerTag(current);
   archive = applyProductManualMap(archive);
   current = applyProductManualMap(current);
+  const clientIdentityMap = buildCounterpartyIdentityMap(archive.concat(current));
+  archive = applyCounterpartyIdentityMap(archive, clientIdentityMap);
+  current = applyCounterpartyIdentityMap(current, clientIdentityMap);
   archive = applyClientAliasMap(archive);
   current = applyClientAliasMap(current);
 
   balances = enrichRowsWithManagerTag(balances);
+  balances = applyCounterpartyIdentityMap(balances, clientIdentityMap);
   balances = applyClientAliasMap(balances);
 
   const adminBrandsSource = archive.concat(current);
@@ -1459,6 +2051,7 @@ function buildDashboardServerSnapshotPayload_() {
       client_manager_map: getClientManagerMapRowsForAdmin_(),
       client_alias_map: getClientAliasMapRowsForAdmin_(),
       client_status_map: getClientStatusMapRowsForAdmin_(),
+      client_ltv_meta: getClientLtvMetaRowsForAdmin_(),
       bonuses_log: getBonusesLogRowsForAdmin_(),
       client_tag_map: getClientTagMapRowsForAdmin_(),
       product_manual_map: getProductManualMapRowsForAdmin_(),
@@ -1473,6 +2066,7 @@ function buildDashboardServerSnapshotPayload_() {
 }
 
 function rebuildDashboardServerSnapshotCore_() {
+  ensureSalesServerCacheCurrentMonthReady_();
   const snapshot = buildDashboardServerSnapshotPayload_();
   writeDashboardServerSnapshot_(snapshot);
   markDashboardServerSnapshotFresh_(snapshot.built_at);
@@ -1511,38 +2105,38 @@ function rebuildDashboardServerSnapshotInsideLockedFlow_() {
 }
 
 function getDashboardServerSnapshot_() {
-  const state = normalizeCell(getSystemMetaValue(DASHBOARD_SNAPSHOT_STATE_META_KEY)).toLowerCase();
   const snapshot = readDashboardServerSnapshot_();
-  if (state === 'fresh' && snapshot) return snapshot;
 
-  const lock = LockService.getScriptLock();
-  if (lock.tryLock(500)) {
-    try {
-      rebuildDashboardServerSnapshotInsideLockedFlow_();
-    } finally {
-      lock.releaseLock();
-    }
+  // Для відкриття дашборду важливіше швидко показати останній готовий snapshot,
+  // а не перебудовувати його прямо в користувацькому запиті. Свіжий snapshot
+  // має готуватися refresh-loop / RUN-функціями у фоні.
+  if (snapshot) return snapshot;
 
-    const rebuiltSnapshot = readDashboardServerSnapshot_();
-    if (rebuiltSnapshot) {
-      return rebuiltSnapshot;
-    }
-  }
-
-  if (snapshot) {
-    return snapshot;
-  }
-
-  rebuildDashboardServerSnapshot();
-  const rebuiltSnapshot = readDashboardServerSnapshot_();
-  if (!rebuiltSnapshot) {
-    throw new Error('Не вдалося прочитати dashboard snapshot після rebuild');
-  }
-  return rebuiltSnapshot;
+  const state = normalizeCell(getSystemMetaValue(DASHBOARD_SNAPSHOT_STATE_META_KEY)).toLowerCase();
+  const hint = state === 'building'
+    ? 'Snapshot дашборду зараз перебудовується у фоні. Спробуй оновити сторінку за хвилину.'
+    : 'Dashboard snapshot ще не готовий. Запусти RUN_23_rebuildDashboardServerSnapshot або дочекайся фонового циклу.';
+  setSystemMetaValue(DASHBOARD_SNAPSHOT_LAST_ERROR_META_KEY, hint);
+  throw new Error(hint);
 }
 
 function getDashboardServerSnapshotFresh_() {
-  rebuildDashboardServerSnapshot();
+  const lock = LockService.getScriptLock();
+  let locked = false;
+
+  try {
+    locked = lock.tryLock(1000);
+    if (locked) {
+      rebuildDashboardServerSnapshotCore_();
+    }
+  } catch (err) {
+    markDashboardServerSnapshotStale_(err && err.message ? err.message : err);
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
+  }
+
   const snapshot = readDashboardServerSnapshot_();
   if (!snapshot) {
     throw new Error('Не вдалося отримати свіжий dashboard snapshot');
@@ -1581,31 +2175,43 @@ function getPreparedDashboardDataForUserFresh_(user) {
 }
 
 function buildDashboardPayloadFromPrepared_(user, prepared) {
+  const metaMap = getSystemMetaMap_();
+  const adminBootstrap = user && user.is_admin
+    ? buildAdminBootstrapPayloadFromSnapshot_(user, prepared && prepared.snapshot ? prepared.snapshot : {}, metaMap)
+    : null;
+  const clientLtvMetaRows = getClientLtvMetaRowsForAdmin_();
+
   return {
     ok: true,
     user: user,
     archive: prepared.archive,
     current: prepared.current,
     balances_current: prepared.balances_current,
-    meta: buildDashboardMetaPayload_(),
-    admin: null
+    client_ltv_meta: clientLtvMetaRows,
+    meta: buildDashboardMetaPayloadFromMap_(metaMap),
+    admin: adminBootstrap ? adminBootstrap.admin : null
+  };
+}
+
+function getAdminSystemStatusFromMetaMap_(metaMap) {
+  return {
+    refresh_loop: getRefreshLoopStateFromMetaMap_(metaMap),
+    refresh_loop_cycle_completed_at: getSystemMetaValueFromMap_(metaMap, REFRESH_LOOP_CYCLE_COMPLETED_AT_KEY),
+    refresh_loop_cycle_counter: Number(getSystemMetaValueFromMap_(metaMap, REFRESH_LOOP_CYCLE_COUNTER_KEY) || 0),
+    sales_last_refresh: getSystemMetaValueFromMap_(metaMap, 'sales_last_refresh'),
+    client_tag_map_last_refresh: getSystemMetaValueFromMap_(metaMap, 'client_tag_map_last_refresh'),
+    client_balances_last_refresh: getSystemMetaValueFromMap_(metaMap, 'client_balances_last_refresh'),
+    product_stock_last_refresh: getSystemMetaValueFromMap_(metaMap, 'product_stock_last_refresh'),
+    dashboard_snapshot_state: getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_STATE_META_KEY),
+    dashboard_snapshot_built_at: getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_BUILT_AT_META_KEY),
+    dashboard_snapshot_invalidated_at: getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_INVALIDATED_AT_META_KEY),
+    dashboard_snapshot_last_error: getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_LAST_ERROR_META_KEY)
   };
 }
 
 function getAdminSystemStatus_() {
-  return {
-    refresh_loop: getRefreshLoopState(),
-    refresh_loop_cycle_completed_at: getSystemMetaValue(REFRESH_LOOP_CYCLE_COMPLETED_AT_KEY),
-    refresh_loop_cycle_counter: Number(getSystemMetaValue(REFRESH_LOOP_CYCLE_COUNTER_KEY) || 0),
-    sales_last_refresh: getSystemMetaValue('sales_last_refresh'),
-    client_tag_map_last_refresh: getSystemMetaValue('client_tag_map_last_refresh'),
-    client_balances_last_refresh: getSystemMetaValue('client_balances_last_refresh'),
-    product_stock_last_refresh: getSystemMetaValue('product_stock_last_refresh'),
-    dashboard_snapshot_state: getSystemMetaValue(DASHBOARD_SNAPSHOT_STATE_META_KEY),
-    dashboard_snapshot_built_at: getSystemMetaValue(DASHBOARD_SNAPSHOT_BUILT_AT_META_KEY),
-    dashboard_snapshot_invalidated_at: getSystemMetaValue(DASHBOARD_SNAPSHOT_INVALIDATED_AT_META_KEY),
-    dashboard_snapshot_last_error: getSystemMetaValue(DASHBOARD_SNAPSHOT_LAST_ERROR_META_KEY)
-  };
+  healStaleRefreshLoopCurrentTask_();
+  return getAdminSystemStatusFromMetaMap_(getSystemMetaMap_());
 }
 
 function markRefreshLoopCycleCompleted_() {
@@ -1626,6 +2232,7 @@ function markRefreshLoopCycleCompleted_() {
 
 function serverGetRefreshLoopSignal(sessionToken) {
   requireAuthorizedUserBySession(sessionToken);
+  healStaleRefreshLoopCurrentTask_();
 
   return {
     ok: true,
@@ -1640,6 +2247,7 @@ function serverGetRefreshLoopSignal(sessionToken) {
 
 function serverGetAdminSystemLiveStatus(sessionToken) {
   requireAdminBySession(sessionToken);
+  healStaleRefreshLoopCurrentTask_();
 
   return {
     ok: true,
@@ -1659,6 +2267,7 @@ function serverSessionBootstrap(sessionToken) {
       client_manager_map: getClientManagerMapRowsForAdmin(sessionToken),
       client_alias_map: getClientAliasMapRowsForAdmin(sessionToken),
       client_status_map: getClientStatusMapRowsForAdmin(sessionToken),
+      client_ltv_meta: getClientLtvMetaRowsForAdmin_(),
       client_tag_map: getClientTagMapRowsForAdmin(sessionToken),
       product_manual_map: getProductManualMapRowsForAdmin(sessionToken),
       product_stock: getProductStockRowsForAdmin(sessionToken),
@@ -1667,31 +2276,38 @@ function serverSessionBootstrap(sessionToken) {
   };
 }
 
-function buildDashboardMetaPayload_() {
+function buildDashboardMetaPayloadFromMap_(metaMap) {
   return {
-    sales_last_refresh: getSystemMetaValue('sales_last_refresh'),
-    client_tag_map_last_refresh: getSystemMetaValue('client_tag_map_last_refresh'),
-    client_balances_last_refresh: getSystemMetaValue('client_balances_last_refresh'),
-    product_stock_last_refresh: getSystemMetaValue('product_stock_last_refresh')
+    sales_last_refresh: getSystemMetaValueFromMap_(metaMap, 'sales_last_refresh'),
+    client_tag_map_last_refresh: getSystemMetaValueFromMap_(metaMap, 'client_tag_map_last_refresh'),
+    client_balances_last_refresh: getSystemMetaValueFromMap_(metaMap, 'client_balances_last_refresh'),
+    product_stock_last_refresh: getSystemMetaValueFromMap_(metaMap, 'product_stock_last_refresh')
   };
+}
+
+function buildDashboardMetaPayload_() {
+  return buildDashboardMetaPayloadFromMap_(getSystemMetaMap_());
 }
 
 function buildDashboardUserCacheKey_(user) {
   var role = normalizeCell(user && user.role);
   var email = normalizeCell(user && user.email).toLowerCase();
   var managerTag = normalizeTagName(user && user.manager_tag);
+  var metaMap = getSystemMetaMap_();
+  var ltvMetaSignature = getClientLtvMetaCacheSignature_();
   return [
-    'dashboard_data_v2',
+    'dashboard_data_v4',
     role || 'user',
     managerTag || 'all',
     email || 'anon',
-    getSystemMetaValue('sales_last_refresh') || 'sales0',
-    getSystemMetaValue('client_balances_last_refresh') || 'bal0',
-    getSystemMetaValue('client_tag_map_last_refresh') || 'tag0',
-    getSystemMetaValue('product_stock_last_refresh') || 'stock0',
-    getSystemMetaValue(DASHBOARD_SNAPSHOT_STATE_META_KEY) || 'snap0',
-    getSystemMetaValue(DASHBOARD_SNAPSHOT_BUILT_AT_META_KEY) || 'built0',
-    getSystemMetaValue(DASHBOARD_SNAPSHOT_INVALIDATED_AT_META_KEY) || 'inv0'
+    getSystemMetaValueFromMap_(metaMap, 'sales_last_refresh') || 'sales0',
+    getSystemMetaValueFromMap_(metaMap, 'client_balances_last_refresh') || 'bal0',
+    getSystemMetaValueFromMap_(metaMap, 'client_tag_map_last_refresh') || 'tag0',
+    getSystemMetaValueFromMap_(metaMap, 'product_stock_last_refresh') || 'stock0',
+    getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_STATE_META_KEY) || 'snap0',
+    getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_BUILT_AT_META_KEY) || 'built0',
+    getSystemMetaValueFromMap_(metaMap, DASHBOARD_SNAPSHOT_INVALIDATED_AT_META_KEY) || 'inv0',
+    ltvMetaSignature || 'ltv0'
   ].join('|');
 }
 
@@ -1741,50 +2357,58 @@ function serverGetDashboardDataFresh(sessionToken) {
   return buildDashboardPayloadFromPrepared_(user, prepared);
 }
 
-function serverAdminBootstrap(sessionToken) {
-  const user = requireAuthorizedUserBySession(sessionToken);
-  const cacheKey = [
-    'admin_bootstrap_v1',
-    normalizeCell(user && user.email).toLowerCase() || 'anon',
-    getSystemMetaValue('sales_last_refresh') || 'sales0',
-    getSystemMetaValue('client_balances_last_refresh') || 'bal0',
-    getSystemMetaValue('client_tag_map_last_refresh') || 'tag0',
-    getSystemMetaValue('product_stock_last_refresh') || 'stock0',
-    getSystemMetaValue(DASHBOARD_SNAPSHOT_STATE_META_KEY) || 'snap0',
-    getSystemMetaValue(DASHBOARD_SNAPSHOT_BUILT_AT_META_KEY) || 'built0',
-    getSystemMetaValue(DASHBOARD_SNAPSHOT_INVALIDATED_AT_META_KEY) || 'inv0'
-  ].join('|');
-  const cached = readJsonCache_(cacheKey);
-  if (cached && cached.ok) {
-    return cached;
-  }
-  const prepared = getPreparedDashboardDataForUser_(user);
-  const snapshot = prepared.snapshot || {};
-  const snapshotAdmin = snapshot.admin || {};
-  const brandListRows = safeGet(snapshotAdmin, ['brand_settings', 'brands'], []);
+function buildAdminBootstrapPayloadFromSnapshot_(user, snapshot, metaMap) {
+  const safeSnapshot = snapshot || {};
+  const snapshotAdmin = safeSnapshot.admin || {};
+  const emptyProductOptions = { brands: [], categories: [], groups: [] };
 
-  const payload = {
+  function adminArray(path) {
+    const value = getPathValue_(snapshotAdmin, path);
+    return Array.isArray(value) ? value : [];
+  }
+
+  function adminObject(path, fallback) {
+    const value = getPathValue_(snapshotAdmin, path);
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
+  }
+
+  const brandListRows = adminArray(['brand_settings', 'brands']);
+  const balanceRows = getClientBalanceRowsForDashboard(user, Array.isArray(safeSnapshot.balances_all) ? safeSnapshot.balances_all : []);
+
+  return {
     ok: true,
     user: user,
-    balances_current: prepared.balances_current,
+    balances_current: balanceRows,
     admin: user.is_admin ? {
-      client_manager_map: safeGet(snapshotAdmin, ['client_manager_map'], []),
-      client_alias_map: safeGet(snapshotAdmin, ['client_alias_map'], []),
-      client_status_map: safeGet(snapshotAdmin, ['client_status_map'], []),
-      client_tag_map: safeGet(snapshotAdmin, ['client_tag_map'], []),
-      product_manual_map: safeGet(snapshotAdmin, ['product_manual_map'], []),
-      product_stock: safeGet(snapshotAdmin, ['product_stock'], []),
-      product_options: safeGet(snapshotAdmin, ['product_options_all'], prepared.filtered_product_options || { brands: [], categories: [], groups: [] }),
-      technical_tags_master: safeGet(snapshotAdmin, ['technical_tags_master'], []),
+      client_manager_map: getClientManagerMapRowsForAdmin_(),
+      client_alias_map: getClientAliasMapRowsForAdmin_(),
+      client_status_map: getClientStatusMapRowsForAdmin_(),
+      client_ltv_meta: getClientLtvMetaRowsForAdmin_(),
+      client_tag_map: adminArray(['client_tag_map']),
+      product_manual_map: getProductManualMapRowsForAdmin_(),
+      product_stock: adminArray(['product_stock']),
+      product_options: adminObject(['product_options_all'], emptyProductOptions),
+      technical_tags_master: adminArray(['technical_tags_master']),
       brand_settings: {
-        brands: brandListRows
+        brands: getBrandListRows()
       },
       system_status: getAdminSystemStatus_()
     } : null
   };
+}
 
-  writeJsonCache_(cacheKey, payload, ADMIN_BOOTSTRAP_CACHE_TTL_SECONDS);
-  return payload;
+function buildAdminBootstrapPayloadFast_(user) {
+  const metaMap = getSystemMetaMap_();
+  const snapshot = readDashboardServerSnapshotFast_(metaMap) || {};
+  return buildAdminBootstrapPayloadFromSnapshot_(user, snapshot, metaMap);
+}
+
+function serverAdminBootstrap(sessionToken) {
+  const user = requireAuthorizedUserBySession(sessionToken);
+
+  // Адмінка не має чекати LockService і не має запускати rebuild snapshot.
+  // Editable admin tables are read live from sheets, so recently saved rows appear immediately.
+  return buildAdminBootstrapPayloadFast_(user);
 }
 
 function serverGetOkrAdminConfig(sessionToken, monthKeyOrPayload) {
@@ -1801,14 +2425,15 @@ function serverGetOkrAdminConfig(sessionToken, monthKeyOrPayload) {
         return normalizeCell(item.manager_tag).toLowerCase() === ownManagerTag.toLowerCase();
       });
 
-  const efficiencyTotals = getEfficiencyGlobalRevenueTotalsForOkr_(user, payload);
+  // OKR-план має відкриватися швидко: не чіпаємо dashboard snapshot і LockService.
+  // Факт і прогрес фронт рахує з уже завантажених sales rows.
   return {
     ok: true,
     month_key: cleanMonthKey,
     default_manager_tags: user.is_admin ? getOkrDefaultManagerTags_() : [],
     plans: plans,
-    efficiency_global_revenue_total: efficiencyTotals.total,
-    efficiency_revenue_by_manager: efficiencyTotals.by_manager
+    efficiency_global_revenue_total: 0,
+    efficiency_revenue_by_manager: {}
   };
 }
 
@@ -2167,6 +2792,7 @@ function getBusinessCategoryMap() {
 }
 
 function getBusinessGroupToCategoryMap() {
+  if (getBusinessGroupToCategoryMap._cache) return getBusinessGroupToCategoryMap._cache;
   const base = {};
   const catMap = getBusinessCategoryMap();
   Object.keys(catMap).forEach(function(category) {
@@ -2174,60 +2800,76 @@ function getBusinessGroupToCategoryMap() {
       base[normalizeCell(group).toLowerCase()] = category;
     });
   });
+  getBusinessGroupToCategoryMap._cache = base;
   return base;
 }
 
 function normalizeProductGroupBusiness(rawGroup, rawProduct) {
-  const path = normalizeCell(rawGroup).toLowerCase();
-  const product = normalizeCell(rawProduct).toLowerCase();
-  const text = (path + ' | ' + product).toLowerCase();
-  const groups = Object.keys(getBusinessGroupToCategoryMap());
+  const groupText = normalizeCell(rawGroup).toLowerCase().replace(/aзп/g, 'азп');
+  const productText = normalizeCell(rawProduct).toLowerCase().replace(/aзп/g, 'азп');
+  const text = (groupText + ' | ' + productText).toLowerCase();
+  const businessMap = getBusinessGroupToCategoryMap();
+  const groups = Object.keys(businessMap).sort(function(a, b) { return b.length - a.length; });
 
+  // 1) Спочатку шукаємо готові бізнес-групи із сайту у групі МойСклад або назві товару.
   for (var i = 0; i < groups.length; i++) {
-    if (groups[i] && text.indexOf(groups[i]) !== -1) return Object.keys(getBusinessGroupToCategoryMap()).reduce(function(acc, key) {
-      return key === groups[i] ? groups[i] : acc;
-    }, '');
+    const key = groups[i];
+    if (!key) continue;
+    if (groupText === key || groupText.indexOf(key) !== -1 || productText.indexOf(key) !== -1) return key;
   }
 
-  if (/чохол|case/.test(text)) {
+  // 2) Далі — розумна класифікація по назві товару, коли у МойСклад group = бренд/скорочення.
+  if (/захисн.*скло|скло|glass|camera lens|lens protector|lens glass/.test(text)) {
+    if (/камер|camera|lens/.test(text) && /samsung/.test(text)) return 'захисне скло для камери samsung';
+    if (/камер|camera|lens/.test(text) && /iphone/.test(text)) return 'захисне скло для камери iphone';
+    if (/ipad/.test(text)) return 'захисне скло для ipad';
+    if (/iphone/.test(text)) return 'захисне скло для iphone';
+    if (/samsung/.test(text)) return 'захисне скло для samsung';
+    if (/watch|apple watch/.test(text)) return 'захисне скло для apple watch';
+    return 'захисне скло для iphone';
+  }
+  if (/плівк|пленк|film|protective film|screen protector/.test(text)) {
+    if (/macbook/.test(text)) return 'захисні плівки для macbook';
+    if (/ipad/.test(text)) return 'захисні плівки для ipad';
+    return 'захисні плівки для ipad';
+  }
+
+  // MacBook sleeves/envelopes/skins often arrive from MoySklad with group = brand (WIWU/DUX DUCIS).
+  // Treat them as the site business group “Чохли для MacBook”.
+  if (/конверт|sleeve|leather\s*sleeve|skin\s*(zero|armor|pro|croco)|horizontal\s*sleeve|minimalist\s*sleeve/.test(text)) {
+    if (/macbook/.test(text)) return 'чохли для macbook';
+    return 'чохли для macbook';
+  }
+
+  if (/чохол|чехол|case|cover|bumper/.test(text)) {
     if (/ipad/.test(text)) return 'чохли для ipad';
     if (/iphone/.test(text)) return 'чохли для iphone';
     if (/samsung/.test(text)) return 'чохли для samsung';
     if (/macbook/.test(text)) return 'чохли для macbook';
     if (/airpods/.test(text)) return 'чохли для airpods';
     if (/airtag/.test(text)) return 'чохли для airtag';
+    return 'чохли для iphone';
   }
-  if (/ремінец|ремешок|band|strap/.test(text)) return 'ремінці для apple watch';
+  if (/ремінец|ремінець|ремешок|band|strap/.test(text)) return 'ремінці для apple watch';
   if (/шнурок|lanyard/.test(text)) return 'шнурки для iphone';
-  if (/organizer|сумк/.test(text)) return 'сумки для аксесуарів';
+  if (/рюкзак|backpack|organizer|органайзер|сумк|bag|pouch/.test(text)) return 'сумки для аксесуарів';
 
-  if (/glass|скло/.test(text)) {
-    if (/camera.*iphone|камери iphone/.test(text)) return 'захисне скло для камери iphone';
-    if (/camera.*samsung|камери samsung/.test(text)) return 'захисне скло для камери samsung';
-    if (/ipad/.test(text)) return 'захисне скло для ipad';
-    if (/iphone/.test(text)) return 'захисне скло для iphone';
-    if (/samsung/.test(text)) return 'захисне скло для samsung';
-    if (/watch/.test(text)) return 'захисне скло для apple watch';
-  }
-  if (/плівк|film/.test(text)) {
-    if (/ipad/.test(text)) return 'захисні плівки для ipad';
-    if (/macbook/.test(text)) return 'захисні плівки для macbook';
-  }
+  // Автомобільні зарядки на сайті йдуть в “Інші Аксесуари”, тому це правило стоїть вище за charger/adapter.
+  if (/прикурювач|(^|[\s\/\-\|])азп($|[\s\/\-\|])|car\s*charger|auto\s*charger|авто.*заряд|заряд.*авто/.test(text)) return 'прикурювачі';
+  if (/автотримач|авто.*тримач|car\s*holder|holder/.test(text)) return 'автотримачі';
 
-  if (/wireless|бездротов/.test(text)) return 'бездротові зарядки';
-  if (/power ?bank/.test(text)) return 'powerbank';
-  if (/adapter|адаптер/.test(text)) return 'адаптери';
-  if (/cable|кабель/.test(text) && /перехід|adapter|usb-c аксесуар/.test(text)) return 'кабелі - перехідники';
-  if (/cable|кабель/.test(text)) return 'кабелі';
-  if (/(laptop|ноутбук|macbook).*(заряд|charge)/.test(text) || /(заряд|charge).*(laptop|ноутбук|macbook)/.test(text)) return 'зарядки для ноутбуків';
-  if (/watch/.test(text) && /(заряд|charge)/.test(text)) return 'зарядні для apple watch';
+  if (/power\s*bank|powerbank|повербанк|павербанк/.test(text)) return 'powerbank';
+  if (/wireless|бездротов|magsafe|mag\s*safe/.test(text) && /(заряд|charge|charging|charger|станц)/.test(text)) return 'бездротові зарядки';
+  if (/(laptop|ноутбук|macbook).*(заряд|charge|adapter|адаптер)/.test(text) || /(заряд|charge|adapter|адаптер).*(laptop|ноутбук|macbook)/.test(text)) return 'зарядки для ноутбуків';
+  if (/watch|apple watch/.test(text) && /(заряд|charge|charging|charger)/.test(text)) return 'зарядні для apple watch';
+  if (/cable|кабель|шнур/.test(text) && /перехід|переходник|adapter|usb-c аксесуар|type-c аксесуар/.test(text)) return 'кабелі - перехідники';
+  if (/cable|кабель|шнур/.test(text)) return 'кабелі';
+  if (/adapter|адаптер|charger|зарядний|зарядка|charging block|wall charger|gan/.test(text)) return 'адаптери';
 
-  if (/автотримач|holder/.test(text)) return 'автотримачі';
-  if (/прикурювач|car charger/.test(text)) return 'прикурювачі';
-  if (/навушник|earbud|headphone/.test(text)) return 'навушники';
-  if (/pencil/.test(text)) return 'pencil';
-  if (/usb-c аксесуар|hub|dock|card reader/.test(text)) return 'перехідники/usb-c аксесуари';
-  if (/розетк/.test(text)) return 'перехідники для розетки';
+  if (/навушник|наушник|earbud|earphone|headphone|headset/.test(text)) return 'навушники';
+  if (/pencil|stylus|стилус/.test(text)) return 'pencil';
+  if (/usb-c аксесуар|type-c аксесуар|hub|dock|card reader|кардрідер|кардридер|flash drive|накопичувач/.test(text)) return 'перехідники/usb-c аксесуари';
+  if (/розетк|socket|plug/.test(text)) return 'перехідники для розетки';
   return '';
 }
 
@@ -2250,6 +2892,16 @@ function toTitleCaseUkrGroup(normalizedGroup) {
 function categoryByProductGroup(groupName) {
   const key = normalizeCell(groupName).toLowerCase();
   return getBusinessGroupToCategoryMap()[key] || '';
+}
+
+function isUnknownProductCategory_(value) {
+  const key = normalizeCell(value).toLowerCase();
+  return !key || key.indexOf('невизнач') !== -1;
+}
+
+function isUnknownProductGroup_(value) {
+  const key = normalizeCell(value).toLowerCase();
+  return !key || key.indexOf('невизнач') !== -1;
 }
 
 function buildProductManualKey(sku, product) {
@@ -2321,6 +2973,7 @@ function serverGetBonusesBootstrap(sessionToken) {
   return {
     ok: true,
     client_status_map: getClientStatusMapRowsForAdmin_(),
+    client_ltv_meta: getClientLtvMetaRowsForAdmin_(),
     bonuses_log: getBonusesLogRowsForAdmin_()
   };
 }
@@ -2357,20 +3010,40 @@ function applyProductManualMap(rows) {
   return rows.map(function(row) {
     const enriched = {};
     Object.keys(row).forEach(function(key){ enriched[key] = row[key]; });
+
     const key = buildProductManualKey(row.sku, row.product);
     const manual = manualMap[key];
+    const hasManualGroup = !!(manual && !isUnknownProductGroup_(manual.product_group));
+    const hasManualCategory = !!(manual && !isUnknownProductCategory_(manual.category));
+
     if (manual) {
       if (manual.brand) enriched.brand = manual.brand;
-      if (manual.product_group) enriched.product_group = manual.product_group;
-      if (manual.category) enriched.category = manual.category;
+      if (hasManualGroup) enriched.product_group = manual.product_group;
+      if (hasManualCategory) enriched.category = manual.category;
     }
-    if (!normalizeCell(enriched.product_group)) {
-      const normalized = normalizeProductGroupBusiness(row.product_group, row.product);
-      enriched.product_group = toTitleCaseUkrGroup(normalized);
+
+    const currentGroup = normalizeCell(enriched.product_group);
+    const detectedGroupKey = normalizeProductGroupBusiness(currentGroup || row.product_group, row.product);
+    const detectedGroup = toTitleCaseUkrGroup(detectedGroupKey);
+    const currentGroupCategory = categoryByProductGroup(currentGroup);
+
+    // Якщо group із МойСклад не є бізнес-групою сайту (наприклад WIWU/McDodo/АЗП),
+    // замінюємо її на визначену групу з назви товару. Ручні правки не перетираємо.
+    if (!hasManualGroup) {
+      if (isUnknownProductGroup_(currentGroup)) {
+        enriched.product_group = detectedGroup || '';
+      } else if (!currentGroupCategory && detectedGroup) {
+        enriched.product_group = detectedGroup;
+      }
     }
-    if (!normalizeCell(enriched.category)) {
-      enriched.category = categoryByProductGroup(enriched.product_group);
+
+    const finalGroupCategory = categoryByProductGroup(enriched.product_group);
+    const detectedCategory = detectedGroup ? categoryByProductGroup(detectedGroup) : '';
+
+    if (!hasManualCategory && isUnknownProductCategory_(enriched.category)) {
+      enriched.category = finalGroupCategory || detectedCategory || '';
     }
+
     return enriched;
   });
 }
@@ -2412,22 +3085,40 @@ function safeUrlFetch_(url, options) {
   const opts = Object.assign({}, options || {}, { muteHttpExceptions: true });
   let lastText = '';
   let lastCode = 0;
+  const maxAttempts = 5;
 
-  for (var attempt = 0; attempt < 3; attempt++) {
-    const response = UrlFetchApp.fetch(url, opts);
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    let response;
+
+    try {
+      response = UrlFetchApp.fetch(url, opts);
+    } catch (err) {
+      const errorText = String(err && err.message ? err.message : err);
+      const isBandwidthException =
+        errorText.indexOf('Bandwidth quota exceeded') !== -1 ||
+        errorText.indexOf('Try reducing the rate') !== -1;
+
+      if (!isBandwidthException || attempt === maxAttempts - 1) {
+        throw err;
+      }
+
+      Utilities.sleep(20000);
+      continue;
+    }
+
     lastCode = response.getResponseCode();
     lastText = response.getContentText();
 
     if (lastCode >= 200 && lastCode < 300) {
-      Utilities.sleep(80);
+      Utilities.sleep(120);
       return response;
     }
 
     const isBandwidth = String(lastText || '').indexOf('Bandwidth quota exceeded') !== -1;
     const isRateLike = lastCode === 429 || lastCode === 503 || isBandwidth;
-    if (!isRateLike || attempt === 2) break;
+    if (!isRateLike || attempt === maxAttempts - 1) break;
 
-    Utilities.sleep(isBandwidth ? 15000 : 5000);
+    Utilities.sleep(isBandwidth ? 20000 : 7000);
   }
 
   throw new Error('HTTP error ' + lastCode + '\n' + lastText);
@@ -2479,6 +3170,19 @@ function safeGet(obj, path, fallback) {
     return cur === null || cur === undefined ? (fallback || '') : cur;
   } catch (e) {
     return fallback || '';
+  }
+}
+
+function getPathValue_(obj, path) {
+  try {
+    let cur = obj;
+    for (var i = 0; i < path.length; i++) {
+      if (cur === null || cur === undefined) return undefined;
+      cur = cur[path[i]];
+    }
+    return cur;
+  } catch (e) {
+    return undefined;
   }
 }
 
@@ -2605,7 +3309,7 @@ function getMonthRowNumbersByDateColumn(sheet, monthPrefix, dateColumn) {
   const rowNumbers = [];
 
   for (var i = 0; i < dateValues.length; i++) {
-    const dateText = String(dateValues[i][0] || '');
+    const dateText = formatSheetDateValue_(dateValues[i][0], 'yyyy-MM-dd HH:mm:ss');
     if (dateText.indexOf(monthPrefix) === 0) {
       rowNumbers.push(i + 2);
     }
@@ -2622,7 +3326,7 @@ function getDayRowNumbersByDateColumn(sheet, dayPrefix, dateColumn) {
   const rowNumbers = [];
 
   for (var i = 0; i < dateValues.length; i++) {
-    const dateText = String(dateValues[i][0] || '');
+    const dateText = formatSheetDateValue_(dateValues[i][0], 'yyyy-MM-dd HH:mm:ss');
     if (dateText.indexOf(dayPrefix) === 0) {
       rowNumbers.push(i + 2);
     }
@@ -2703,8 +3407,12 @@ function getSalesMainSheetRows_() {
   const values = sheet.getDataRange().getValues();
   if (!values || values.length < 2) return [];
 
-  return values.slice(1).filter(function(row) {
-    return String(row[1] || '').trim();
+  return values.slice(1).map(function(row) {
+    const normalizedRow = normalizeRowWidth_(row, HEADERS.length);
+    normalizedRow[1] = formatSheetDateValue_(normalizedRow[1], 'yyyy-MM-dd HH:mm:ss');
+    return normalizedRow;
+  }).filter(function(row) {
+    return normalizeCell(row[1]);
   });
 }
 
@@ -2712,7 +3420,7 @@ function filterSalesRowsByYear_(rows, year) {
   const yearPrefix = String(year) + '-';
 
   return (Array.isArray(rows) ? rows : []).filter(function(row) {
-    return String(row[1] || '').indexOf(yearPrefix) === 0;
+    return formatSheetDateValue_(row[1], 'yyyy-MM-dd HH:mm:ss').indexOf(yearPrefix) === 0;
   });
 }
 
@@ -2721,7 +3429,7 @@ function filterSalesRowsByMonthWindow_(rows, monthFrom, monthTo) {
   const to = normalizeCell(monthTo);
 
   return (Array.isArray(rows) ? rows : []).filter(function(row) {
-    const monthPrefix = String(row[1] || '').slice(0, 7);
+    const monthPrefix = formatSheetDateValue_(row[1], 'yyyy-MM-dd HH:mm:ss').slice(0, 7);
     if (!monthPrefix) return false;
     if (from && monthPrefix < from) return false;
     if (to && monthPrefix > to) return false;
@@ -2777,7 +3485,7 @@ function refreshSalesYearSheetCurrentMonth() {
   const targetSheet = ensureSalesYearSheet_(year);
   const sourceRows = filterSalesRowsByYear_(getSalesMainSheetRows_(), year)
     .filter(function(row) {
-      return String(row[1] || '').indexOf(range.monthPrefix) === 0;
+      return formatSheetDateValue_(row[1], 'yyyy-MM-dd HH:mm:ss').indexOf(range.monthPrefix) === 0;
     });
 
   const monthRowNumbers = getMonthRowNumbersByDateColumn(targetSheet, range.monthPrefix, 2);
@@ -3003,9 +3711,20 @@ function getManagerTagCandidates(tagNames) {
   });
 }
 
-function resolveManagerTagFromTags(tagNames) {
+function resolveManagerTagFromTags(tagNames, previousManagerTag) {
   const managerTags = getManagerTagCandidates(tagNames);
   if (!managerTags.length) return '';
+
+  const previous = normalizeTagName(previousManagerTag);
+  if (previous && managerTags.length > 1 && managerTags.indexOf(previous) !== -1) {
+    const changedCandidates = managerTags.filter(function(tag) {
+      return tag !== previous;
+    });
+    if (changedCandidates.length) {
+      return normalizeTagName(changedCandidates[changedCandidates.length - 1]);
+    }
+  }
+
   return normalizeTagName(managerTags[managerTags.length - 1]);
 }
 
@@ -3091,7 +3810,7 @@ function fetchAllCounterparties() {
 
 function fetchCounterpartyBalancesReportChunk(offset) {
   const query = buildQuery({
-    limit: 1000,
+    limit: COUNTERPARTY_BALANCE_REPORT_LIMIT,
     offset: offset
   });
 
@@ -3110,9 +3829,9 @@ function fetchAllCounterpartyBalancesReportRows() {
 
     allRows = allRows.concat(rows);
 
-    if (rows.length < 1000) break;
-    offset += 1000;
-    Utilities.sleep(250);
+    if (rows.length < COUNTERPARTY_BALANCE_REPORT_LIMIT) break;
+    offset += COUNTERPARTY_BALANCE_REPORT_LIMIT;
+    Utilities.sleep(900);
   }
 
   return allRows;
@@ -3474,16 +4193,42 @@ function resolveCounterpartyBalance(counterparty) {
   return '';
 }
 
-function buildClientTagMapRows(counterparties) {
+function buildExistingClientTagMapLookup_() {
+  const lookup = {
+    by_id: {},
+    by_client: {}
+  };
+
+  getSheetObjects(SHEET_CLIENT_TAG_MAP).forEach(function(row) {
+    const counterpartyId = normalizeCell(row.counterparty_id);
+    const client = normalizeCell(row.client);
+    const payload = {
+      counterparty_id: counterpartyId,
+      client: client,
+      manager_tag: normalizeTagName(row.manager_tag),
+      exclude_tags: normalizeCell(row.exclude_tags),
+      all_tags: normalizeCell(row.all_tags),
+      updated_at: normalizeCell(row.updated_at)
+    };
+    if (counterpartyId) lookup.by_id[counterpartyId] = payload;
+    if (client) lookup.by_client[client] = payload;
+  });
+
+  return lookup;
+}
+
+function buildClientTagMapRows(counterparties, previousLookup) {
   const out = [];
   const batchUpdatedAt = nowText();
+  const lookup = previousLookup || { by_id: {}, by_client: {} };
 
   (counterparties || []).forEach(function(counterparty) {
     const client = normalizeCell(counterparty && counterparty.name);
     const counterpartyId = normalizeCell(counterparty && counterparty.id);
     const tagNames = extractTagNamesFromCounterparty(counterparty);
     const normalizedTagNames = tagNames.map(normalizeTagName).filter(Boolean);
-    const managerTag = resolveManagerTagFromTags(normalizedTagNames);
+    const previous = (counterpartyId && lookup.by_id[counterpartyId]) || (client && lookup.by_client[client]) || {};
+    const managerTag = resolveManagerTagFromTags(normalizedTagNames, previous.manager_tag);
     const excludeTags = extractExcludeTags(normalizedTagNames, managerTag);
 
     out.push([
@@ -3686,12 +4431,72 @@ function clearRefreshLoopCurrentTaskState_() {
 }
 
 function parseRefreshLoopDateMs_(value) {
-  var text = normalizeCell(value);
+  var text = normalizeCell(value).replace(/\u00A0/g, ' ').trim();
   if (!text) return 0;
 
-  var parsed = new Date(text.replace(' ', 'T'));
-  var time = parsed.getTime();
-  return isFinite(time) ? time : 0;
+  var directTime = new Date(text).getTime();
+  if (isFinite(directTime)) return directTime;
+
+  var isoLikeTime = new Date(text.replace(' ', 'T')).getTime();
+  if (isFinite(isoLikeTime)) return isoLikeTime;
+
+  var match = text.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s+(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (match) {
+    var timeFirst = new Date(
+      Number(match[6]),
+      Number(match[5]) - 1,
+      Number(match[4]),
+      Number(match[1]),
+      Number(match[2]),
+      Number(match[3] || 0)
+    ).getTime();
+    return isFinite(timeFirst) ? timeFirst : 0;
+  }
+
+  match = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (match) {
+    var dateFirst = new Date(
+      Number(match[3]),
+      Number(match[2]) - 1,
+      Number(match[1]),
+      Number(match[4]),
+      Number(match[5]),
+      Number(match[6] || 0)
+    ).getTime();
+    return isFinite(dateFirst) ? dateFirst : 0;
+  }
+
+  match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (match) {
+    var isoParts = new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4] || 0),
+      Number(match[5] || 0),
+      Number(match[6] || 0)
+    ).getTime();
+    return isFinite(isoParts) ? isoParts : 0;
+  }
+
+  return 0;
+}
+
+function getRefreshLoopTaskSuccessMetaKey_(taskRunLabel) {
+  var normalized = normalizeCell(taskRunLabel);
+
+  if (normalized === 'RUN_06_monthlyRepairNow') return 'sales_last_refresh';
+  if (normalized === 'RUN_09_refreshClientBalancesNow') return 'client_balances_last_refresh';
+  if (normalized === 'RUN_10_refreshProductStockNow') return 'product_stock_last_refresh';
+  if (normalized === 'RUN_23_rebuildDashboardServerSnapshot') return DASHBOARD_SNAPSHOT_BUILT_AT_META_KEY;
+
+  return '';
+}
+
+function getRefreshLoopTaskSuccessMs_(taskRunLabel) {
+  var metaKey = getRefreshLoopTaskSuccessMetaKey_(taskRunLabel);
+
+  return metaKey ? parseRefreshLoopDateMs_(getSystemMetaValue(metaKey)) : 0;
 }
 
 function healStaleRefreshLoopCurrentTask_() {
@@ -3704,12 +4509,30 @@ function healStaleRefreshLoopCurrentTask_() {
   if (!startedAtMs) return false;
   if (Date.now() - startedAtMs < REFRESH_LOOP_STALE_TASK_MS) return false;
 
-  clearRefreshLoopCurrentTaskState_();
-  setSystemMetaValue(getRefreshLoopMetaKey_('last_error'), 'Автоочистка завислої loop-задачі: ' + currentTask);
+  var tasks = getRefreshLoopTasks_();
+  var staleTaskIndex = tasks.findIndex(function(task) {
+    return normalizeCell(task.runLabel) === currentTask;
+  });
+  var retryCount = getRefreshLoopRetryCount_();
+  var taskSuccessMs = getRefreshLoopTaskSuccessMs_(currentTask);
+  var taskAlreadyWroteResult = taskSuccessMs && taskSuccessMs >= startedAtMs;
+  var taskSuccessText = taskAlreadyWroteResult
+    ? getSystemMetaValue(getRefreshLoopTaskSuccessMetaKey_(currentTask))
+    : '';
+  var nextIndex = staleTaskIndex >= 0 ? (staleTaskIndex + 1) % tasks.length : getRefreshLoopIndex_();
+  var shouldRetrySameTask = !taskAlreadyWroteResult && retryCount < 1 && staleTaskIndex >= 0;
+  var targetIndex = shouldRetrySameTask ? staleTaskIndex : nextIndex;
+  var staleMessage = shouldRetrySameTask
+    ? 'Повтор після завислої loop-задачі без зафіксованого результату: ' + currentTask
+    : 'Автоперехід після завислої loop-задачі: ' + currentTask;
 
-  if (normalizeCell(getSystemMetaValue(getRefreshLoopMetaKey_('last_status'))) !== 'ok') {
-    setSystemMetaValue(getRefreshLoopMetaKey_('last_status'), 'stale_cleared');
-  }
+  clearRefreshLoopCurrentTaskState_();
+  setRefreshLoopState_(targetIndex, shouldRetrySameTask ? retryCount + 1 : 0, {
+    last_task: currentTask,
+    last_status: taskAlreadyWroteResult ? 'ok' : (shouldRetrySameTask ? 'stale_retry' : 'failed_skip'),
+    last_success_at: taskSuccessText,
+    last_error: taskAlreadyWroteResult ? '' : staleMessage
+  });
 
   return true;
 }
@@ -3753,6 +4576,30 @@ function getRefreshLoopState() {
   };
 }
 
+function getRefreshLoopStateFromMetaMap_(metaMap) {
+  var tasks = getRefreshLoopTasks_();
+  var rawIndex = Number(getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('index')));
+  if (!isFinite(rawIndex) || rawIndex < 0) rawIndex = 0;
+  var index = tasks.length ? rawIndex % tasks.length : 0;
+  var nextTask = tasks[index] || null;
+  var retry = Number(getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('retry_count')));
+  if (!isFinite(retry) || retry < 0) retry = 0;
+
+  return {
+    ok: true,
+    tasks: tasks.map(function(task) { return task.runLabel; }),
+    current_index: index,
+    next_task: nextTask ? nextTask.runLabel : '',
+    retry_count: retry,
+    current_task: getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('current_task')),
+    current_started_at: getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('current_started_at')),
+    last_task: getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('last_task')),
+    last_status: getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('last_status')),
+    last_success_at: getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('last_success_at')),
+    last_error: getSystemMetaValueFromMap_(metaMap, getRefreshLoopMetaKey_('last_error'))
+  };
+}
+
 function resetRefreshLoopState() {
   clearRefreshLoopCurrentTaskState_();
   setRefreshLoopState_(0, 0, {
@@ -3785,7 +4632,11 @@ function installRefreshLoopTrigger() {
 function startRefreshLoop() {
   resetRefreshLoopState();
   var triggerInfo = installRefreshLoopTrigger();
-  var firstTick = schedulerTick_();
+  var firstTick = {
+    ok: true,
+    skipped: true,
+    reason: 'deferred_to_minute_trigger'
+  };
 
   return {
     ok: true,
@@ -4048,10 +4899,66 @@ function initializeClientTagMapRefreshSheet_() {
   return sheet;
 }
 
-function appendClientTagMapRows_(sheet, rows) {
+function prepareClientTagMapRefreshSheet_() {
+  ensureClientTagRulesSheet();
+  ensureClientTagMapSheet();
+  const sheet = getSpreadsheet().getSheetByName(SHEET_CLIENT_TAG_MAP);
+  ensureHeadersForSheet(sheet, CLIENT_TAG_MAP_HEADERS);
+  sheet.setFrozenRows(1);
+  return sheet;
+}
+
+function getClientTagMapRowKey_(row) {
+  const counterpartyId = normalizeCell(row && row[0]);
+  if (counterpartyId) return 'id:' + counterpartyId;
+  const client = normalizeCell(row && row[1]).toLowerCase();
+  return client ? 'client:' + client : '';
+}
+
+function upsertClientTagMapRows_(sheet, rows) {
   if (!sheet || !rows || !rows.length) return 0;
-  const startRow = Math.max(2, sheet.getLastRow() + 1);
-  sheet.getRange(startRow, 1, rows.length, CLIENT_TAG_MAP_HEADERS.length).setValues(rows);
+  ensureHeadersForSheet(sheet, CLIENT_TAG_MAP_HEADERS);
+
+  const lastRow = sheet.getLastRow();
+  const existingValues = lastRow > 1
+    ? sheet.getRange(2, 1, lastRow - 1, CLIENT_TAG_MAP_HEADERS.length).getValues()
+    : [];
+  const rowByKey = {};
+  const order = [];
+
+  existingValues.forEach(function(row) {
+    const key = getClientTagMapRowKey_(row);
+    if (!key) return;
+    if (!Object.prototype.hasOwnProperty.call(rowByKey, key)) order.push(key);
+    rowByKey[key] = row.slice(0, CLIENT_TAG_MAP_HEADERS.length);
+  });
+
+  rows.forEach(function(row) {
+    const normalizedRow = row.slice(0, CLIENT_TAG_MAP_HEADERS.length);
+    const key = getClientTagMapRowKey_(normalizedRow);
+    if (!key) return;
+    if (!Object.prototype.hasOwnProperty.call(rowByKey, key)) order.push(key);
+    rowByKey[key] = normalizedRow;
+  });
+
+  const merged = order
+    .map(function(key) {
+      return rowByKey[key];
+    })
+    .filter(function(row) {
+      return normalizeCell(row && row[0]) || normalizeCell(row && row[1]);
+    })
+    .sort(function(a, b) {
+      return String(a[1] || '').localeCompare(String(b[1] || ''), 'uk');
+    });
+
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, CLIENT_TAG_MAP_HEADERS.length).clearContent();
+  }
+  if (merged.length) {
+    sheet.getRange(2, 1, merged.length, CLIENT_TAG_MAP_HEADERS.length).setValues(merged);
+  }
+  sheet.setFrozenRows(1);
   return rows.length;
 }
 
@@ -4078,12 +4985,11 @@ function refreshClientTagMapManualPart_(partIndex) {
 
     const startedAt = nowText();
     const stateBeforePart = getClientTagMapRefreshState_();
+    const previousLookup = buildExistingClientTagMapLookup_();
     const offset = numericPart === 1
       ? 0
       : Math.max(CLIENT_TAG_MAP_MANUAL_PART_LIMIT, Number(stateBeforePart.offset || CLIENT_TAG_MAP_MANUAL_PART_LIMIT));
-    const sheet = numericPart === 1
-      ? initializeClientTagMapRefreshSheet_()
-      : getSpreadsheet().getSheetByName(SHEET_CLIENT_TAG_MAP);
+    const sheet = prepareClientTagMapRefreshSheet_();
 
     if (!sheet) {
       throw new Error('Не вдалося отримати аркуш client_tag_map');
@@ -4105,8 +5011,8 @@ function refreshClientTagMapManualPart_(partIndex) {
       lastChunkLength = counterparties.length;
       if (!counterparties.length) break;
 
-      const rows = buildClientTagMapRows(counterparties);
-      rowsWritten += appendClientTagMapRows_(sheet, rows);
+      const rows = buildClientTagMapRows(counterparties, previousLookup);
+      rowsWritten += upsertClientTagMapRows_(sheet, rows);
       counterpartiesProcessed += counterparties.length;
       currentOffset += counterparties.length;
       chunksCompleted += 1;
@@ -4181,7 +5087,8 @@ function processClientTagMapRefreshBatches_(options) {
   const startedAtMs = Number(config.started_at_ms || Date.now());
   const deadlineMs = startedAtMs + CLIENT_TAG_MAP_REFRESH_EXECUTION_MS;
   const chunkLimit = Math.max(50, Number(config.chunk_limit || CLIENT_TAG_MAP_REFRESH_LIMIT));
-  const sheet = getSpreadsheet().getSheetByName(SHEET_CLIENT_TAG_MAP) || initializeClientTagMapRefreshSheet_();
+  const sheet = prepareClientTagMapRefreshSheet_();
+  const previousLookup = buildExistingClientTagMapLookup_();
   let state = getClientTagMapRefreshState_();
   let offset = Math.max(0, Number(state.offset || 0));
   let rowsWritten = Math.max(0, Number(state.rows_written || 0));
@@ -4215,8 +5122,8 @@ function processClientTagMapRefreshBatches_(options) {
       };
     }
 
-    const rows = buildClientTagMapRows(counterparties);
-    rowsWritten += appendClientTagMapRows_(sheet, rows);
+    const rows = buildClientTagMapRows(counterparties, previousLookup);
+    rowsWritten += upsertClientTagMapRows_(sheet, rows);
     offset += counterparties.length;
     chunksCompleted += 1;
 
@@ -4565,11 +5472,18 @@ function enrichRowsWithManagerTag(rows) {
   if (!Array.isArray(rows)) return [];
 
   const clientTagMap = getClientTagMap();
+  const clientTagIdMap = {};
+  Object.keys(clientTagMap).forEach(function(client) {
+    const binding = clientTagMap[client] || {};
+    const counterpartyId = normalizeCell(binding.counterparty_id);
+    if (counterpartyId) clientTagIdMap[counterpartyId] = binding;
+  });
 
   return rows.map(function(row) {
     const client = normalizeCell(row.client);
+    const rowCounterpartyId = normalizeCell(row.counterparty_id || row.client_id);
     const originalManager = normalizeCell(row.manager || '');
-    const binding = clientTagMap[client] || null;
+    const binding = (rowCounterpartyId && clientTagIdMap[rowCounterpartyId]) || clientTagMap[client] || null;
 
     const enriched = {};
     Object.keys(row).forEach(function(key) {
@@ -4580,7 +5494,7 @@ function enrichRowsWithManagerTag(rows) {
     enriched.manager_tag = binding ? normalizeTagName(binding.manager_tag) : '';
     enriched.client_exclude_tags = binding ? binding.exclude_tags : '';
     enriched.client_all_tags = binding ? binding.all_tags : '';
-    enriched.counterparty_id = binding ? binding.counterparty_id : '';
+    enriched.counterparty_id = rowCounterpartyId || (binding ? binding.counterparty_id : '');
 
     return enriched;
   });
@@ -4641,6 +5555,69 @@ function resolveClientAlias(client, aliasMap) {
   return current;
 }
 
+function buildCounterpartyIdentityMap(rows) {
+  const map = {};
+
+  (Array.isArray(rows) ? rows : []).forEach(function(row) {
+    const counterpartyId = normalizeCell(row.counterparty_id || row.client_id);
+    const client = normalizeCell(row.client);
+    if (!counterpartyId || !client) return;
+
+    const date = formatSheetDateValue_(row.date, 'yyyy-MM-dd HH:mm:ss');
+    const existing = map[counterpartyId];
+    if (!existing || date >= existing.date) {
+      map[counterpartyId] = {
+        client: client,
+        date: date
+      };
+    }
+  });
+
+  getSheetObjects(SHEET_CLIENT_TAG_MAP).forEach(function(row) {
+    const counterpartyId = normalizeCell(row.counterparty_id);
+    const client = normalizeCell(row.client);
+    if (!counterpartyId || !client || map[counterpartyId]) return;
+    map[counterpartyId] = {
+      client: client,
+      date: ''
+    };
+  });
+
+  return map;
+}
+
+function applyCounterpartyIdentityMap(rows, identityMap) {
+  if (!Array.isArray(rows)) return [];
+
+  const map = identityMap || buildCounterpartyIdentityMap(rows);
+
+  return rows.map(function(row) {
+    const enriched = {};
+    Object.keys(row).forEach(function(key) {
+      enriched[key] = row[key];
+    });
+
+    const counterpartyId = normalizeCell(row.counterparty_id || row.client_id);
+    if (!counterpartyId) return enriched;
+
+    const identity = map[counterpartyId] || {};
+    const displayClient = normalizeCell(identity.client);
+    const currentClient = normalizeCell(row.client);
+
+    enriched.counterparty_id = counterpartyId;
+    enriched.client_key = counterpartyId;
+
+    if (displayClient && displayClient !== currentClient) {
+      enriched.original_client = currentClient;
+      enriched.client = displayClient;
+    } else if (displayClient) {
+      enriched.client = displayClient;
+    }
+
+    return enriched;
+  });
+}
+
 function applyClientAliasMap(rows) {
   if (!Array.isArray(rows)) return [];
 
@@ -4651,6 +5628,13 @@ function applyClientAliasMap(rows) {
     Object.keys(row).forEach(function(key) {
       enriched[key] = row[key];
     });
+
+    const counterpartyId = normalizeCell(row.counterparty_id || row.client_id);
+    if (counterpartyId) {
+      enriched.counterparty_id = counterpartyId;
+      enriched.client_key = counterpartyId;
+      return enriched;
+    }
 
     const aliasedClient = resolveClientAlias(row.client, aliasMap);
     if (aliasedClient) {
@@ -4963,7 +5947,8 @@ function buildSalesRows(rows) {
         unitPrice,
         discountPct,
         revenue,
-        extractDemandStatus(demand)
+        extractDemandStatus(demand),
+        safeGet(agent, ['id'], '')
       ]);
     });
   });
@@ -5038,6 +6023,191 @@ function getUniqueSalesRows(rows) {
   return out;
 }
 
+function fetchDemandCounterpartyIdentityByOrderId_(orderId) {
+  const cleanOrderId = normalizeCell(orderId);
+  if (!cleanOrderId) return null;
+
+  const url = getApiBase() + '/entity/demand/' + encodeURIComponent(cleanOrderId);
+  const demand = apiGet(url);
+  const agent = demand && demand.agent ? demand.agent : {};
+  const counterpartyId = normalizeCell(agent.id);
+
+  if (!counterpartyId) return null;
+  return {
+    counterparty_id: counterpartyId,
+    client: normalizeCell(agent.name)
+  };
+}
+
+function writeCounterpartyIdColumnUpdates_(sheet, updates) {
+  if (!sheet || !Array.isArray(updates) || !updates.length) return 0;
+
+  const counterpartyColumn = HEADERS.indexOf('counterparty_id') + 1;
+  const sorted = updates
+    .filter(function(update) {
+      return update && Number(update.row) > 1 && normalizeCell(update.value);
+    })
+    .sort(function(a, b) {
+      return Number(a.row) - Number(b.row);
+    });
+
+  if (!sorted.length) return 0;
+
+  let written = 0;
+  let blockStart = Number(sorted[0].row);
+  let blockValues = [[normalizeCell(sorted[0].value)]];
+  let previousRow = blockStart;
+
+  for (var i = 1; i < sorted.length; i++) {
+    const rowNumber = Number(sorted[i].row);
+    const value = normalizeCell(sorted[i].value);
+
+    if (rowNumber === previousRow + 1) {
+      blockValues.push([value]);
+    } else {
+      sheet.getRange(blockStart, counterpartyColumn, blockValues.length, 1).setValues(blockValues);
+      written += blockValues.length;
+      blockStart = rowNumber;
+      blockValues = [[value]];
+    }
+
+    previousRow = rowNumber;
+  }
+
+  sheet.getRange(blockStart, counterpartyColumn, blockValues.length, 1).setValues(blockValues);
+  written += blockValues.length;
+  return written;
+}
+
+function buildClientNameToCounterpartyIdMap_() {
+  const tagMap = getClientTagMap();
+  const map = {};
+
+  Object.keys(tagMap).forEach(function(client) {
+    const counterpartyId = normalizeCell(tagMap[client] && tagMap[client].counterparty_id);
+    const cleanClient = normalizeCell(client);
+    if (cleanClient && counterpartyId) map[cleanClient] = counterpartyId;
+  });
+
+  return map;
+}
+
+function backfillSalesCounterpartyIdsNow() {
+  const startedAt = Date.now();
+  const sheet = ensureMainSheet();
+  ensureExactHeaders(sheet, HEADERS);
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return {
+      ok: true,
+      sheet: SHEET_MAIN,
+      scanned_rows: 0,
+      missing_rows_before: 0,
+      filled_from_client_map: 0,
+      api_orders_checked: 0,
+      filled_from_api: 0,
+      remaining_rows: 0,
+      cache_rebuilt: false
+    };
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+  const orderIndex = HEADERS.indexOf('order_id');
+  const clientIndex = HEADERS.indexOf('client');
+  const counterpartyIndex = HEADERS.indexOf('counterparty_id');
+  const clientNameToId = buildClientNameToCounterpartyIdMap_();
+  const updates = [];
+  const missingByOrderId = {};
+  let missingRowsBefore = 0;
+  let filledFromClientMap = 0;
+
+  values.forEach(function(row, index) {
+    const existingId = normalizeCell(row[counterpartyIndex]);
+    if (existingId) return;
+
+    const sheetRow = index + 2;
+    const client = normalizeCell(row[clientIndex]);
+    const mappedId = client ? normalizeCell(clientNameToId[client]) : '';
+
+    missingRowsBefore++;
+
+    if (mappedId) {
+      row[counterpartyIndex] = mappedId;
+      updates.push({ row: sheetRow, value: mappedId });
+      filledFromClientMap++;
+      return;
+    }
+
+    const orderId = normalizeCell(row[orderIndex]);
+    if (!orderId) return;
+    if (!missingByOrderId[orderId]) missingByOrderId[orderId] = [];
+    missingByOrderId[orderId].push(sheetRow);
+  });
+
+  const orderIds = Object.keys(missingByOrderId);
+  let apiOrdersChecked = 0;
+  let filledFromApi = 0;
+  const orderLimit = Math.max(1, Number(COUNTERPARTY_ID_BACKFILL_API_LIMIT_PER_RUN) || 1);
+  const maxMillis = Math.max(30000, Number(COUNTERPARTY_ID_BACKFILL_MAX_MILLIS) || 30000);
+  let apiErrors = 0;
+
+  for (var i = 0; i < orderIds.length; i++) {
+    if (apiOrdersChecked >= orderLimit) break;
+    if (Date.now() - startedAt > maxMillis) break;
+
+    const orderId = orderIds[i];
+    let identity = null;
+
+    try {
+      identity = fetchDemandCounterpartyIdentityByOrderId_(orderId);
+      apiOrdersChecked++;
+    } catch (err) {
+      apiErrors++;
+      apiOrdersChecked++;
+      Logger.log(
+        'backfillSalesCounterpartyIdsNow -> failed order ' +
+        orderId + ': ' + (err && err.message ? err.message : err)
+      );
+    }
+
+    if (identity && identity.counterparty_id) {
+      missingByOrderId[orderId].forEach(function(rowNumber) {
+        updates.push({ row: rowNumber, value: identity.counterparty_id });
+        filledFromApi++;
+      });
+    }
+
+    Utilities.sleep(COUNTERPARTY_ID_BACKFILL_API_SLEEP_MS);
+  }
+
+  const writtenRows = writeCounterpartyIdColumnUpdates_(sheet, updates);
+  const remainingRows = Math.max(0, missingRowsBefore - writtenRows);
+  let snapshotResult = null;
+
+  if (remainingRows === 0 && writtenRows > 0) {
+    snapshotResult = rebuildSalesCacheAndSnapshot_();
+  } else if (writtenRows > 0) {
+    markDashboardServerSnapshotStale_('sales_counterparty_id_backfill_partial');
+  }
+
+  return {
+    ok: true,
+    sheet: SHEET_MAIN,
+    scanned_rows: values.length,
+    missing_rows_before: missingRowsBefore,
+    filled_from_client_map: filledFromClientMap,
+    api_orders_checked: apiOrdersChecked,
+    api_errors: apiErrors,
+    filled_from_api: filledFromApi,
+    written_rows: writtenRows,
+    remaining_rows: remainingRows,
+    cache_rebuilt: !!(snapshotResult && snapshotResult.ok),
+    snapshot_built_at: snapshotResult && snapshotResult.built_at ? snapshotResult.built_at : ''
+  };
+}
+
 function fetchSalesPeriodRows(startText, endTextExclusive) {
   const safeStart = clampStartDate(startText);
   const filter = 'moment>=' + safeStart + ';moment<' + endTextExclusive;
@@ -5053,7 +6223,7 @@ function fetchSalesPeriodRows(startText, endTextExclusive) {
 
     if (rows.length < DEMAND_LIMIT) break;
     offset += DEMAND_LIMIT;
-    Utilities.sleep(300);
+    Utilities.sleep(DEMAND_FETCH_SLEEP_MS);
   }
 
   return allRows;
@@ -5120,6 +6290,17 @@ function rebuildCurrentMonthDedup() {
   );
 }
 
+function normalizeRowWidth_(row, columnCount) {
+  const width = Math.max(0, Number(columnCount || 0));
+  const out = Array.isArray(row) ? row.slice(0, width) : [];
+
+  while (out.length < width) {
+    out.push('');
+  }
+
+  return out;
+}
+
 function DailyRefreshNow() {
   const sheet = ensureMainSheet();
   const bounds = getTodayBounds();
@@ -5172,9 +6353,11 @@ function rebuildServerCache() {
   const currentRows = [];
 
   data.slice(1).forEach(function(row) {
-    const date = String(row[1] || '');
-    if (date.indexOf(monthPrefix) === 0) currentRows.push(row);
-    else archiveRows.push(row);
+    const normalizedRow = normalizeRowWidth_(row, HEADERS.length);
+    const date = formatSheetDateValue_(normalizedRow[1], 'yyyy-MM-dd HH:mm:ss');
+    normalizedRow[1] = date;
+    if (date.indexOf(monthPrefix) === 0) currentRows.push(normalizedRow);
+    else archiveRows.push(normalizedRow);
   });
 
   if (archiveRows.length) {
@@ -5193,9 +6376,80 @@ function rebuildServerCache() {
   Logger.log('rebuildServerCache -> archive=' + archiveRows.length + ', current=' + currentRows.length);
 }
 
+function rebuildCurrentMonthServerCacheOnly() {
+  const main = ensureMainSheet();
+  const current = getOrCreateSheet(SHEET_CURRENT);
+  const data = main.getDataRange().getValues();
+
+  current.clearContents();
+  ensureExactHeaders(current, HEADERS);
+  current.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  applySpecialSheetFormats(current);
+
+  if (!data || data.length < 2) {
+    current.setFrozenRows(1);
+    setSalesLastRefreshNow();
+    markDashboardServerSnapshotStale_('sales_current_cache_rebuilt');
+    return {
+      ok: true,
+      current_rows: 0
+    };
+  }
+
+  const monthPrefix = getCurrentMonthRange().monthPrefix;
+  const currentRows = [];
+
+  data.slice(1).forEach(function(row) {
+    const normalizedRow = normalizeRowWidth_(row, HEADERS.length);
+    const date = formatSheetDateValue_(normalizedRow[1], 'yyyy-MM-dd HH:mm:ss');
+    normalizedRow[1] = date;
+    if (date.indexOf(monthPrefix) === 0) currentRows.push(normalizedRow);
+  });
+
+  if (currentRows.length) {
+    current.getRange(2, 1, currentRows.length, HEADERS.length).setValues(currentRows);
+  }
+
+  current.setFrozenRows(1);
+  setSalesLastRefreshNow();
+  markDashboardServerSnapshotStale_('sales_current_cache_rebuilt');
+
+  Logger.log('rebuildCurrentMonthServerCacheOnly -> current=' + currentRows.length);
+
+  return {
+    ok: true,
+    current_rows: currentRows.length
+  };
+}
+
+function ensureSalesServerCacheCurrentMonthReady_() {
+  try {
+    const main = ensureMainSheet();
+    const current = getOrCreateSheet(SHEET_CURRENT);
+    const monthPrefix = getCurrentMonthRange().monthPrefix;
+    const mainMonthRows = getMonthRowNumbersByDateColumn(main, monthPrefix, 2).length;
+    const currentMonthRows = getMonthRowNumbersByDateColumn(current, monthPrefix, 2).length;
+
+    if (mainMonthRows > 0 && currentMonthRows !== mainMonthRows) {
+      Logger.log(
+        'ensureSalesServerCacheCurrentMonthReady_ -> rebuilding cache, main=' +
+        mainMonthRows + ', current=' + currentMonthRows
+      );
+      rebuildServerCache();
+    }
+  } catch (err) {
+    Logger.log('ensureSalesServerCacheCurrentMonthReady_ failed: ' + (err && err.message ? err.message : err));
+  }
+}
+
+function rebuildSalesCacheAndSnapshot_() {
+  rebuildServerCache();
+  return rebuildDashboardServerSnapshotInsideLockedFlow_();
+}
+
 function monthlyRepairNow() {
   rebuildCurrentMonthDedup();
-  rebuildServerCache();
+  return rebuildSalesCacheAndSnapshot_();
 }
 
 function getManualSalesRebuildTarget_() {
@@ -5224,8 +6478,10 @@ function fillSalesSelectedMonthNow() {
 
 function fillSalesSelectedMonthAndRebuildCache() {
   const result = fillSalesSelectedMonthNow();
-  rebuildServerCache();
+  const snapshotResult = rebuildSalesCacheAndSnapshot_();
   result.cache_rebuilt = true;
+  result.snapshot_rebuilt = !!(snapshotResult && snapshotResult.ok);
+  result.snapshot_built_at = snapshotResult && snapshotResult.built_at ? snapshotResult.built_at : '';
   return result;
 }
 
@@ -5241,14 +6497,16 @@ function getPreviousMonthYearMonth_() {
 function refreshPreviousMonthNow() {
   const target = getPreviousMonthYearMonth_();
   const result = rebuildMonthByYearMonth(target.year, target.month);
-  rebuildServerCache();
+  const snapshotResult = rebuildSalesCacheAndSnapshot_();
   return {
     ok: true,
     month_key: String(target.year) + '-' + String(target.month).padStart(2, '0'),
     month: result.month,
     deleted_rows: result.deleted_rows,
     inserted_rows: result.inserted_rows,
-    cache_rebuilt: true
+    cache_rebuilt: true,
+    snapshot_rebuilt: !!(snapshotResult && snapshotResult.ok),
+    snapshot_built_at: snapshotResult && snapshotResult.built_at ? snapshotResult.built_at : ''
   };
 }
 
@@ -5434,10 +6692,12 @@ function rebuildPaymentsServerCache() {
   const currentRows = [];
 
   data.slice(1).forEach(function(row) {
-    const date = String(row[1] || '');
+    const normalizedRow = normalizeRowWidth_(row, PAYMENT_HEADERS.length);
+    const date = formatSheetDateValue_(normalizedRow[1], 'yyyy-MM-dd HH:mm:ss');
+    normalizedRow[1] = date;
 
-    if (date.indexOf(monthPrefix) === 0) currentRows.push(row);
-    else archiveRows.push(row);
+    if (date.indexOf(monthPrefix) === 0) currentRows.push(normalizedRow);
+    else archiveRows.push(normalizedRow);
   });
 
   if (archiveRows.length) {
@@ -5959,5 +7219,3 @@ function normalizeRepairKey_(value) {
     .replace(/\s+/g, ' ')
     .trim();
 }
-
-
