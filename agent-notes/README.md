@@ -8,3 +8,7 @@ Relevant OpenClaw memory files:
 - `/root/.openclaw/workspace/memory/rules-sales.md`
 - `/root/.openclaw/workspace/memory/reporting-client-risk.md`
 - `/root/.openclaw/workspace/memory/agent-memory-policy.md`
+
+Repo coding memory:
+
+- `agent-notes/CODER_MEMORY.md`
