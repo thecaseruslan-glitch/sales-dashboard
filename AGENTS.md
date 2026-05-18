@@ -18,8 +18,8 @@ Coding work here belongs to Кодер TC.
 
 ## Project Structure
 
-- `D13/` - sales dashboard source.
-- `P5/` - purchase dashboard source.
+- `sales-dashboard/` - sales dashboard source.
+- `purchase-dashboard/` - purchase dashboard source.
 - `shared/` - shared logic or notes if extracted later.
 - `docs/` - docs and deployment notes.
 - `agent-notes/` - repo-specific agent notes.
