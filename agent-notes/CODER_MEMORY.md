@@ -46,3 +46,36 @@ Verification:
 Rollback note:
 
 - No rollback needed for analysis-only work.
+
+## D17 Sales Dashboard Variant - 2026-05-26
+
+Request: create new D17 sales dashboard files from GitHub D16, auto-open/load admin data 10 seconds after dashboard load, and fix OKR plans not being detected from the sheet.
+
+Base version:
+
+- `sales-dashboard/D16`
+- `sales-dashboard/D16.html`
+
+Changed files:
+
+- `sales-dashboard/D17`
+- `sales-dashboard/D17.html`
+
+Implementation:
+
+- Added locale-safe OKR plan number parsing in backend so values like `11704,06` from `okr_plans` read as real numbers instead of `0`.
+- Added frontend OKR plan normalization with the existing comma-aware `parseNumber`.
+- Bumped OKR localStorage cache key from `v2` to `v3` so old cached zero-plan payloads do not mask fresh sheet data.
+- Added admin auto-open timer: for admin users, 10 seconds after successful dashboard data load the Admin modal opens itself and starts the existing admin bootstrap/load flow.
+
+Verification:
+
+- Pulled latest `origin/main` to get D16.
+- Read live `okr_plans` rows in read-only mode and confirmed plan values use comma decimals.
+- Ran `node --check sales-dashboard/D17`.
+- Extracted and syntax-checked 5 inline JS script blocks from `D17.html` with `new Function`.
+- Ran `git diff --check -- sales-dashboard/D17 sales-dashboard/D17.html`.
+
+Rollback note:
+
+- D16 remains unchanged and is the rollback point.
