@@ -141,3 +141,28 @@ Verification:
 - Extracted and syntax-checked 5 inline JS script blocks from D21.html with new Function.
 - git diff --check -- sales-dashboard/D21 sales-dashboard/D21.html agent-notes/SALES_DASHBOARD_MEMORY.md agent-notes/CODER_MEMORY.md.
 - Parser sample check confirmed `WIWU Classic III Case` normalizes to seriesKey `wiwu classic iii` and extracts iPad 10.2 2019-2021, iPad Air 3, and iPad Pro 10.5.
+
+## 2026-05-26 - D22 Keyword Color And Model Rankings
+
+Base: D21 copied to D22 after Руслан confirmed.
+
+Request: when the user searches by keywords without selecting a concrete SKU/product, the same color and model ranking blocks should appear as they do for a selected position.
+
+Problem: D21 keyword mode rendered the main position chart and client lists, but color/model comparison blocks stayed hidden because they required `positionExplorerSelectedProduct` as an anchor.
+
+Fix:
+
+- Created D22/D22.html from D21/D21.html.
+- Kept backend identical to D21.
+- Added keyword-mode aggregation for the color comparison block using all matched rows in the current dashboard/client/filter slice.
+- Added keyword-mode aggregation for the model comparison block using parsed compatible models from all matched rows.
+- Kept exact selected-product behavior unchanged.
+- The “Усі” color button now re-renders the full Position Analysis block, so it works in both selected-product and keyword modes.
+- In keyword model ranking, model rows are informational only; selected-product mode keeps clickable model navigation.
+
+Verification:
+
+- Confirmed D22 backend matches D21 byte-for-byte.
+- Ran node --check sales-dashboard/D22.
+- Extracted and syntax-checked 5 inline JS script blocks from D22.html with new Function.
+- Ran git diff --check -- sales-dashboard/D22 sales-dashboard/D22.html agent-notes/SALES_DASHBOARD_MEMORY.md agent-notes/CODER_MEMORY.md.

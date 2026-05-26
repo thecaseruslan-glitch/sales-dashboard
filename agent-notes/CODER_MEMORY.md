@@ -279,3 +279,40 @@ Verification:
 Rollback note:
 
 - D20 remains unchanged and is the rollback point.
+
+## D22 Keyword Color And Model Rankings - 2026-05-26
+
+Request: create a new version after D21. In keyword search mode, when the user enters words and presses “Знайти” without choosing a concrete SKU, also show the color and model ranking/comparison blocks.
+
+Base version:
+
+- sales-dashboard/D21
+- sales-dashboard/D21.html
+
+Changed files:
+
+- sales-dashboard/D22
+- sales-dashboard/D22.html
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Copied D21 to D22 so D21 remains the rollback point.
+- Kept backend identical to D21.
+- Added renderPositionKeywordColorComparison(rows, label), which builds color totals and monthly chart datasets from all keyword-matched rows.
+- Added renderPositionKeywordModelComparison(rows, label), which builds model totals and monthly chart datasets from all keyword-matched rows using the D21 parser.
+- RenderPositionExplorer now calls the keyword color/model charts when there is an active keyword query and no selected product.
+- Adjusted the “Усі” color button to re-render the whole Position Analysis block so it resets color filtering in both modes.
+- Kept selected-product color/model behavior unchanged.
+
+Verification:
+
+- Confirmed D22 backend matches D21 byte-for-byte.
+- Ran node --check sales-dashboard/D22.
+- Extracted and syntax-checked 5 inline JS script blocks from D22.html with new Function.
+- Ran git diff --check -- sales-dashboard/D22 sales-dashboard/D22.html agent-notes/SALES_DASHBOARD_MEMORY.md agent-notes/CODER_MEMORY.md.
+
+Rollback note:
+
+- D21 remains unchanged and is the rollback point.
