@@ -79,3 +79,40 @@ Verification:
 Rollback note:
 
 - D16 remains unchanged and is the rollback point.
+
+## D18 Sales Dashboard Variant - 2026-05-26
+
+Request: investigate why admin auto-load still looked incomplete and why plans still did not appear in the live dashboard using the main Sales Dashboard System sheet.
+
+Findings:
+
+- Main sheet Sales Dashboard System has May 2026 OKR plans in okr_plans; the source data is present.
+- Plan values are stored with comma decimals, for example 10911,06.
+- D17 fixed the backend parser, but several frontend Efficiency/OKR calculation paths still wrapped already-normalized plan values with Number(...).
+- Browser localStorage could still contain a stale OKR cache from the earlier zero-plan response.
+- Admin modal could show final-looking empty brand lists while admin bootstrap was still loading or had failed, making it look like admin data loaded as empty.
+
+Changed files:
+
+- sales-dashboard/D18
+- sales-dashboard/D18.html
+
+Implementation:
+
+- Hardened backend OKR month_key normalization for string/date month values.
+- Kept comma-safe numeric parsing for OKR plan values.
+- Changed remaining frontend plan calculations from Number(...) to the comma-aware parseNumber.
+- Bumped OKR frontend cache key to okr_admin_config_v4 to bypass stale zero-plan browser cache.
+- Added visible admin bootstrap pending/error states so the modal does not show 0 brands as if loading completed.
+- Made admin bootstrap lighter by taking client_ltv_meta from the server snapshot instead of rereading the full sheet during admin open.
+
+Verification:
+
+- Confirmed main okr_plans has May 2026 plans via read-only Sheets API.
+- Ran node --check sales-dashboard/D18.
+- Extracted and syntax-checked 5 inline JS script blocks from D18.html with new Function.
+- Ran git diff --check -- sales-dashboard/D18 sales-dashboard/D18.html.
+
+Rollback note:
+
+- D17 and D16 remain unchanged rollback points.
