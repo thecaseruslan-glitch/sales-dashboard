@@ -244,3 +244,38 @@ Rollback note:
 
 - D19 remains the stable rollback point.
 - Previous D20 direct-edit commits remain available in Git history.
+
+## D21 Pinned Chart Tooltips And Stronger Model Parser - 2026-05-26
+
+Request: create new dashboard files after D20. Make chart bars/points clickable so a tooltip stays pinned for the clicked element and clears when clicking empty chart space. Also fix model-series detection for products where the same series is written with different model formats, especially iPad compatibility such as WIWU Classic III Case for `iPad 10.2" [2019-2021]/Air3/Pro 10.5"`.
+
+Base version:
+
+- sales-dashboard/D20
+- sales-dashboard/D20.html
+
+Changed files:
+
+- sales-dashboard/D21
+- sales-dashboard/D21.html
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Copied D20 to D21 so D20 remains the rollback point.
+- Added click-to-pin tooltip helpers for Chart.js and wired them into the main position chart, color comparison chart, and model comparison chart.
+- Improved iPad parsing for slash-compatible names: size/year ranges, Air3/Air 3, Pro 10.5, Mini/Pro/Air variants.
+- Reworked series matching from strict full-name matching to normalized term matching, for example `wiwu classic iii` and `mist`.
+- Added series terms to product search indexing so suggestions and keyword search can match series names more reliably.
+
+Verification:
+
+- Ran node --check sales-dashboard/D21.
+- Extracted and syntax-checked 5 inline JS script blocks from D21.html with new Function.
+- Ran git diff --check -- sales-dashboard/D21 sales-dashboard/D21.html agent-notes/SALES_DASHBOARD_MEMORY.md agent-notes/CODER_MEMORY.md.
+- Ran parser sample check: WIWU iPad Classic III Case parsed to iPad 10.2 2019-2021, iPad Air 3, iPad Pro 10.5 with seriesKey `wiwu classic iii`; Mist iPhone slash sample parsed to iPhone 17, iPhone 17 Air, iPhone 17 Pro Max with seriesKey `mist`.
+
+Rollback note:
+
+- D20 remains unchanged and is the rollback point.

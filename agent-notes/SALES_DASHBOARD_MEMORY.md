@@ -117,3 +117,27 @@ Verification:
 - node --check sales-dashboard/D20.
 - Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
 - git diff --check -- sales-dashboard/D20.html.
+
+## 2026-05-26 - D21 Pinned Chart Tooltips And Stronger Model Parser
+
+Base: D20 copied to D21 after Руслан confirmed.
+
+Problem: model comparison worked only for some product names. It failed when the same product series was written with different words/order, and iPad compatibility strings such as `iPad 10.2" [2019-2021]/Air3/Pro 10.5" Classic III Case` were not grouped reliably. Руслан also wanted chart labels to stay visible after clicking a bar/point, and reset when clicking empty chart space.
+
+Cause: D20 compared series keys too strictly and treated iPad model parsing as a simple regex. Product names need two separate concepts: compatible model list and normalized product-series key.
+
+Fix:
+
+- Created D21/D21.html from D20/D20.html.
+- Added stronger iPad parser for slash-compatible strings: 10.2 year ranges, Air3/Air 3, Pro 10.5, Mini/Pro/Air variants.
+- Changed series matching to normalized terms such as `wiwu classic iii` or `mist`, instead of exact full product-name match.
+- Search index now also includes series terms.
+- Added reusable Chart.js click-to-pin tooltip helper: click a bar/point to pin its tooltip, click empty chart space to clear and return to normal hover behavior.
+- Connected pinned tooltip behavior to the main position chart, color comparison chart, and model comparison chart.
+
+Verification:
+
+- node --check sales-dashboard/D21.
+- Extracted and syntax-checked 5 inline JS script blocks from D21.html with new Function.
+- git diff --check -- sales-dashboard/D21 sales-dashboard/D21.html agent-notes/SALES_DASHBOARD_MEMORY.md agent-notes/CODER_MEMORY.md.
+- Parser sample check confirmed `WIWU Classic III Case` normalizes to seriesKey `wiwu classic iii` and extracts iPad 10.2 2019-2021, iPad Air 3, and iPad Pro 10.5.
