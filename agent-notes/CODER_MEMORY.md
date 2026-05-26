@@ -149,3 +149,35 @@ Verification:
 Rollback note:
 
 - D18 remains unchanged and is the rollback point.
+
+## D20 Sales Dashboard Variant - 2026-05-26
+
+Request: continue from the stable D19 dashboard and make a narrow Position Explorer naming change: rename the “Пошук Позиції” block to “Аналіз позиції”.
+
+Base version:
+
+- sales-dashboard/D19
+- sales-dashboard/D19.html
+
+Changed files:
+
+- sales-dashboard/D20
+- sales-dashboard/D20.html
+
+Implementation:
+
+- Copied D19 to D20 so D19 remains the rollback point.
+- Left the backend identical to D19.
+- Renamed the visible block heading to “Аналіз позиції”.
+- Updated related UI hints, input placeholder, clear-button aria label, and top-sales click hints to use the new block name.
+
+Verification:
+
+- Confirmed D20 backend matches D19 byte-for-byte.
+- Ran node --check sales-dashboard/D20.
+- Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
+- Ran git diff --check -- sales-dashboard/D20 sales-dashboard/D20.html.
+
+Rollback note:
+
+- D19 remains unchanged and is the rollback point.
