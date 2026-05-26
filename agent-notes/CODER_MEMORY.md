@@ -181,3 +181,37 @@ Verification:
 Rollback note:
 
 - D19 remains unchanged and is the rollback point.
+
+## D20 Position Analysis Search Update - 2026-05-26
+
+Request: for this prompt only, continue editing D20 directly. Improve the “Аналіз позиції” block so product suggestions are built from the full available product history, keyword search like “ZK Armored” can analyze all matching products without selecting a specific SKU, Enter and a new “Знайти” button trigger rendering, rendering shows a loader, and the chart meta shows first/last sale date.
+
+Base version:
+
+- sales-dashboard/D20
+- sales-dashboard/D20.html
+
+Changed files:
+
+- sales-dashboard/D20.html
+
+Implementation:
+
+- Added a “Знайти” button next to the product search input.
+- Changed Enter in the product search field to run the same search action unless a suggestion is actively selected with keyboard navigation.
+- Split suggestion indexing from result filtering: suggestions now use all accessible sales history plus stock, while the rendered result still respects the current period/client/manager/service filters.
+- Added keyword search mode: entering multiple keywords without selecting a suggestion finds products whose searchable text contains all keywords, even when the words are not adjacent.
+- Kept exact product selection behavior for selecting a specific product/SKU from the dropdown or top-sales table.
+- Added loader state while the analysis is being rendered.
+- Added first and last sale dates to the chart meta for the current rendered selection.
+- Adjusted client lists for keyword search so they show clients across all matching products.
+
+Verification:
+
+- Ran node --check sales-dashboard/D20.
+- Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
+- Ran git diff --check -- sales-dashboard/D20 sales-dashboard/D20.html.
+
+Rollback note:
+
+- D19 remains unchanged. Previous D20 commit before this direct update is c1c08e8.

@@ -5672,7 +5672,32 @@ html, body{
   }
 
   .position-explorer-filters{
-    grid-template-columns:minmax(360px,1.2fr) minmax(320px,.8fr);
+    grid-template-columns:minmax(300px,1.2fr) 118px minmax(320px,.8fr);
+  }
+
+  .position-search-submit{
+    min-height:44px;
+    border:none;
+    border-radius:14px;
+    background:#2563eb;
+    color:#fff;
+    font-size:14px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 8px 18px rgba(37,99,235,.18);
+    transition:transform .14s ease, box-shadow .14s ease, background .14s ease;
+  }
+
+  .position-search-submit:hover{
+    background:#1d4ed8;
+    transform:translateY(-1px);
+    box-shadow:0 10px 22px rgba(37,99,235,.22);
+  }
+
+  .position-search-submit:disabled{
+    cursor:progress;
+    opacity:.72;
+    transform:none;
   }
 
   .position-explorer-kpis{
@@ -6021,6 +6046,11 @@ html, body{
     font-size:15px;
     font-weight:700;
     pointer-events:none;
+  }
+
+  .position-explorer-empty.loading{
+    gap:9px;
+    color:#2563eb;
   }
 
   #positionExplorerClientList,
@@ -8400,6 +8430,7 @@ html, body{
             <button id="positionProductSearchClear" class="search-input-clear" type="button" aria-label="Очистити аналіз позиції">×</button>
             <div id="positionProductSuggestions" class="search-suggestions"></div>
           </div>
+          <button id="positionProductSearchSubmit" class="position-search-submit" type="button">Знайти</button>
           <div class="search-field" id="positionClientSearchWrap">
             <input id="positionClientSearch" type="text" placeholder="Фільтр по клієнту (необов'язково)">
             <button id="positionClientSearchClear" class="search-input-clear" type="button" aria-label="Очистити фільтр клієнта">×</button>
@@ -8440,12 +8471,12 @@ html, body{
         </div>
         <div class="position-explorer-client-grid">
           <div class="position-explorer-side">
-            <div class="triple-top-title">Клієнти по моделі</div>
-            <div class="hint" style="margin-bottom:12px;">Усі кольори цієї позиції</div>
+            <div id="positionExplorerAllClientsTitle" class="triple-top-title">Клієнти по моделі</div>
+            <div id="positionExplorerAllClientsHint" class="hint" style="margin-bottom:12px;">Усі кольори цієї позиції</div>
             <div id="positionExplorerClientListAllColors" class="top-list scroll-list"></div>
           </div>
           <div class="position-explorer-side">
-            <div class="triple-top-title">Клієнти по кольору</div>
+            <div id="positionExplorerCurrentClientsTitle" class="triple-top-title">Клієнти по кольору</div>
             <div id="positionExplorerCurrentColorHint" class="hint" style="margin-bottom:12px;">Поточний вибраний колір</div>
             <div id="positionExplorerClientList" class="top-list scroll-list"></div>
           </div>
@@ -9494,11 +9525,15 @@ html, body{
     const positionProductSearchWrap = document.getElementById('positionProductSearchWrap');
     const positionProductSearch = document.getElementById('positionProductSearch');
     const positionProductSearchClear = document.getElementById('positionProductSearchClear');
+    const positionProductSearchSubmit = document.getElementById('positionProductSearchSubmit');
     const positionProductSuggestions = document.getElementById('positionProductSuggestions');
     const positionClientSearchWrap = document.getElementById('positionClientSearchWrap');
     const positionClientSearch = document.getElementById('positionClientSearch');
     const positionClientSearchClear = document.getElementById('positionClientSearchClear');
     const positionClientSuggestions = document.getElementById('positionClientSuggestions');
+    const positionExplorerAllClientsTitle = document.getElementById('positionExplorerAllClientsTitle');
+    const positionExplorerAllClientsHint = document.getElementById('positionExplorerAllClientsHint');
+    const positionExplorerCurrentClientsTitle = document.getElementById('positionExplorerCurrentClientsTitle');
     const clientBasketTitle = document.getElementById('clientBasketTitle');
     const clientBasketMeta = document.getElementById('clientBasketMeta');
     const clientBasketSearchWrap = document.getElementById('clientBasketSearchWrap');
@@ -11079,7 +11114,7 @@ html, body{
       return true;
     }
 
-    function bindSuggestionKeyboardNavigation(inputEl, container, renderFn, closeFn) {
+    function bindSuggestionKeyboardNavigation(inputEl, container, renderFn, closeFn, options = {}) {
       if (!inputEl || !container || typeof renderFn !== 'function') return;
 
       inputEl.addEventListener('keydown', (e) => {
@@ -11099,10 +11134,20 @@ html, body{
 
         if (e.key === 'Enter' && container.classList.contains('open')) {
           e.preventDefault();
+          if (options && typeof options.onEnter === 'function' && Number(container.dataset.activeIndex || '-1') < 0) {
+            options.onEnter(e);
+            return;
+          }
           if (!activateSuggestionKeyboardState(container)) {
             const first = container.querySelector('.search-suggestion');
             if (first) first.click();
           }
+          return;
+        }
+
+        if (e.key === 'Enter' && options && typeof options.onEnter === 'function') {
+          e.preventDefault();
+          options.onEnter(e);
           return;
         }
 
@@ -22365,6 +22410,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     positionProductSearch.addEventListener('input', () => {
       if (normalizeText(positionProductSearch.value) !== positionExplorerSelectedProduct) {
         positionExplorerSelectedProduct = '';
+        positionExplorerActiveQuery = '';
         positionExplorerSelectedColor = '';
         positionExplorerSelectedClient = '';
         positionClientSearch.value = '';
@@ -22380,14 +22426,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
         if (currentUser && currentUser.is_admin && !adminBootstrapLoaded) {
           void queueAdminBootstrap();
         }
-        const exactMatch = findExactPositionExplorerProduct(positionProductSearch.value);
-        if (exactMatch) {
-          positionExplorerSelectedProduct = exactMatch.key || '';
-          positionExplorerSelectedColor = '';
-        }
         renderPositionProductSuggestions();
         renderPositionClientSuggestions();
-        if (exactMatch) renderPositionExplorer();
       }, 120);
     });
 
@@ -22483,6 +22523,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         e.preventDefault();
         positionProductSearch.value = '';
         positionExplorerSelectedProduct = '';
+        positionExplorerActiveQuery = '';
         positionExplorerSelectedColor = '';
         positionExplorerSelectedClient = '';
         positionClientSearch.value = '';
@@ -22492,6 +22533,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
         renderPositionClientSuggestions();
         renderPositionExplorer();
         positionProductSearch.focus();
+      });
+    }
+
+    if (positionProductSearchSubmit) {
+      positionProductSearchSubmit.addEventListener('click', (e) => {
+        e.preventDefault();
+        runPositionExplorerSearch();
       });
     }
 
@@ -22637,7 +22685,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
       positionProductSearch,
       positionProductSuggestions,
       () => renderPositionProductSuggestions(),
-      () => positionProductSuggestions.classList.remove('open')
+      () => positionProductSuggestions.classList.remove('open'),
+      { onEnter: () => runPositionExplorerSearch() }
     );
     bindSuggestionKeyboardNavigation(
       positionClientSearch,
@@ -22822,6 +22871,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clientTrendChart = null;
     let clientCompareChart = null;
     let positionExplorerSelectedProduct = '';
+    let positionExplorerActiveQuery = '';
     let positionExplorerSelectedClient = '';
     let positionExplorerSelectedColor = '';
     let positionExplorerBaseRowsCache = [];
@@ -24335,6 +24385,21 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }) : [];
     }
 
+    function getPositionExplorerIndexRows() {
+      const isAdmin = !!(currentUser && currentUser.is_admin);
+      const userManagerTag = normalizeText(currentUser && (currentUser.manager_tag || currentUser.display_name));
+
+      return Array.isArray(raw) ? raw.filter(row => {
+        if (isAlwaysExcludedSalesStatus(row.status)) return false;
+        if (excludeServiceShipments && isServiceShipmentStatus(row.status)) return false;
+        if (!isAdmin && userManagerTag) {
+          const rowManagerTag = normalizeText(row.manager_tag || row.effective_manager || row.manager);
+          if (rowManagerTag !== userManagerTag) return false;
+        }
+        return true;
+      }) : [];
+    }
+
     function getSlowProductsBaseRows() {
       const isAdmin = !!(currentUser && currentUser.is_admin);
       const userManagerTag = normalizeText(currentUser && (currentUser.manager_tag || currentUser.display_name));
@@ -24725,8 +24790,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
     function rebuildPositionExplorerIndex() {
       positionExplorerBaseRowsCache = getPositionExplorerBaseRows();
+      const indexRowsBase = getPositionExplorerIndexRows();
       const stockRowsBase = getPositionExplorerStockRowsBase();
       const stockRowsMap = new Map();
+      const indexProductRowsMap = new Map();
       positionExplorerProductMetaMap = new Map();
       positionExplorerProductRowsMap = new Map();
       positionExplorerClientCacheMap = new Map();
@@ -24751,11 +24818,11 @@ function renderClientNameForLtv(clientName, extraHtml) {
         });
       });
 
-      positionExplorerBaseRowsCache.forEach(row => {
+      indexRowsBase.forEach(row => {
         const productKey = getProductAnalyticsKey(row);
         if (!productKey) return;
-        if (!positionExplorerProductRowsMap.has(productKey)) positionExplorerProductRowsMap.set(productKey, []);
-        positionExplorerProductRowsMap.get(productKey).push(row);
+        if (!indexProductRowsMap.has(productKey)) indexProductRowsMap.set(productKey, []);
+        indexProductRowsMap.get(productKey).push(row);
         if (!positionExplorerProductMetaMap.has(productKey)) {
           const label = getProductAnalyticsLabel(row) || productKey;
           const sku = getProductAnalyticsCode(row) || normalizeSkuValue(productKey);
@@ -24773,12 +24840,20 @@ function renderClientNameForLtv(clientName, extraHtml) {
         }
       });
 
+      positionExplorerBaseRowsCache.forEach(row => {
+        const productKey = getProductAnalyticsKey(row);
+        if (!productKey) return;
+        if (!positionExplorerProductRowsMap.has(productKey)) positionExplorerProductRowsMap.set(productKey, []);
+        positionExplorerProductRowsMap.get(productKey).push(row);
+      });
+
       positionExplorerProductsCache = Array.from(positionExplorerProductMetaMap.entries())
         .map(([key, meta]) => ({
           key,
           name: normalizeText(meta && meta.label) || key,
           sku: normalizeText(meta && meta.sku),
-          count: (positionExplorerProductRowsMap.get(key) || []).length,
+          count: (indexProductRowsMap.get(key) || []).length,
+          filteredCount: (positionExplorerProductRowsMap.get(key) || []).length,
           stockCount: (stockRowsMap.get(key) || []).length,
           search: normalizeText(meta && meta.search)
         }))
@@ -25026,6 +25101,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     function updatePositionExplorerEmpty(message) {
       clearPositionExplorerChart();
       if (positionExplorerEmpty) {
+        positionExplorerEmpty.classList.remove('loading');
         positionExplorerEmpty.textContent = message;
         positionExplorerEmpty.style.display = 'flex';
       }
@@ -25150,7 +25226,86 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (positionExplorerSelectedProduct) {
         return positionExplorerProductRowsMap.get(positionExplorerSelectedProduct) || [];
       }
+      if (positionExplorerActiveQuery) {
+        const keys = getPositionExplorerKeywordProductKeys(positionExplorerActiveQuery);
+        const rows = [];
+        keys.forEach(key => rows.push(...(positionExplorerProductRowsMap.get(key) || [])));
+        return rows;
+      }
       return positionExplorerBaseRowsCache;
+    }
+
+    function getPositionExplorerKeywordProductKeys(query) {
+      const normalizedQuery = normalizeText(query);
+      if (!normalizedQuery) return [];
+      if (!positionExplorerProductsCache.length) rebuildPositionExplorerIndex();
+      return positionExplorerProductsCache
+        .map(item => ({ key: item.key, score: scoreKeywordMatch(item.search, normalizedQuery), name: item.name }))
+        .filter(item => item.key && item.score >= 0)
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'uk'))
+        .map(item => item.key);
+    }
+
+    function getPositionExplorerActiveLabel() {
+      if (positionExplorerSelectedProduct) return getPositionExplorerProductDisplayName(positionExplorerSelectedProduct);
+      return positionExplorerActiveQuery ? 'Ключові слова: ' + positionExplorerActiveQuery : '';
+    }
+
+    function getPositionExplorerRowsDateRange(rows) {
+      const dates = (Array.isArray(rows) ? rows : []).map(row => normalizeDate(row.date)).filter(Boolean).sort((a, b) => a.localeCompare(b));
+      return { first: dates[0] || '', last: dates[dates.length - 1] || '' };
+    }
+
+    function setPositionExplorerClientListMode(mode) {
+      const isKeyword = mode === 'keyword';
+      if (positionExplorerAllClientsTitle) positionExplorerAllClientsTitle.textContent = isKeyword ? 'Клієнти по збігах' : 'Клієнти по моделі';
+      if (positionExplorerAllClientsHint) positionExplorerAllClientsHint.textContent = isKeyword ? 'Усі товари, які містять ключові слова' : 'Усі кольори цієї позиції';
+      if (positionExplorerCurrentClientsTitle) positionExplorerCurrentClientsTitle.textContent = isKeyword ? 'Клієнти у вибірці' : 'Клієнти по кольору';
+      const currentColorHint = document.getElementById('positionExplorerCurrentColorHint');
+      if (currentColorHint && isKeyword) currentColorHint.textContent = 'Поточна ключова вибірка';
+    }
+
+    function setPositionExplorerSearchLoading(message) {
+      clearPositionExplorerChart();
+      if (positionProductSearchSubmit) positionProductSearchSubmit.disabled = true;
+      if (positionExplorerEmpty) {
+        positionExplorerEmpty.classList.add('loading');
+        positionExplorerEmpty.innerHTML = '<span class="ui-busy-spinner" aria-hidden="true"></span><span>' + (message || 'Шукаю позиції...') + '</span>';
+        positionExplorerEmpty.style.display = 'flex';
+      }
+    }
+
+    function finishPositionExplorerSearchLoading() {
+      if (positionProductSearchSubmit) positionProductSearchSubmit.disabled = false;
+      if (positionExplorerEmpty) positionExplorerEmpty.classList.remove('loading');
+    }
+
+    function runPositionExplorerSearch() {
+      if (!positionProductSearch) return;
+      if (!positionExplorerProductsCache.length) rebuildPositionExplorerIndex();
+      const query = normalizeText(positionProductSearch.value);
+      positionProductSuggestions.classList.remove('open');
+      clearSuggestionKeyboardState(positionProductSuggestions);
+      positionExplorerSelectedColor = '';
+      positionExplorerSelectedProduct = '';
+      positionExplorerActiveQuery = '';
+      if (!query) {
+        renderPositionExplorer();
+        return;
+      }
+      const exactMatch = findExactPositionExplorerProduct(query);
+      if (exactMatch) {
+        positionExplorerSelectedProduct = exactMatch.key || '';
+        positionProductSearch.value = exactMatch.name || query;
+      } else {
+        positionExplorerActiveQuery = query;
+      }
+      setPositionExplorerSearchLoading('Формую аналіз позиції...');
+      setTimeout(() => {
+        renderPositionClientSuggestions();
+        renderPositionExplorer();
+        finishPositionExplorerSearchLoading();
+      }, 0);
     }
 
     function renderPositionProductSuggestions() {
@@ -25170,6 +25325,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
           name: item.name,
           score: scoreKeywordMatch(item.search, query),
           count: item.count,
+          filteredCount: item.filteredCount,
           sku: item.sku,
           stockCount: item.stockCount
         }))
@@ -25179,7 +25335,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         .map(item => ({
           key: item.key,
           name: item.name,
-          meta: `${item.sku ? 'код ' + item.sku + ' | ' : ''}${item.count} продажів${item.stockCount > 0 ? ' | є в stock' : ''}`
+          meta: `${item.sku ? 'код ' + item.sku + ' | ' : ''}${item.count} продажів за весь час${item.filteredCount > 0 ? ' | у зрізі ' + item.filteredCount : ''}${item.stockCount > 0 ? ' | є в stock' : ''}`
         }));
 
       updateSearchSuggestions(positionProductSuggestions, items, (item) => {
@@ -25215,6 +25371,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (!exactMatch) return;
 
       positionExplorerSelectedProduct = exactMatch.key || '';
+      positionExplorerActiveQuery = '';
       positionExplorerSelectedColor = '';
       positionProductSearch.value = exactMatch.name || normalizedLabel || '';
       toggleClearButton(positionProductSearch, positionProductSearchClear);
@@ -25235,13 +25392,15 @@ function renderClientNameForLtv(clientName, extraHtml) {
     function renderPositionClientSuggestions() {
       const query = normalizeText(positionClientSearch.value);
       toggleClearButton(positionClientSearch, positionClientSearchClear);
-      if (!positionExplorerSelectedProduct || !query) {
+      if ((!positionExplorerSelectedProduct && !positionExplorerActiveQuery) || !query) {
         positionClientSuggestions.classList.remove('open');
         clearSuggestionKeyboardState(positionClientSuggestions);
         return;
       }
 
-      const clients = positionExplorerClientCacheMap.get(positionExplorerSelectedProduct) || [];
+      const clients = positionExplorerSelectedProduct
+        ? (positionExplorerClientCacheMap.get(positionExplorerSelectedProduct) || [])
+        : buildPositionExplorerClientEntries(getMatchedProductRows());
       const items = clients
         .map(item => ({
           name: item.name,
@@ -25251,7 +25410,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         .filter(item => item.score >= 0)
         .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'uk'))
         .slice(0, 8)
-        .map(item => ({ name: item.name, meta: `${item.count} рядків по вибраній позиції` }));
+        .map(item => ({ name: item.name, meta: positionExplorerSelectedProduct ? `${item.count} рядків по вибраній позиції` : `${formatMetricValue(item.value || item.count)} у ключовій вибірці` }));
 
       updateSearchSuggestions(positionClientSuggestions, items, (name) => {
         positionExplorerSelectedClient = name;
@@ -25915,6 +26074,20 @@ function renderClientNameForLtv(clientName, extraHtml) {
       });
     }
 
+    function buildPositionExplorerClientEntries(rows) {
+      const clientMap = {};
+      (Array.isArray(rows) ? rows : []).forEach(r => {
+        const key = normalizeText(r.client) || 'Невідомий клієнт';
+        clientMap[key] = (clientMap[key] || 0) + getMetricValue(r);
+      });
+      return entriesSorted(clientMap).map(([name, value]) => ({
+        name,
+        count: value,
+        value,
+        search: normalizeSearchText(name)
+      }));
+    }
+
     function renderPositionExplorerClientList(targetEl, rows, emptyLabel) {
       if (!targetEl) return;
       targetEl.innerHTML = '';
@@ -25924,13 +26097,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         return;
       }
 
-      const clientMap = {};
-      rows.forEach(r => {
-        const key = normalizeText(r.client) || 'Невідомий клієнт';
-        clientMap[key] = (clientMap[key] || 0) + getMetricValue(r);
-      });
-
-      const entries = entriesSorted(clientMap);
+      const entries = buildPositionExplorerClientEntries(rows).map(item => [item.name, item.value]);
       const total = entries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
 
       entries.forEach(([name, value]) => {
@@ -25954,9 +26121,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
       rebuildPositionExplorerIndex();
       const productQuery = normalizeText(positionProductSearch.value);
-      const productLabel = getPositionExplorerProductDisplayName(positionExplorerSelectedProduct);
-      const productRows = positionExplorerSelectedProduct
-        ? (positionExplorerProductRowsMap.get(positionExplorerSelectedProduct) || [])
+      const productLabel = getPositionExplorerActiveLabel();
+      const isKeywordSearch = !!(!positionExplorerSelectedProduct && positionExplorerActiveQuery);
+      const productRows = (positionExplorerSelectedProduct || positionExplorerActiveQuery)
+        ? getMatchedProductRows()
         : [];
       const clientRows = positionExplorerSelectedClient
         ? productRows.filter(r => normalizeText(r.client) === positionExplorerSelectedClient)
@@ -25971,27 +26139,28 @@ function renderClientNameForLtv(clientName, extraHtml) {
       updatePositionExplorerTotalChip(productRows);
       updatePositionExplorerShipmentChip(clientRows.length ? clientRows : productRows);
       updatePositionExplorerManagerChip(productRows);
+      setPositionExplorerClientListMode(isKeywordSearch ? 'keyword' : 'product');
       positionExplorerMeta.innerHTML = `
-        <div>Позиція: ${productLabel || (productQuery ? 'вибери зі списку' : '—')}</div>
+        <div>Позиція: ${productLabel || (productQuery ? 'натисни “Знайти”' : '—')}</div>
         <div>Клієнт: ${positionExplorerSelectedClient || 'усі'}</div>
         <div>Метрика: ${chartMetric === 'quantity' ? 'кількість' : 'сума продаж'}</div>
       `;
       const familyRows = positionExplorerSelectedProduct
         ? getPositionColorFamilyRows(positionExplorerSelectedProduct)
-        : [];
-      renderPositionExplorerClientList(positionExplorerClientListAllColors, familyRows, 'Немає клієнтів по моделі');
-      renderPositionExplorerClientList(positionExplorerClientList, productRows, 'Немає клієнтів по кольору');
+        : productRows;
+      renderPositionExplorerClientList(positionExplorerClientListAllColors, familyRows, isKeywordSearch ? 'Немає клієнтів по ключових словах' : 'Немає клієнтів по моделі');
+      renderPositionExplorerClientList(positionExplorerClientList, productRows, isKeywordSearch ? 'Немає клієнтів у вибірці' : 'Немає клієнтів по кольору');
 
-      if (!positionExplorerSelectedProduct) {
+      if (!positionExplorerSelectedProduct && !positionExplorerActiveQuery) {
         updatePositionExplorerEmpty(productQuery
-          ? 'Знайшов збіги вище. Обери точну позицію зі списку.'
+          ? 'Натисни Enter або кнопку “Знайти”, щоб побудувати аналіз по ключових словах.'
           : 'Почни вводити назву позиції, і я одразу підкажу збіги.');
         hidePositionColorSection();
         return;
       }
 
       if (!clientRows.length) {
-        updatePositionExplorerEmpty('Для цього товару в поточному зрізі продажів немає даних. У stock він знайдений.');
+        updatePositionExplorerEmpty(isKeywordSearch ? 'За цими ключовими словами в поточному зрізі продажів немає даних.' : 'Для цього товару в поточному зрізі продажів немає даних. У stock він знайдений.');
         updatePositionExplorerShipmentChip([]);
         updatePositionExplorerManagerChip([]);
         hidePositionColorSection();
@@ -26017,12 +26186,15 @@ function renderClientNameForLtv(clientName, extraHtml) {
       const labels = entries.map(([month]) => formatMonthBucketLabel(month));
       const values = entries.map(([, value]) => value);
       const total = values.reduce((sum, value) => sum + value, 0);
+      const dateRange = getPositionExplorerRowsDateRange(clientRows);
       updatePositionExplorerManagerChip(clientRows);
 
       positionExplorerMeta.innerHTML = `
         <div>Позиція: ${productLabel || positionExplorerSelectedProduct}</div>
         <div>Клієнт: ${positionExplorerSelectedClient || 'усі'}</div>
         <div>Усього: ${formatMetricValue(total)}</div>
+        <div>Перший продаж: ${dateRange.first ? formatDisplayDate(dateRange.first) : '—'}</div>
+        <div>Останній продаж: ${dateRange.last ? formatDisplayDate(dateRange.last) : '—'}</div>
       `;
       positionExplorerEmpty.style.display = 'none';
 
@@ -26072,7 +26244,11 @@ function renderClientNameForLtv(clientName, extraHtml) {
         }
       });
 
-      renderPositionColorComparison();
+      if (positionExplorerSelectedProduct) {
+        renderPositionColorComparison();
+      } else {
+        hidePositionColorSection();
+      }
     }
 
     function renderReverseTopList(containerId, map) {
