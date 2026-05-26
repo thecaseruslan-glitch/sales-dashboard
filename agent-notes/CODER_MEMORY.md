@@ -116,3 +116,36 @@ Verification:
 Rollback note:
 
 - D17 and D16 remain unchanged rollback points.
+
+## D19 Sales Dashboard Variant - 2026-05-26
+
+Request: keep the currently working D18 behavior stable and make two narrow Efficiency KPI changes: disable the “Неліквід” KPI from the assessment by default, and show client lists inside the detail modal for “Нові клієнти”, “Повернуті клієнти”, “Втрати бази 90+”, and “Активні клієнти”.
+
+Base version:
+
+- sales-dashboard/D18
+- sales-dashboard/D18.html
+
+Changed files:
+
+- sales-dashboard/D19
+- sales-dashboard/D19.html
+
+Implementation:
+
+- Copied D18 to D19 so D18 remains the rollback point.
+- Left the backend identical to D18.
+- Made the “Неліквід” KPI unchecked and excluded from the total score by default unless explicitly enabled.
+- Added client drill-down rows to the KPI modal for new clients, returned clients, newly lost 90+ clients, and active clients.
+- Kept the existing non-liquid SKU drill-down inside its modal, but excluded that KPI from the default assessment score.
+
+Verification:
+
+- Confirmed D19 backend matches D18 byte-for-byte.
+- Ran node --check sales-dashboard/D19.
+- Extracted and syntax-checked 5 inline JS script blocks from D19.html with new Function.
+- Ran git diff --check -- sales-dashboard/D19 sales-dashboard/D19.html.
+
+Rollback note:
+
+- D18 remains unchanged and is the rollback point.
