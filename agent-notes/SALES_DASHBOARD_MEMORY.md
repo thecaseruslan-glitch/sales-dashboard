@@ -87,3 +87,33 @@ Risk: model comparison needs a parser that separates product series from phone m
 
 Recommended implementation: keep color graph unchanged, add a separate model-comparison section below it, parse common model tokens such as 17, 17 Air, 17 Pro, 17 Pro Max, derive series key by removing model and color, then compare matching products by model.
 
+## 2026-05-26 - D20 Universal Model Parser And Model Graph
+
+Base: direct edit to D20 after Руслан confirmed.
+
+Problem: a hard-coded list of current models would fail for future products. Product names can contain compatibility through slash, for example iPhone 16 Pro/17, iPhone 13 Pro Max/14 Plus, iPhone 14 Pro/15/16. The dashboard also needed a model comparison graph below the existing color graph.
+
+Cause: existing color logic only splits trailing color in parentheses and treats the rest as one model string. It does not separate product category, device, compatible models, product series, and color.
+
+Fix:
+
+- Added universal product-name parser for position analysis.
+- Parser extracts compatible models as an array, including slash-separated compatibility.
+- Parser currently supports common groups/devices: iPhone, Samsung/Galaxy, iPad, MacBook, Apple Watch, AirPods.
+- Parser derives a seriesKey by removing detected model/device words and color from the product name.
+- Added model comparison graph below the color graph.
+- Model graph compares rows with the same series key and device across detected compatible models.
+- Compatible SKUs can count under multiple model buckets because one SKU is physically compatible with multiple devices.
+- Added search stop-word filtering for words like на, для, і, та, по, so user search phrases do not break matching.
+- Increased position suggestions from 8 to 20 items.
+
+Fallback:
+
+- If parser cannot detect models or cannot find at least two comparable models, the model graph stays hidden.
+- This avoids breaking the existing position analysis for unknown future naming formats.
+
+Verification:
+
+- node --check sales-dashboard/D20.
+- Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
+- git diff --check -- sales-dashboard/D20.html.

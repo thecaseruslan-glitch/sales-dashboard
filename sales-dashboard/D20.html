@@ -8520,6 +8520,41 @@ html, body{
           </div>
         </div>
       </div>
+
+      <div id="positionModelSection" class="position-color-section">
+        <div class="block-title" style="margin-top:18px;">
+          <h2 style="font-size:24px;">Порівняння Моделей Серії</h2>
+          <div id="positionModelMeta" class="hint">Показує ту саму серію товару в різних моделях пристроїв</div>
+        </div>
+        <div class="position-color-grid">
+          <div class="position-explorer-side">
+            <div class="position-color-chart-shell">
+              <canvas id="positionModelCompareChart"></canvas>
+            </div>
+            <div class="position-color-summary">
+              <div class="position-color-chip">
+                <span class="label">Знайдено моделей</span>
+                <span id="positionModelCount" class="value">—</span>
+                <span class="small">у поточному зрізі</span>
+              </div>
+              <div class="position-color-chip">
+                <span class="label">Топ модель</span>
+                <span id="positionModelLeader" class="value">—</span>
+                <span id="positionModelLeaderMeta" class="small">—</span>
+              </div>
+              <div class="position-color-chip">
+                <span class="label">Сума по серії</span>
+                <span id="positionModelTotal" class="value">—</span>
+                <span class="small">сумісні SKU можуть входити в кілька моделей</span>
+              </div>
+            </div>
+          </div>
+          <div class="position-explorer-side">
+            <div class="triple-top-title">Рейтинг моделей</div>
+            <div id="positionModelRankingList" class="top-list scroll-list position-color-ranking"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="topSalesCard" class="card slow-products-card products-view-item">
@@ -9522,6 +9557,14 @@ html, body{
     const positionColorLeader = document.getElementById('positionColorLeader');
     const positionColorLeaderMeta = document.getElementById('positionColorLeaderMeta');
     const positionColorTotal = document.getElementById('positionColorTotal');
+    const positionModelSection = document.getElementById('positionModelSection');
+    const positionModelMeta = document.getElementById('positionModelMeta');
+    const positionModelCompareCanvas = document.getElementById('positionModelCompareChart');
+    const positionModelRankingList = document.getElementById('positionModelRankingList');
+    const positionModelCount = document.getElementById('positionModelCount');
+    const positionModelLeader = document.getElementById('positionModelLeader');
+    const positionModelLeaderMeta = document.getElementById('positionModelLeaderMeta');
+    const positionModelTotal = document.getElementById('positionModelTotal');
     const positionProductSearchWrap = document.getElementById('positionProductSearchWrap');
     const positionProductSearch = document.getElementById('positionProductSearch');
     const positionProductSearchClear = document.getElementById('positionProductSearchClear');
@@ -22874,6 +22917,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let positionExplorerActiveQuery = '';
     let positionExplorerSelectedClient = '';
     let positionExplorerSelectedColor = '';
+    let positionModelCompareChart = null;
     let positionExplorerBaseRowsCache = [];
     let positionExplorerCurrentRows = [];
     let positionExplorerProductsCache = [];
@@ -24265,6 +24309,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
         .trim();
     }
 
+    const POSITION_SEARCH_STOP_WORDS = new Set(['на','для','і','та','в','у','з','із','по','під','до','the','case']);
+
     function normalizeSkuValue(value) {
       const digits = String(value == null ? '' : value).replace(/\D/g, '');
       if (!digits) return '';
@@ -24340,7 +24386,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
     function tokenizeSearch(value) {
       const normalized = normalizeSearchText(value);
-      return normalized ? normalized.split(/\s+/).filter(Boolean) : [];
+      return normalized ? normalized.split(/\s+/).filter(term => term && !POSITION_SEARCH_STOP_WORDS.has(term)) : [];
     }
 
     function scoreKeywordMatch(text, query) {
@@ -24803,10 +24849,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
         if (!productKey) return;
         const label = getProductAnalyticsLabel(row) || productKey;
         const sku = getProductAnalyticsCode(row) || normalizeSkuValue(productKey);
+        const parsedLabel = parsePositionProductName(label);
         const labels = [label];
         const searchTokens = []
           .concat(buildSkuSearchTokens(sku))
           .concat(labels)
+          .concat(parsedLabel.models || [])
+          .concat(parsedLabel.seriesKey ? [parsedLabel.seriesKey] : [])
           .concat(productKey ? [productKey] : []);
         if (!stockRowsMap.has(productKey)) stockRowsMap.set(productKey, []);
         stockRowsMap.get(productKey).push(row);
@@ -24826,10 +24875,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
         if (!positionExplorerProductMetaMap.has(productKey)) {
           const label = getProductAnalyticsLabel(row) || productKey;
           const sku = getProductAnalyticsCode(row) || normalizeSkuValue(productKey);
+          const parsedLabel = parsePositionProductName(label);
           const labels = [...new Set([label].concat(normalizeText(row && row.product) ? [normalizeText(row.product)] : []))];
           const searchTokens = []
             .concat(buildSkuSearchTokens(sku))
             .concat(labels)
+            .concat(parsedLabel.models || [])
+            .concat(parsedLabel.seriesKey ? [parsedLabel.seriesKey] : [])
             .concat(productKey ? [productKey] : []);
           positionExplorerProductMetaMap.set(productKey, {
             key: productKey,
@@ -24886,6 +24938,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }
     }
 
+    function clearPositionModelCompareChart() {
+      if (positionModelCompareChart) {
+        positionModelCompareChart.destroy();
+        positionModelCompareChart = null;
+      }
+    }
+
     function hidePositionColorSection() {
       clearPositionColorCompareChart();
       positionExplorerSelectedColor = '';
@@ -24903,6 +24962,19 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (currentColorHint) currentColorHint.textContent = 'Поточний вибраний колір';
     }
 
+    function hidePositionModelSection() {
+      clearPositionModelCompareChart();
+      if (positionModelSection) positionModelSection.classList.remove('open');
+      if (positionModelRankingList) {
+        positionModelRankingList.innerHTML = '<div class="top-item"><div class="top-name">Немає даних</div><div></div><div></div></div>';
+      }
+      if (positionModelCount) positionModelCount.textContent = '—';
+      if (positionModelLeader) positionModelLeader.textContent = '—';
+      if (positionModelLeaderMeta) positionModelLeaderMeta.textContent = '—';
+      if (positionModelTotal) positionModelTotal.textContent = '—';
+      if (positionModelMeta) positionModelMeta.textContent = 'Показує ту саму серію товару в різних моделях пристроїв';
+    }
+
     function splitProductModelAndColor(productName) {
       const fullName = normalizeText(productName);
       const match = fullName.match(/^(.*)\(([^()]+)\)\s*$/);
@@ -24916,6 +24988,103 @@ function renderClientNameForLtv(clientName, extraHtml) {
       return {
         model: normalizeText(match[1]),
         color: normalizeText(match[2])
+      };
+    }
+
+    function normalizeDeviceModelLabel(device, model) {
+      const cleanDevice = normalizeText(device);
+      const cleanModel = normalizeSearchText(model)
+        .replace(/\b(pro max|pro|max|plus|air|mini|ultra|fe|se|e|xs|xr)\b/g, match => match.toLowerCase())
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!cleanDevice || !cleanModel) return '';
+      return (cleanDevice + ' ' + cleanModel)
+        .replace(/\bpro max\b/g, 'Pro Max')
+        .replace(/\bpro\b/g, 'Pro')
+        .replace(/\bmax\b/g, 'Max')
+        .replace(/\bplus\b/g, 'Plus')
+        .replace(/\bair\b/g, 'Air')
+        .replace(/\bmini\b/g, 'Mini')
+        .replace(/\bultra\b/g, 'Ultra')
+        .replace(/\bfe\b/g, 'FE')
+        .replace(/\bse\b/g, 'SE')
+        .replace(/\bxs\b/g, 'Xs')
+        .replace(/\bxr\b/g, 'Xr')
+        .replace(/\be\b/g, 'e')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function expandSlashModelList(device, rawModels) {
+      const normalized = normalizeText(rawModels).replace(/\s*\/\s*/g, '/');
+      if (!normalized) return [];
+      const parts = normalized.split('/').map(part => normalizeText(part)).filter(Boolean);
+      const models = [];
+      let lastNumber = '';
+      parts.forEach(part => {
+        const numberMatch = part.match(/^(\d{1,2}|x|xs|xr|se)\b/i);
+        if (numberMatch) lastNumber = numberMatch[1];
+        const fullPart = (!numberMatch && lastNumber && /^(pro max|pro|max|plus|air|mini|ultra|fe|e)\b/i.test(part))
+          ? lastNumber + ' ' + part
+          : part;
+        const label = normalizeDeviceModelLabel(device, fullPart);
+        if (label) models.push(label);
+      });
+      return [...new Set(models)];
+    }
+
+    function extractCompatibleModelsFromName(productName) {
+      const text = normalizeText(productName);
+      const matches = [];
+      const patterns = [
+        { device: 'iPhone', regex: /\b(?:iphone|айфон)\s+((?:(?:\d{1,2}|x|xs|xr|se)(?:\s*(?:pro max|pro|plus|air|mini|max|se|e))?|(?:pro max|pro|plus|air|mini|max|se|e))(?:\s*\/\s*(?:(?:\d{1,2}|x|xs|xr|se)?\s*(?:pro max|pro|plus|air|mini|max|se|e)?))*\b)/ig },
+        { device: 'Samsung', regex: /\b(?:samsung|galaxy)\s+((?:(?:a|s|m|j)\s*\d{1,3}|note\s*\d{1,2}|fold\s*\d|flip\s*\d)(?:\s*(?:ultra|plus|fe|5g|4g))?(?:\s*\/\s*(?:(?:a|s|m|j)?\s*\d{1,3}|note\s*\d{1,2}|fold\s*\d|flip\s*\d)(?:\s*(?:ultra|plus|fe|5g|4g))?)*)/ig },
+        { device: 'iPad', regex: /\bipad\s+((?:(?:pro|air|mini)?\s*(?:\d{1,2}(?:\.\d)?|20\d{2}|m\d)?(?:\s*(?:pro|air|mini|inch|дюйм|gen|покоління))?)(?:\s*\/\s*(?:(?:pro|air|mini)?\s*(?:\d{1,2}(?:\.\d)?|20\d{2}|m\d)?(?:\s*(?:pro|air|mini|inch|дюйм|gen|покоління))?))*)/ig },
+        { device: 'MacBook', regex: /\bmacbook\s+((?:(?:air|pro)?\s*(?:\d{2})?(?:\s*(?:m\d|inch|дюйм))?)(?:\s*\/\s*(?:(?:air|pro)?\s*(?:\d{2})?(?:\s*(?:m\d|inch|дюйм))?))*)/ig },
+        { device: 'Apple Watch', regex: /\b(?:apple\s+watch|watch)\s+((?:(?:ultra|se|series)?\s*\d{1,2}(?:\s*mm)?|\d{2}\s*mm)(?:\s*\/\s*(?:(?:ultra|se|series)?\s*\d{1,2}(?:\s*mm)?|\d{2}\s*mm))*)/ig },
+        { device: 'AirPods', regex: /\bairpods\s+((?:pro\s*)?\d?(?:\s*(?:pro|max|gen|покоління))?)/ig }
+      ];
+      patterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.regex.exec(text)) !== null) {
+          const raw = normalizeText(match[0]);
+          const modelText = normalizeText(match[1]);
+          const models = expandSlashModelList(pattern.device, modelText);
+          models.forEach(model => matches.push({ device: pattern.device, model, raw }));
+        }
+      });
+      const unique = new Map();
+      matches.forEach(item => {
+        const key = item.device + '|' + item.model;
+        if (!unique.has(key)) unique.set(key, item);
+      });
+      return Array.from(unique.values());
+    }
+
+    function escapeRegExp(value) {
+      return String(value == null ? '' : value).replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    }
+
+    function parsePositionProductName(productName) {
+      const split = splitProductModelAndColor(productName);
+      const baseName = split.model || normalizeText(productName);
+      const models = extractCompatibleModelsFromName(baseName);
+      let seriesBase = normalizeText(baseName);
+      models.forEach(item => {
+        if (item.raw) seriesBase = seriesBase.replace(new RegExp(escapeRegExp(item.raw), 'ig'), ' ');
+      });
+      const seriesKey = normalizeSearchText(seriesBase)
+        .replace(/\b(для|на|під|iphone|ipad|samsung|galaxy|macbook|apple|watch|airpods)\b/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return {
+        fullName: normalizeText(productName),
+        baseName,
+        color: split.color || '',
+        models: models.map(item => item.model),
+        device: models[0] ? models[0].device : '',
+        seriesKey,
+        seriesLabel: seriesKey ? seriesKey.split(' ').map(word => word.length <= 3 ? word.toUpperCase() : word).join(' ') : baseName
       };
     }
 
@@ -25096,6 +25265,161 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }
       renderPositionColorRanking(colorEntries, activeRankingColor, !!positionExplorerSelectedColor);
       positionColorSection.classList.add('open');
+    }
+
+    function getPositionModelFamilyRows(productKey) {
+      const selectedInfo = parsePositionProductName(getPositionExplorerProductDisplayName(productKey));
+      if (!selectedInfo.seriesKey || !selectedInfo.models.length) return [];
+      return positionExplorerBaseRowsCache.filter(row => {
+        const info = parsePositionProductName(row.product);
+        return info.seriesKey === selectedInfo.seriesKey && info.device === selectedInfo.device && info.models.length;
+      });
+    }
+
+    function findPositionExplorerProductBySeriesModel(baseProductKey, modelName) {
+      const selectedInfo = parsePositionProductName(getPositionExplorerProductDisplayName(baseProductKey));
+      const desiredModel = normalizeText(modelName);
+      if (!selectedInfo.seriesKey || !desiredModel) return null;
+      if (!positionExplorerProductsCache.length) rebuildPositionExplorerIndex();
+      const matches = positionExplorerProductsCache.filter(item => {
+        const info = parsePositionProductName(item && item.name);
+        return info.seriesKey === selectedInfo.seriesKey
+          && info.device === selectedInfo.device
+          && info.models.map(normalizeText).includes(desiredModel);
+      });
+      if (!matches.length) return null;
+      return matches.slice().sort((a, b) => {
+        const countDelta = Number(b && (b.filteredCount || b.count) || 0) - Number(a && (a.filteredCount || a.count) || 0);
+        if (countDelta !== 0) return countDelta;
+        return normalizeText(a && a.name).localeCompare(normalizeText(b && b.name), 'uk');
+      })[0];
+    }
+
+    function renderPositionModelRanking(entries, activeModels) {
+      if (!positionModelRankingList) return;
+      const total = entries.reduce((sum, entry) => sum + Number(entry[1] || 0), 0);
+      const activeSet = new Set((Array.isArray(activeModels) ? activeModels : []).map(normalizeText));
+      positionModelRankingList.innerHTML = '';
+      if (!entries.length) {
+        positionModelRankingList.innerHTML = '<div class="top-item"><div class="top-name">Немає моделей</div><div></div><div></div></div>';
+        return;
+      }
+      entries.forEach(entry => {
+        const model = entry[0];
+        const value = entry[1];
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'top-item clickable';
+        if (activeSet.has(normalizeText(model))) row.classList.add('active');
+        row.innerHTML = '<div class="top-name">' + model + '</div><div class="top-val">' + formatMetricValue(value) + '</div><div class="top-pct">' + getPercent(value, total) + '%</div>';
+        row.addEventListener('click', () => {
+          const matchedProduct = findPositionExplorerProductBySeriesModel(positionExplorerSelectedProduct, model);
+          if (matchedProduct) activatePositionExplorerProduct(matchedProduct.key || '', matchedProduct.name || '', matchedProduct.sku || '');
+        });
+        positionModelRankingList.appendChild(row);
+      });
+    }
+
+    function renderPositionModelComparison() {
+      if (!positionModelSection || !positionModelCompareCanvas) return;
+      if (!positionExplorerSelectedProduct) {
+        hidePositionModelSection();
+        return;
+      }
+      const selectedInfo = parsePositionProductName(getPositionExplorerProductDisplayName(positionExplorerSelectedProduct));
+      if (!selectedInfo.seriesKey || !selectedInfo.models.length) {
+        hidePositionModelSection();
+        return;
+      }
+      const familyRows = getPositionModelFamilyRows(positionExplorerSelectedProduct);
+      const scopedRows = positionExplorerSelectedClient
+        ? familyRows.filter(row => normalizeText(row.client) === positionExplorerSelectedClient)
+        : familyRows;
+      const byModel = new Map();
+      scopedRows.forEach(row => {
+        const info = parsePositionProductName(row.product);
+        (info.models.length ? info.models : ['Нерозпізнано']).forEach(model => {
+          if (!byModel.has(model)) byModel.set(model, []);
+          byModel.get(model).push(row);
+        });
+      });
+      const modelEntries = Array.from(byModel.entries())
+        .map(entry => [entry[0], entry[1].reduce((sum, row) => sum + getMetricValue(row), 0)])
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'uk'));
+      if (modelEntries.length < 2) {
+        hidePositionModelSection();
+        return;
+      }
+      const monthSet = new Set();
+      scopedRows.forEach(row => {
+        const key = normalizeDate(row.date).slice(0, 7);
+        if (key) monthSet.add(key);
+      });
+      const months = Array.from(monthSet).sort((a, b) => a.localeCompare(b));
+      const monthRange = months.length ? buildMonthRange(months[0], months[months.length - 1]) : [];
+      const monthKeys = monthRange.length ? monthRange : months;
+      const labels = monthKeys.map(month => formatMonthBucketLabel(month));
+      const palette = ['#0f766e', '#2563eb', '#f97316', '#16a34a', '#8b5cf6', '#ec4899', '#eab308', '#ef4444'];
+      clearPositionModelCompareChart();
+      const positionModelUseBar = Array.isArray(labels) && labels.length <= 1;
+      positionModelCompareChart = new Chart(positionModelCompareCanvas, {
+        type: positionModelUseBar ? 'bar' : 'line',
+        data: {
+          labels,
+          datasets: modelEntries.map((entry, index) => {
+            const model = entry[0];
+            const modelRows = byModel.get(model) || [];
+            const byMonth = {};
+            modelRows.forEach(row => {
+              const key = normalizeDate(row.date).slice(0, 7);
+              if (!key) return;
+              byMonth[key] = (byMonth[key] || 0) + getMetricValue(row);
+            });
+            const chartColor = palette[index % palette.length];
+            return {
+              label: model,
+              data: monthKeys.map(month => Number(byMonth[month] || 0)),
+              borderColor: chartColor,
+              backgroundColor: positionModelUseBar ? chartColor + '88' : chartColor + '22',
+              pointBackgroundColor: chartColor,
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: positionModelUseBar ? 0 : 3,
+              pointHoverRadius: 5,
+              fill: false,
+              tension: positionModelUseBar ? 0 : 0.28,
+              borderWidth: positionModelUseBar ? 0 : 2,
+              borderRadius: positionModelUseBar ? 10 : 0,
+              categoryPercentage: positionModelUseBar ? 0.98 : undefined,
+              barPercentage: positionModelUseBar ? 0.98 : undefined
+            };
+          })
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'top' },
+            tooltip: { callbacks: { label: context => context.dataset.label + ': ' + formatMetricValue(context.raw) } }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: value => formatMetricValue(value) }, grid: { color: 'rgba(148,163,184,.18)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+      const total = modelEntries.reduce((sum, entry) => sum + entry[1], 0);
+      const leader = modelEntries[0] || null;
+      if (positionModelCount) positionModelCount.textContent = fmt(modelEntries.length);
+      if (positionModelLeader) positionModelLeader.textContent = leader ? leader[0] : '—';
+      if (positionModelLeaderMeta) positionModelLeaderMeta.textContent = leader ? formatMetricValue(leader[1]) + ' | ' + getPercent(leader[1], total) + '%' : '—';
+      if (positionModelTotal) positionModelTotal.textContent = formatMetricValue(total);
+      if (positionModelMeta) {
+        positionModelMeta.textContent = selectedInfo.seriesLabel + ' | ' + (selectedInfo.device || 'усі пристрої') + ' | ' + (positionExplorerSelectedClient || 'усі клієнти') + ' | ' + (chartMetric === 'quantity' ? 'кількість' : 'сума продаж');
+      }
+      renderPositionModelRanking(modelEntries, selectedInfo.models);
+      positionModelSection.classList.add('open');
     }
 
     function updatePositionExplorerEmpty(message) {
@@ -25331,7 +25655,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         }))
         .filter(item => item.score >= 0)
         .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'uk'))
-        .slice(0, 8)
+        .slice(0, 20)
         .map(item => ({
           key: item.key,
           name: item.name,
@@ -26156,6 +26480,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
           ? 'Натисни Enter або кнопку “Знайти”, щоб побудувати аналіз по ключових словах.'
           : 'Почни вводити назву позиції, і я одразу підкажу збіги.');
         hidePositionColorSection();
+        hidePositionModelSection();
         return;
       }
 
@@ -26164,6 +26489,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         updatePositionExplorerShipmentChip([]);
         updatePositionExplorerManagerChip([]);
         hidePositionColorSection();
+        hidePositionModelSection();
         positionExplorerMeta.innerHTML = `
           <div>Позиція: ${productLabel || positionExplorerSelectedProduct}</div>
           <div>Клієнт: ${positionExplorerSelectedClient || 'усі'}</div>
@@ -26246,8 +26572,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
       if (positionExplorerSelectedProduct) {
         renderPositionColorComparison();
+        renderPositionModelComparison();
       } else {
         hidePositionColorSection();
+        hidePositionModelSection();
       }
     }
 

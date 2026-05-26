@@ -215,3 +215,32 @@ Verification:
 Rollback note:
 
 - D19 remains unchanged. Previous D20 commit before this direct update is c1c08e8.
+
+## D20 Universal Model Parser And Model Graph - 2026-05-26
+
+Request: continue editing D20 directly. Build a universal parser for product models across all product groups, account for slash-compatible models, fix search phrases with service words, and add a model comparison chart below the existing color chart.
+
+Changed files:
+
+- sales-dashboard/D20.html
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Added parser functions that extract device, compatible model array, series key, and color from product names.
+- Added slash compatibility handling, for example iPhone 16 Pro/17 and iPhone 13 Pro Max/14 Plus.
+- Added support for common device groups: iPhone, Samsung/Galaxy, iPad, MacBook, Apple Watch, AirPods.
+- Added a new “Порівняння Моделей Серії” chart below the color comparison chart.
+- Added model ranking list and clickable model rows that switch to a matching product when possible.
+- Added search stop-word filtering and increased product suggestions to 20.
+
+Verification:
+
+- Ran node --check sales-dashboard/D20.
+- Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
+- Ran git diff --check -- sales-dashboard/D20.html.
+
+Rollback note:
+
+- D19 remains the stable rollback point.
+- Previous D20 direct-edit commits remain available in Git history.
