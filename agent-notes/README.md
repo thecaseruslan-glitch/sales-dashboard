@@ -12,3 +12,5 @@ Relevant OpenClaw memory files:
 Repo coding memory:
 
 - `agent-notes/CODER_MEMORY.md`
+- `agent-notes/SALES_DASHBOARD_MEMORY.md`
+- `agent-notes/PURCHASE_DASHBOARD_MEMORY.md`
