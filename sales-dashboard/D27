@@ -5281,14 +5281,14 @@ function installClientTagMapDailyTrigger() {
   removeTriggersByHandler('refreshClientTagMapPart2Now');
   clearClientTagMapContinuationTrigger_();
 
-  [5, 17].forEach(function(hour) {
+  [9, 17].forEach(function(hour) {
     ScriptApp.newTrigger('refreshClientTagMapPart1Now')
       .timeBased()
       .everyDays(1)
       .atHour(hour)
       .create();
   });
-  [6, 18].forEach(function(hour) {
+  [10, 18].forEach(function(hour) {
     ScriptApp.newTrigger('refreshClientTagMapPart2Now')
       .timeBased()
       .everyDays(1)
@@ -5299,7 +5299,7 @@ function installClientTagMapDailyTrigger() {
   return {
     ok: true,
     handlers: ['refreshClientTagMapPart1Now', 'refreshClientTagMapPart2Now'],
-    schedule: 'part1 at 05:00/17:00, part2 at 06:00/18:00'
+    schedule: 'part1 at 09:00/17:00, part2 at 10:00/18:00'
   };
 }
 

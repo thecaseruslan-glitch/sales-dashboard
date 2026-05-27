@@ -271,7 +271,7 @@ Fix:
 - `monthlyRepairNow` now rebuilds current-month sales cache only; it no longer rebuilds the final dashboard snapshot.
 - Main refresh-loop order is now sales current month -> balances -> stock -> dashboard snapshot.
 - Balances and stock still rewrite the same existing sheets with the same headers.
-- Client tag refresh is separated from the main loop and can be installed as a twice-daily trigger: part1 at 05:00/17:00, part2 at 06:00/18:00.
+- Client tag refresh is separated from the main loop and can be installed as a twice-daily trigger per Руслан's requested start times: part1 at 09:00/17:00, part2 at 10:00/18:00.
 - Frontend gets stock, bonuses, and client statuses directly from the snapshot payload, not from admin bootstrap.
 
 Verification:
