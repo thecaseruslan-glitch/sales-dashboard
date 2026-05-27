@@ -390,3 +390,39 @@ Verification:
 Rollback note:
 
 - D23 remains unchanged and is the rollback point.
+
+## D25 Background Fresh Data Auto-Apply - 2026-05-27
+
+Request: improve the refresh/update system. When the dashboard is open it should continuously pull fresh data from the backend/sheets/snapshot in the background, apply it without requiring the user to click the refresh-ready button, and show a truthful System cycle state.
+
+Base version:
+
+- sales-dashboard/D24
+- sales-dashboard/D24.html
+
+Changed files:
+
+- sales-dashboard/D25
+- sales-dashboard/D25.html
+- agent-notes/CODER_MEMORY.md
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Copied D24 to D25 so D24 remains the rollback point.
+- Changed background prefetch to call serverGetDashboardDataFresh instead of the cached serverGetDashboardData.
+- Added automatic application of a prepared fresh payload after prefetch, with manual `Застосувати зараз` kept as a fallback.
+- Preserved the current view, period, manager/client/service filters, drill selections, and chart metric while replacing the data payload.
+- Delayed auto-apply while the tab is hidden, a modal is open, an input/select is focused, or another UI transition is running.
+- Added cycle readiness into System status and treated an idle completed cycle/snapshot as ready instead of showing `cycle_started_at_missing`.
+- Added System rows for Dashboard snapshot and Cycle readiness.
+
+Verification:
+
+- Ran node --check sales-dashboard/D25.
+- Extracted and syntax-checked 6 inline JS script blocks from D25.html with new Function.
+- Ran whitespace/diff checks against D24/D24.html.
+
+Rollback note:
+
+- D24 remains unchanged and is the rollback point.

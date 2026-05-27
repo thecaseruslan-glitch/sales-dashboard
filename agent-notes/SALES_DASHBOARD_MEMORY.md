@@ -210,3 +210,25 @@ Verification:
 - Extracted and syntax-checked 5 inline JS script blocks from D24.html with new Function.
 - No `adminSystemTabBtn` references remain.
 - Diff whitespace checks passed against D23/D23.html.
+
+## 2026-05-27 - D25 Background Fresh Data Auto-Apply
+
+Base: D24 copied to D25.
+
+Request: the dashboard should keep pulling fresh table/snapshot data while open, without asking the user to click the ready-refresh button. System status should show the actual loop/snapshot state and not get stuck on stale cycle signals.
+
+Fix:
+
+- Background cycle polling now prefetches via `serverGetDashboardDataFresh`.
+- Once a fresh payload is ready, the dashboard automatically applies it in the background.
+- Current user state is preserved while swapping data: active tab, period, manager/client/service filters, drill selections, and metric.
+- Auto-apply waits if the tab is hidden, a modal is open, the user is typing/selecting, or another UI transition is active.
+- The refresh-ready button remains as a manual fallback labelled `Застосувати зараз`.
+- Backend cycle readiness now treats an idle completed cycle or existing snapshot as ready instead of reporting `cycle_started_at_missing`.
+- System status includes Dashboard snapshot and Cycle readiness rows.
+
+Verification:
+
+- node --check sales-dashboard/D25.
+- Extracted and syntax-checked 6 inline JS script blocks from D25.html with new Function.
+- Diff whitespace checks passed against D24/D24.html.
