@@ -426,3 +426,40 @@ Verification:
 Rollback note:
 
 - D24 remains unchanged and is the rollback point.
+
+## D26 Refresh Protocol Diagnostics And Snapshot Gate - 2026-05-27
+
+Request: D25 did not work reliably in practice: new shipments were not appearing, shipment refresh time did not clearly update, and the System modal showed no useful cycle state. Create a stabilizing version that makes the update chain observable and only applies a fresh complete snapshot.
+
+Base version:
+
+- sales-dashboard/D25
+- sales-dashboard/D25.html
+
+Changed files:
+
+- sales-dashboard/D26
+- sales-dashboard/D26.html
+- agent-notes/CODER_MEMORY.md
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Copied D25 to D26 so D25 remains the rollback point.
+- Changed refresh-loop task order version and made `RUN_23_rebuildDashboardServerSnapshot` an explicit loop task after balances, stock, and sales repair.
+- Made cycle readiness require `dashboard_server_snapshot_built_at`, not only `sales_last_refresh`.
+- Added snapshot diagnostics to server snapshot/payload: archive/current row counts, total rows, balance/stock rows, max sales dates.
+- Added snapshot metadata to dashboard meta and refresh signal: snapshot state, built time, file id, last error, cycle counter/completed time.
+- Frontend now validates that a fetched fresh payload matches the snapshot timestamp advertised by the refresh signal before applying it.
+- Top refresh strip now shows Snapshot time alongside shipments, balances, stock, and tags.
+- System modal now starts with a visible live-sync state and has enough metadata to render cycle/snapshot state for any authorized user.
+
+Verification:
+
+- Ran node --check sales-dashboard/D26.
+- Extracted and syntax-checked 6 inline JS script blocks from D26.html with new Function.
+- Ran whitespace/diff checks against D25/D25.html.
+
+Rollback note:
+
+- D25 remains unchanged and is the rollback point.

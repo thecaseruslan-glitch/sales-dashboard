@@ -232,3 +232,25 @@ Verification:
 - node --check sales-dashboard/D25.
 - Extracted and syntax-checked 6 inline JS script blocks from D25.html with new Function.
 - Diff whitespace checks passed against D24/D24.html.
+
+## 2026-05-27 - D26 Refresh Protocol Diagnostics And Snapshot Gate
+
+Base: D25 copied to D26.
+
+Request: D25 did not reliably bring new shipments into the dashboard and the System modal did not expose useful cycle state. Stabilize the refresh chain and make every step observable.
+
+Fix:
+
+- The refresh loop now has an explicit snapshot rebuild task after balances, stock, and sales repair: `RUN_23_rebuildDashboardServerSnapshot`.
+- Cycle readiness requires both sales refresh and `dashboard_server_snapshot_built_at`, so a cycle cannot look complete without a ready snapshot.
+- Server snapshots now carry diagnostics: archive/current rows, total sales rows, balance rows, stock rows, and max sales dates.
+- Dashboard payloads and refresh signals now expose snapshot built time, state, file id, last error, cycle counter, and cycle completion time.
+- Frontend refuses to apply a fresh payload when its snapshot timestamp does not match the timestamp announced by the signal.
+- The top refresh strip now shows Snapshot time, making it clear whether the dashboard is looking at a fresh server snapshot.
+- The System modal starts in visible live-sync mode and has enough metadata to render real loop/snapshot status for all authorized users.
+
+Verification:
+
+- node --check sales-dashboard/D26.
+- Extracted and syntax-checked 6 inline JS script blocks from D26.html with new Function.
+- Diff whitespace checks passed against D25/D25.html.
