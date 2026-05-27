@@ -166,3 +166,24 @@ Verification:
 - Ran node --check sales-dashboard/D22.
 - Extracted and syntax-checked 5 inline JS script blocks from D22.html with new Function.
 - Ran git diff --check -- sales-dashboard/D22 sales-dashboard/D22.html agent-notes/SALES_DASHBOARD_MEMORY.md agent-notes/CODER_MEMORY.md.
+
+## 2026-05-27 - D23 Keyword Model/Color Drill Filters
+
+Base: D22 copied to D23.
+
+Request: in Position Analysis keyword mode, model and color ranking rows should work as filters, not only as visual rankings.
+
+Behavior:
+
+- Search by keywords, for example `Skin Pro`, still builds the broad keyword analysis.
+- Clicking a model filters the keyword result to that model across all colors and rebuilds charts/client lists.
+- Clicking a color filters the keyword result to all models in that color and rebuilds charts/client lists.
+- Clicking the second dimension after the first attempts to resolve the exact matching SKU/product and opens it as a concrete selected position.
+- The “Усі” color button clears only the color filter and preserves the selected model.
+
+Verification:
+
+- D23 backend matches D22 byte-for-byte.
+- node --check sales-dashboard/D23.
+- Extracted and syntax-checked 5 inline JS script blocks from D23.html with new Function.
+- git diff --check -- sales-dashboard/D23 sales-dashboard/D23.html agent-notes/CODER_MEMORY.md agent-notes/SALES_DASHBOARD_MEMORY.md.

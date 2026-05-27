@@ -316,3 +316,40 @@ Verification:
 Rollback note:
 
 - D21 remains unchanged and is the rollback point.
+
+## D23 Keyword Model/Color Drill Filters - 2026-05-27
+
+Request: after keyword search such as `Skin Pro`, make clicks on model/color rankings act as filters. Clicking a model should rebuild charts and client lists for that model across all colors. Clicking a color first should rebuild analysis for all models in that color. If both model and color are selected, switch to the exact matching SKU/product when available.
+
+Base version:
+
+- sales-dashboard/D22
+- sales-dashboard/D22.html
+
+Changed files:
+
+- sales-dashboard/D23
+- sales-dashboard/D23.html
+- agent-notes/CODER_MEMORY.md
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Copied D22 to D23 so D22 remains the rollback point.
+- Kept backend identical to D22.
+- Added keyword-mode state for selected model alongside the existing selected color.
+- Filtered keyword-matched rows by selected model and/or color before building the main chart and client lists.
+- Made keyword-mode model ranking rows clickable.
+- Made keyword-mode color ranking clicks preserve model/color drill state.
+- Added exact SKU/product activation when a keyword-selected model and color match a concrete product.
+
+Verification:
+
+- Confirmed D23 backend matches D22 byte-for-byte.
+- Ran node --check sales-dashboard/D23.
+- Extracted and syntax-checked 5 inline JS script blocks from D23.html with new Function.
+- Ran git diff --check -- sales-dashboard/D23 sales-dashboard/D23.html agent-notes/CODER_MEMORY.md agent-notes/SALES_DASHBOARD_MEMORY.md.
+
+Rollback note:
+
+- D22 remains unchanged and is the rollback point.
