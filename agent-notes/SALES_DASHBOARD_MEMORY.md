@@ -254,3 +254,27 @@ Verification:
 - node --check sales-dashboard/D26.
 - Extracted and syntax-checked 6 inline JS script blocks from D26.html with new Function.
 - Diff whitespace checks passed against D25/D25.html.
+
+## 2026-05-27 - D27 Simplified No-Admin Dashboard Pipeline
+
+Base: D26 copied to D27.
+
+Request: remove admin from the dashboard for now and rebuild the data update architecture around clear sheet refreshes: sales current month, balances, stock, then one final cache/snapshot rebuild. Keep writing to the same existing sheets and columns, preserving IDs, SKUs, groups, product metadata, and current dashboard logic.
+
+Fix:
+
+- Removed the visible admin entry point and stopped admin warmup/bootstrap from running on dashboard load.
+- Main dashboard snapshot no longer carries heavy admin dictionaries.
+- Snapshot now contains dashboard runtime data only: archive, current month, balances, stock, bonuses, client statuses, brand settings, meta, and diagnostics.
+- Snapshot rebuild no longer syncs brand_list on each rebuild.
+- Sales rows still get the existing manager/client/product manual metadata before snapshot write.
+- `monthlyRepairNow` now rebuilds current-month sales cache only; it no longer rebuilds the final dashboard snapshot.
+- Main refresh-loop order is now sales current month -> balances -> stock -> dashboard snapshot.
+- Balances and stock still rewrite the same existing sheets with the same headers.
+- Client tag refresh is separated from the main loop and can be installed as a twice-daily trigger: part1 at 05:00/17:00, part2 at 06:00/18:00.
+- Frontend gets stock, bonuses, and client statuses directly from the snapshot payload, not from admin bootstrap.
+
+Verification:
+
+- node --check sales-dashboard/D27.
+- Extracted and syntax-checked 6 inline JS script blocks from D27.html with new Function.

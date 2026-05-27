@@ -463,3 +463,41 @@ Verification:
 Rollback note:
 
 - D25 remains unchanged and is the rollback point.
+
+## D27 Simplified No-Admin Dashboard Pipeline - 2026-05-27
+
+Request: fully simplify the dashboard architecture while keeping dashboard analytics behavior. Remove admin from the user-facing dashboard, keep writing data into the same existing sheets/columns, keep all current IDs/SKUs/groups/metadata, and rebuild the refresh cycle around simple sheet rewrites plus one final cache/snapshot rebuild.
+
+Base version:
+
+- sales-dashboard/D26
+- sales-dashboard/D26.html
+
+Changed files:
+
+- sales-dashboard/D27
+- sales-dashboard/D27.html
+- agent-notes/CODER_MEMORY.md
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Copied D26 to D27 so D26 remains the rollback point.
+- Removed the visible admin entry point and stopped admin warmup/bootstrap from running during dashboard load.
+- Simplified the server snapshot payload: it now stores dashboard data only, using existing sheets/fields: archive, current month, balances, product stock, bonuses, client statuses, and brand settings.
+- Removed heavy admin dictionaries from the main snapshot payload and stopped syncing brand_list during every snapshot rebuild.
+- Kept product/manual/group metadata applied to sales rows before snapshot write, preserving the existing dashboard classification behavior.
+- Changed `monthlyRepairNow` to rebuild only current-month sales cache, not the final dashboard snapshot.
+- Reordered the main refresh loop to: sales current month, balances, stock, final dashboard snapshot.
+- Kept balances and stock refreshes writing into the same existing sheets with the same headers.
+- Re-enabled the client-tag refresh trigger as a separate twice-daily cycle: part1 at 05:00/17:00 and part2 at 06:00/18:00.
+- Frontend now receives product stock, bonuses, and client statuses from the main snapshot payload instead of the admin payload.
+
+Verification:
+
+- Ran node --check sales-dashboard/D27.
+- Extracted and syntax-checked 6 inline JS script blocks from D27.html with new Function.
+
+Rollback note:
+
+- D26 remains unchanged and is the rollback point.
