@@ -187,3 +187,26 @@ Verification:
 - node --check sales-dashboard/D23.
 - Extracted and syntax-checked 5 inline JS script blocks from D23.html with new Function.
 - git diff --check -- sales-dashboard/D23 sales-dashboard/D23.html agent-notes/CODER_MEMORY.md agent-notes/SALES_DASHBOARD_MEMORY.md.
+
+## 2026-05-27 - D24 Quiet Admin Warmup And System Modal
+
+Base: D23 copied to D24.
+
+Request: admin preload should be quiet, System should be separate from admin and visible for all users, and partial admin loading should not make the admin window look ready.
+
+Fix:
+
+- Removed automatic opening of the admin modal after dashboard load.
+- Kept silent admin warmup for admins, so service tables still preload in the background.
+- Removed the System tab from the admin modal.
+- Added a separate top-right `Система` button near `Вийти`.
+- Moved live system/loop status into its own modal.
+- System live status now requires only an authorized session, not admin rights.
+- Added a frontend completeness check for admin bootstrap before setting `adminBootstrapLoaded`; partial payloads retry instead of showing empty/half-loaded admin sections.
+
+Verification:
+
+- node --check sales-dashboard/D24.
+- Extracted and syntax-checked 5 inline JS script blocks from D24.html with new Function.
+- No `adminSystemTabBtn` references remain.
+- Diff whitespace checks passed against D23/D23.html.

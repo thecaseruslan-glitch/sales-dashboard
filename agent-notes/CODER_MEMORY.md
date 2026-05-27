@@ -353,3 +353,40 @@ Verification:
 Rollback note:
 
 - D22 remains unchanged and is the rollback point.
+
+## D24 Quiet Admin Warmup And System Modal - 2026-05-27
+
+Request: create the next dashboard version. Make admin bootstrap load quietly without opening the admin modal, remove the System tab from admin, move System to a separate top-right button near Logout available to all users, and fix cases where admin loaded only the System tab/partial payload.
+
+Base version:
+
+- sales-dashboard/D23
+- sales-dashboard/D23.html
+
+Changed files:
+
+- sales-dashboard/D24
+- sales-dashboard/D24.html
+- agent-notes/CODER_MEMORY.md
+- agent-notes/SALES_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Copied D23 to D24 so D23 remains the rollback point.
+- Stopped auto-opening the admin modal after dashboard load; the existing warmup still silently queues admin bootstrap for admins.
+- Removed the System tab from the admin modal.
+- Added a separate top-right `Система` button near `Вийти`.
+- Moved the live System UI into its own modal and made live polling depend on that modal being open.
+- Changed `serverGetAdminSystemLiveStatus` from admin-only to any authorized dashboard user, so managers can see system/loop state.
+- Added frontend validation for full admin bootstrap payload before setting `adminBootstrapLoaded = true`; partial system-only payloads now trigger retry instead of making admin look loaded.
+
+Verification:
+
+- Ran node --check sales-dashboard/D24.
+- Extracted and syntax-checked 5 inline JS script blocks from D24.html with new Function.
+- Confirmed no `adminSystemTabBtn` references remain.
+- Ran diff whitespace checks against D23/D23.html.
+
+Rollback note:
+
+- D23 remains unchanged and is the rollback point.
