@@ -9206,6 +9206,10 @@ html, body{
     const DASHBOARD_WAKE_CHECK_DEBOUNCE_MS = 350;
     const DASHBOARD_WAKE_CHECK_THROTTLE_MS = 5000;
     const DASHBOARD_PREFETCH_STALE_MS = 2 * 60 * 1000;
+    const DASHBOARD_AUTH_TIMEOUT_MS = 20000;
+    const DASHBOARD_DATA_TIMEOUT_MS = 25000;
+    const DASHBOARD_DATA_FRESH_TIMEOUT_MS = 45000;
+    const DASHBOARD_REFRESH_SIGNAL_TIMEOUT_MS = 8000;
     const DASHBOARD_AUTO_APPLY_DELAY_MS = 1200;
     const DASHBOARD_AUTO_APPLY_RETRY_MS = 5000;
     const ADMIN_SYSTEM_LIVE_POLL_MS = 10000;
@@ -9963,6 +9967,10 @@ html, body{
       });
     }
 
+    function serverCallWithTimeout(methodName, timeoutMs, timeoutMessage, ...args) {
+      return withTimeout(serverCall(methodName, ...args), timeoutMs, timeoutMessage);
+    }
+
     function withTimeout(promise, ms, message) {
       let timer = null;
       const timeout = new Promise((_, reject) => {
@@ -10381,7 +10389,12 @@ html, body{
     async function syncRefreshLoopBaseline() {
       if (!sessionToken) return 0;
       try {
-        const signal = await serverCall('serverGetRefreshLoopSignal', sessionToken);
+        const signal = await serverCallWithTimeout(
+          'serverGetRefreshLoopSignal',
+          DASHBOARD_REFRESH_SIGNAL_TIMEOUT_MS,
+          'Не вдалося швидко перевірити стан циклу.',
+          sessionToken
+        );
         mergeRefreshSignalIntoSystemStatus(signal);
         const cycleCounter = Number(signal && signal.cycle_counter) || 0;
         return cycleCounter;
@@ -10822,7 +10835,12 @@ html, body{
       setRefreshReadyState('loading', 'Оновлюю у фоні…');
 
       try {
-        const data = await serverCall('serverGetDashboardDataFresh', sessionToken);
+        const data = await serverCallWithTimeout(
+          'serverGetDashboardDataFresh',
+          DASHBOARD_DATA_FRESH_TIMEOUT_MS,
+          'Оновлення snapshot триває занадто довго. Спробую знову пізніше.',
+          sessionToken
+        );
         data._refresh_signal = signal;
         data._local_cycle_counter = cycleCounter;
         data._local_snapshot_built_at = getPayloadSnapshotBuiltAt(data) || snapshotBuiltAt;
@@ -10863,7 +10881,12 @@ html, body{
 
     async function prefetchDashboardAfterCycle(cycleCounter) {
       if (!sessionToken || !cycleCounter) return false;
-      const signal = await serverCall('serverGetRefreshLoopSignal', sessionToken);
+      const signal = await serverCallWithTimeout(
+        'serverGetRefreshLoopSignal',
+        DASHBOARD_REFRESH_SIGNAL_TIMEOUT_MS,
+        'Не вдалося швидко перевірити стан циклу.',
+        sessionToken
+      );
       return prefetchDashboardAfterSignal(signal);
     }
 
@@ -10883,7 +10906,12 @@ html, body{
       }
 
       try {
-        const signal = await serverCall('serverGetRefreshLoopSignal', sessionToken);
+        const signal = await serverCallWithTimeout(
+          'serverGetRefreshLoopSignal',
+          DASHBOARD_REFRESH_SIGNAL_TIMEOUT_MS,
+          'Не вдалося швидко перевірити стан циклу.',
+          sessionToken
+        );
         mergeRefreshSignalIntoSystemStatus(signal);
         renderGlobalRefreshInfo();
         if (!isRefreshSignalNewer(signal)) return;
@@ -21990,7 +22018,12 @@ function renderClientNameForLtv(clientName, extraHtml) {
           let usedCachedSnapshotFallback = false;
 
           try {
-            data = await serverCall('serverGetDashboardData', sessionToken);
+            data = await serverCallWithTimeout(
+              'serverGetDashboardData',
+              DASHBOARD_DATA_TIMEOUT_MS,
+              'Сервер дашборду відповідає надто довго. Показую останній збережений snapshot.',
+              sessionToken
+            );
           } catch (serverErr) {
             if (disableLocalFallback) throw serverErr;
 
@@ -22094,7 +22127,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
         const email = normalizeText(loginEmail.value).toLowerCase();
         const password = loginPassword.value || '';
 
-        const data = await serverCall('serverLogin', email, password);
+        const data = await serverCallWithTimeout(
+          'serverLogin',
+          DASHBOARD_AUTH_TIMEOUT_MS,
+          'Перевірка доступу триває занадто довго. Спробуй ще раз.',
+          email,
+          password
+        );
 
         sessionToken = data.session_token;
         sessionStorage.setItem('dashboardSessionToken', sessionToken);
@@ -23147,7 +23186,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       setDashboardView('products');
       setRefreshReadyState('idle');
       if (sessionToken) {
-        await loadDashboardData({ disableLocalFallback: true });
+        await loadDashboardData();
       } else {
         showAuth();
       }
