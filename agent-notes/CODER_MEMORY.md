@@ -544,3 +544,42 @@ Rollback note:
 
 - D27 remains unchanged and is the rollback point.
 - D28 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D29 Independent Table Loop And 20-Minute JSON Snapshot Scheduler - 2026-05-31
+
+Request: simplify D28 further. Keep the main sheet refresh loop independent with only sales, balances, and stock. Build JSON snapshots independently every 20 minutes from whichever rows are already present in the sheets at that moment. Let the open dashboard pick up each published JSON revision in the background. Reduce the System table to the useful timestamps only.
+
+Base version:
+
+- `sales-dashboard/D28`
+- `sales-dashboard/D28.html`
+
+Changed files:
+
+- `sales-dashboard/D29`
+- `sales-dashboard/D29.html`
+- `agent-notes/CODER_MEMORY.md`
+- `agent-notes/SALES_DASHBOARD_MEMORY.md`
+
+Implementation:
+
+- Removed JSON snapshot rebuild from the main scheduler task list. The repeating main loop is now exactly: current-month sales -> balances -> stock -> repeat.
+- Added independent `dashboardSnapshotSchedulerTick_()` and `RUN_34_installDashboardSnapshotRefreshTrigger()`.
+- Apps Script does not support a direct `everyMinutes(20)` trigger. Installed a lightweight supported 5-minute tick that rebuilds only when at least 20 minutes have passed since the previous snapshot run.
+- `RUN_01_startRefreshLoop()` now installs both the one-minute main scheduler and the independent snapshot scheduler. `RUN_02_stopRefreshLoop()` stops both. `RUN_35_stopDashboardSnapshotRefreshTrigger()` can stop only JSON refresh.
+- Changed `RUN_23_rebuildDashboardSnapshotNow()` to rebuild independently without taking the main scheduler ScriptLock. It snapshots the sheet state that already exists at runtime.
+- Kept atomic JSON publication and added a separate active-build marker to avoid overlapping JSON rebuilds without coupling to the main loop's `fresh/stale` state.
+- Browser heartbeat is no longer gated by main-cycle readiness. It can background-load any newly published JSON revision even while the main sheet loop continues.
+- Simplified System table rows to: sales, balances, stock, JSON snapshot, independent tags. Removed the redundant cycle-readiness row.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D29`.
+- Extracted and syntax-checked 5 inline JS script blocks from `D29.html` with `new Function`.
+- Ran `git diff --no-index --check` against `D28` and `D28.html`.
+- Ran static invariant checks for the exact three-task main loop, independent snapshot scheduler, supported 5-minute Apps Script trigger, effective 20-minute rebuild interval, lock-free independent snapshot rebuild, and browser sync independent from main-cycle readiness.
+
+Rollback note:
+
+- D28 remains unchanged and is the rollback point.
+- D29 is local code only; no Apps Script deployment or production Sheet write was performed.

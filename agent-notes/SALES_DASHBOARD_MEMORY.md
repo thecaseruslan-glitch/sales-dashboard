@@ -304,3 +304,28 @@ Verification:
 - Static invariant checks passed for four-step loop, manual snapshot rebuild, revision heartbeat, read-only background fetch, and independent tags.
 
 Deployment: not performed. D28 requires manual first snapshot rebuild after deployment before starting the loop.
+
+## 2026-05-31 - D29 Independent Table Loop And Snapshot Scheduler
+
+Base: D28 copied to D29. D28 remains unchanged rollback.
+
+Goal: separate sheet refreshes from JSON publication completely. Main loop keeps rewriting whatever source sheets it can finish; independent JSON rebuild periodically captures the current written state without waiting for the main loop.
+
+Fix:
+
+- Main scheduler is now exactly sales current month -> balances -> stock -> repeat.
+- JSON snapshot no longer belongs to that scheduler and no longer uses the main scheduler ScriptLock.
+- Added an independent snapshot scheduler. Because Apps Script does not support direct 20-minute clock triggers, a lightweight supported 5-minute trigger checks elapsed time and rebuilds JSON only after 20 minutes.
+- `RUN_01_startRefreshLoop()` installs both schedulers. Added `RUN_34_installDashboardSnapshotRefreshTrigger()` and `RUN_35_stopDashboardSnapshotRefreshTrigger()` for separate control.
+- Atomic JSON publication stays in place. Added a separate active-build timestamp to prevent overlapping snapshot runs even if the main loop marks the current JSON stale while writing sheets.
+- Frontend heartbeat can apply a newly published JSON revision without waiting for main-cycle readiness.
+- System table now shows only sales, balances, stock, JSON snapshot, and independent tags.
+
+Verification:
+
+- `node --check sales-dashboard/D29`.
+- Extracted and syntax-checked 5 inline JS script blocks from `D29.html` with `new Function`.
+- `git diff --no-index --check` passed against D28 files.
+- Static invariants passed for three-step main loop, independent lock-free JSON rebuild, supported 5-minute scheduler tick, effective 20-minute snapshot interval, and independent browser heartbeat.
+
+Deployment: not performed. After deployment run manual first snapshot once, then start the loop.
