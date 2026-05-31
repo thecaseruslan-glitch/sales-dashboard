@@ -733,3 +733,35 @@ Rollback note:
 
 - D45 remains the rollback point.
 - D46 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D47 Manual Client Status Controls - 2026-05-31
+
+Request: create D47 from D46. Add manual client-status management so an admin can remove a client from the "new" set (for example iDesign, where old history before 2024 should not count as new) and persist that change back to the sheet. Also remove the background phrase that said data were quietly updated in the background.
+
+Base version:
+
+- sales-dashboard/D46
+- sales-dashboard/D46.html
+
+Changed files:
+
+- sales-dashboard/D47
+- sales-dashboard/D47.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Kept the D46 cold-start/full-refresh behavior and loading bar work.
+- Expanded the admin client status table to show active/inactive rows and added a per-row toggle action so a status can be removed or restored directly from the table.
+- Kept persistence through the existing client_status_map queue/save flow, so manual status removal still writes to the sheet.
+- Removed the auto-apply status phrase that said data were quietly updated in the background.
+
+Verification:
+
+- Ran node --check sales-dashboard/D47.
+- Ran git diff --check -- sales-dashboard/D47 sales-dashboard/D47.html.
+
+Rollback note:
+
+- D46 remains the rollback point.
+- D47 is local code only; no Apps Script deployment or production Sheet write was performed.
