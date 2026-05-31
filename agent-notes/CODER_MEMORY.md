@@ -798,3 +798,36 @@ Rollback note:
 
 - D50 remains the rollback point.
 - D51 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D52 Status Save Sequencing and Explicit No-Status Append - 2026-05-31
+
+Request: create D52 from D51. Fix the status save flow so the loader is visible before the dashboard refresh, and ensure clearing a client status always persists a no status row in client_status_map even when no prior row exists.
+
+Base version:
+
+- sales-dashboard/D51
+- sales-dashboard/D51.html
+
+Changed files:
+
+- sales-dashboard/D52
+- sales-dashboard/D52.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Wrapped the save flow in the shared UI transition helper so the busy indicators survive until the save and refresh sequence finishes.
+- Forced a fresh admin bootstrap after the save and reloaded the dashboard without local snapshot fallback so the updated sheet state is used immediately.
+- Changed the backend remove-all path to append a none row with active=false when no existing status row is found, instead of silently doing nothing.
+- Kept the bonuses suppression rule aligned with inactive new or none rows so clients removed from new stay out of the bonuses tab.
+
+Verification:
+
+- Ran node --check D52.
+- Ran git diff --check.
+- Verified the patched save path and backend append path with ripgrep.
+
+Rollback note:
+
+- D51 remains the rollback point.
+- D52 is local code only; no Apps Script deployment or production Sheet write was performed.
