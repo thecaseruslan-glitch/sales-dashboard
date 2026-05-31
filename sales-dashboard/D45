@@ -36,12 +36,6 @@ function RUN_05_schedulerTickNow() {
   return result;
 }
 
-function RUN_05B_refreshLoopHeartbeatNow() {
-  const result = refreshLoopHeartbeat_();
-  Logger.log('RUN_05B_refreshLoopHeartbeatNow -> %s', JSON.stringify(result));
-  return result;
-}
-
 function RUN_06_monthlyRepairNow() {
   return monthlyRepairNow();
 }
@@ -3265,13 +3259,6 @@ function rebuildDashboardServerSnapshotCore_() {
   return finalizeRefreshLoopNow();
 }
 
-function rebuildDashboardServerSnapshotFullNow_() {
-  const cacheResult = rebuildDashboardSnapshotCacheStep_();
-  const fileResult = rebuildDashboardSnapshotFileStep_();
-  fileResult.cache_step = cacheResult;
-  return fileResult;
-}
-
 function rebuildDashboardServerSnapshot() {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -3283,15 +3270,6 @@ function rebuildDashboardServerSnapshot() {
     throw err;
   } finally {
     lock.releaseLock();
-  }
-}
-
-function rebuildDashboardServerSnapshotInsideLockedFlow_() {
-  try {
-    return rebuildDashboardServerSnapshotCore_();
-  } catch (err) {
-    markDashboardServerSnapshotStale_(err && err.message ? err.message : err);
-    throw err;
   }
 }
 
@@ -6067,10 +6045,6 @@ function removeLegacyRefreshLoopTriggers_() {
   });
 }
 
-function removeRefreshLoopStepTriggers_() {
-  removeLegacyRefreshLoopTriggers_();
-}
-
 function getRefreshLoopState() {
   ensureRefreshLoopTaskOrderVersion_();
   healStaleRefreshLoopCurrentTask_();
@@ -6424,48 +6398,6 @@ function schedulerTick_() {
   } finally {
     lock.releaseLock();
   }
-}
-
-// Сумісність зі старими кнопками та випадково залишеними triggers попередніх тестових версій.
-// Новий цикл їх не використовує.
-function refreshLoopHeartbeat_() {
-  removeTriggersByHandler(REFRESH_LOOP_HEARTBEAT_HANDLER);
-  return { ok: true, deprecated: true, message: 'D45 використовує лише schedulerTick_ раз на хвилину.', state: getRefreshLoopState() };
-}
-
-function refreshLoopWatchdog_() {
-  removeTriggersByHandler(REFRESH_LOOP_WATCHDOG_HANDLER);
-  return { ok: true, deprecated: true, message: 'D44 не використовує окремий watchdog.', state: getRefreshLoopState() };
-}
-
-function runSalesRefreshLoopStep_() {
-  removeTriggersByHandler('runSalesRefreshLoopStep_');
-  return { ok: true, deprecated: true, message: 'D45: trigger очищено. Використовується schedulerTick_.' };
-}
-
-function runBalancesRefreshLoopStep_() {
-  removeTriggersByHandler('runBalancesRefreshLoopStep_');
-  return { ok: true, deprecated: true, message: 'D45: trigger очищено. Використовується schedulerTick_.' };
-}
-
-function runStockRefreshLoopStep_() {
-  removeTriggersByHandler('runStockRefreshLoopStep_');
-  return { ok: true, deprecated: true, message: 'D45: trigger очищено. Використовується schedulerTick_.' };
-}
-
-function publishSalesRefreshLoopStep_() {
-  removeTriggersByHandler('publishSalesRefreshLoopStep_');
-  return { ok: true, deprecated: true, message: 'D45: trigger очищено. Використовується schedulerTick_.' };
-}
-
-function publishBalancesRefreshLoopStep_() {
-  removeTriggersByHandler('publishBalancesRefreshLoopStep_');
-  return { ok: true, deprecated: true, message: 'D45: trigger очищено. Використовується schedulerTick_.' };
-}
-
-function publishStockRefreshLoopStep_() {
-  removeTriggersByHandler('publishStockRefreshLoopStep_');
-  return { ok: true, deprecated: true, message: 'D45: trigger очищено. Використовується schedulerTick_.' };
 }
 
 function installClientTagMapDailyTrigger() {
@@ -6968,14 +6900,6 @@ function continueClientTagMapRefresh_() {
   } finally {
     lock.releaseLock();
   }
-}
-
-function refreshClientTagMapNow() {
-  return {
-    ok: false,
-    deprecated: true,
-    message: 'Теги тепер оновлюються вручну у 2 частини: спочатку RUN_07_refreshClientTagMapPart1Now, потім RUN_08_refreshClientTagMapPart2Now.'
-  };
 }
 
 function throttleMsForClientTagMapRefresh_() {
