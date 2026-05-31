@@ -278,3 +278,29 @@ Verification:
 
 - node --check sales-dashboard/D27.
 - Extracted and syntax-checked 6 inline JS script blocks from D27.html with new Function.
+
+## 2026-05-31 - D28 Atomic JSON Snapshot And Live Revision Sync
+
+Base: D27 copied to D28. D27 remains unchanged rollback.
+
+Goal: keep one simple repeating data loop and make the browser consume only ready JSON snapshots: sales current month -> balances -> stock -> JSON snapshot. Tags stay independent.
+
+Fix:
+
+- Added manual first-snapshot/recovery entry point `RUN_23_rebuildDashboardSnapshotNow()` using the exact same builder as loop step 4.
+- Snapshot publication is atomic: build and validate the gzip JSON first, then publish file id, revision, timestamp, and `fresh` state.
+- Browser heartbeat remains 30 seconds, but now compares explicit snapshot revisions and loads an already-published JSON file in the background. It no longer triggers snapshot rebuilding.
+- Normal dashboard payloads now take `client_ltv_meta` from JSON instead of rereading the sheet.
+- JSON now also carries OKR plans/default tags. OKR config prefers a small live sheet read with JSON fallback so recently saved plans appear immediately.
+- System view now renders the four real main steps, server/browser JSON revisions, and independent tag-cycle progress separately.
+- Scheduler tick heals stale task state before launching the next step.
+- Fixed local-cache recovery so receiving a heartbeat does not falsely mark a newer revision as already loaded.
+
+Verification:
+
+- `node --check sales-dashboard/D28`.
+- Extracted and syntax-checked 5 inline JS script blocks from `D28.html` with `new Function`.
+- `git diff --no-index --check` passed against D27 files.
+- Static invariant checks passed for four-step loop, manual snapshot rebuild, revision heartbeat, read-only background fetch, and independent tags.
+
+Deployment: not performed. D28 requires manual first snapshot rebuild after deployment before starting the loop.

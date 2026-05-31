@@ -501,3 +501,46 @@ Verification:
 Rollback note:
 
 - D26 remains unchanged and is the rollback point.
+
+## D28 Atomic JSON Snapshot And Live Revision Sync - 2026-05-31
+
+Request: simplify the sales dashboard refresh system to one repeating four-step loop, make the dashboard open from the latest ready JSON snapshot, publish and apply new snapshots automatically, show truthful live System state, keep tags independent, support manual first-snapshot initialization, and fix OKR plans not appearing reliably.
+
+Base version:
+
+- `sales-dashboard/D27`
+- `sales-dashboard/D27.html`
+
+Changed files:
+
+- `sales-dashboard/D28`
+- `sales-dashboard/D28.html`
+- `agent-notes/CODER_MEMORY.md`
+- `agent-notes/SALES_DASHBOARD_MEMORY.md`
+
+Implementation:
+
+- Kept the main loop at exactly four steps: current-month sales, balances, stock, final JSON snapshot.
+- Added `RUN_23_rebuildDashboardSnapshotNow()` as an explicit manual first-snapshot/recovery entry point using the same internal builder as loop step 4.
+- Changed browser fresh-data reads so they only read the latest published JSON snapshot; browser polling no longer rebuilds a snapshot.
+- Added snapshot revision numbers, required-block validation, gzip readback validation, and atomic publication: create and validate the new file first, then publish its file id/revision/state and trash the previous file.
+- Added `building` snapshot state and revision metadata to the dashboard payload, refresh heartbeat, cache key, and System status.
+- Moved `client_ltv_meta` into the JSON snapshot so normal dashboard loads do not reread that sheet.
+- Added OKR plans/default tags to JSON. The small OKR config endpoint still prefers a live read with JSON fallback so a manually saved plan appears immediately before the next loop snapshot.
+- Added OKR snapshot invalidation after manual plan save.
+- Kept frontend heartbeat polling at 30 seconds and made it compare snapshot revisions before background-prefetching and atomically applying the ready payload.
+- Fixed the fallback-cache sync edge case: a heartbeat signal no longer marks a server revision as already loaded before that JSON payload has actually been applied in the browser.
+- Made System show the real four-step order, server/browser snapshot revisions, and a separate lower row for independent tag refresh state.
+- Added stale-task healing at the start of the scheduler tick.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D28`.
+- Extracted and syntax-checked 5 inline JS script blocks from `D28.html` with `new Function`.
+- Ran `git diff --no-index --check` against `D27` and `D27.html`.
+- Ran static invariant checks for the four-task order, manual rebuild entry point, no-rebuild browser fresh endpoint, 30-second heartbeat, revision metadata, and independent tag state.
+
+Rollback note:
+
+- D27 remains unchanged and is the rollback point.
+- D28 is local code only; no Apps Script deployment or production Sheet write was performed.
