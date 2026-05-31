@@ -586,7 +586,8 @@ const ADMIN_BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 const REFRESH_LOOP_HANDLER = 'schedulerTick_';
 const DASHBOARD_SNAPSHOT_REFRESH_HANDLER = 'dashboardSnapshotSchedulerTick_';
 const DASHBOARD_SNAPSHOT_REFRESH_MINUTES = 20;
-const DASHBOARD_SNAPSHOT_SCHEDULER_TICK_MINUTES = 5;
+// Short tick keeps the 20-minute snapshot cadence close to schedule even after transient failures.
+const DASHBOARD_SNAPSHOT_SCHEDULER_TICK_MINUTES = 1;
 const REFRESH_LOOP_META_PREFIX = 'refresh_loop_';
 const REFRESH_LOOP_STALE_TASK_MS = 10 * 60 * 1000;
 const REFRESH_LOOP_CYCLE_COMPLETED_AT_KEY = 'refresh_loop_cycle_completed_at';
