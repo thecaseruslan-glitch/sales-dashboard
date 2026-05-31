@@ -238,6 +238,39 @@ Verification:
 
 - Ran node --check sales-dashboard/D20.
 - Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
+
+## D45 Dual-Cycle Snapshot Variant - 2026-05-31
+
+Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
+
+Base version:
+
+- user-provided D45 attachment copied into repo as sales-dashboard/D45 + sales-dashboard/D45.html
+
+Changed files:
+
+- sales-dashboard/D45
+- sales-dashboard/D45.html
+
+Implementation:
+
+- Kept the main refresh loop independent for sales, balances, and stock.
+- Added a separate snapshot scheduler trigger that runs every 20 minutes via a minute tick.
+- Made RUN_42_rebuildDashboardFastPreparedFilesNow perform the snapshot build flow so the manual entrypoint matches the user's requested workflow.
+- Added explicit install/stop entrypoints for the dashboard snapshot trigger.
+- Changed startRefreshLoop() / stopRefreshLoop() to also manage the snapshot trigger.
+- Made the frontend cache-first: it now reads the last local snapshot immediately, falls back by last user email, then syncs server data in the background.
+- Stored the last login email in sessionStorage so the local snapshot survives token changes.
+
+Verification:
+
+- Ran node --check D45.
+- Parsed all 6 inline JS script blocks from D45.html with vm.Script.
+- Ran git diff --check -- D45 D45.html.
+
+Rollback note:
+
+- The new files are additive. D32 remains an untouched rollback point, and the user-provided D45 attachment remains available in /root/.openclaw/media/inbound/.
 - Ran git diff --check -- sales-dashboard/D20.html.
 
 Rollback note:
