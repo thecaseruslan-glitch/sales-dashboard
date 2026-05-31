@@ -765,3 +765,36 @@ Rollback note:
 
 - D46 remains the rollback point.
 - D47 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D51 Status Save Loader and No-Status Bonus Suppression - 2026-05-31
+
+Request: create D51 from D50. Fix the status admin save flow so the loader appears before reload, and when a client is cleared the sheet should record a no status row rather than keeping new; clients cleared this way must disappear from the bonuses tab while keeping the rest of the bonus flow intact.
+
+Base version:
+
+- sales-dashboard/D50
+- sales-dashboard/D50.html
+
+Changed files:
+
+- sales-dashboard/D51
+- sales-dashboard/D51.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Added an explicit cursor busy indicator and UI busy state before the status save request starts, plus a paint yield so the loader is visible before the reload begins.
+- Kept the loading overlay active through the save and refresh flow and only released the busy indicators in the final cleanup path.
+- Changed the backend status clear path to write none into client_status_map with active=false instead of storing new.
+- Extended the bonus suppression check so inactive new or none status rows hide the client from the bonuses tab, while the main bonus calculation flow remains unchanged.
+
+Verification:
+
+- Ran node --check D51.
+- Ran git diff --check.
+- Verified the updated D51 frontend/backend references with ripgrep.
+
+Rollback note:
+
+- D50 remains the rollback point.
+- D51 is local code only; no Apps Script deployment or production Sheet write was performed.
