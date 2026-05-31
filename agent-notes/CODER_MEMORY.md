@@ -268,6 +268,10 @@ Verification:
 - Parsed all 6 inline JS script blocks from D45.html with vm.Script.
 - Ran git diff --check -- D45 D45.html.
 
+Cleanup follow-up:
+
+- Removed obsolete legacy wrappers from D45: RUN_05B_refreshLoopHeartbeatNow, rebuildDashboardServerSnapshotFullNow_, rebuildDashboardServerSnapshotInsideLockedFlow_, refreshLoopHeartbeat_, refreshLoopWatchdog_, runSalesRefreshLoopStep_, runBalancesRefreshLoopStep_, runStockRefreshLoopStep_, publishSalesRefreshLoopStep_, publishBalancesRefreshLoopStep_, publishStockRefreshLoopStep_, refreshClientTagMapNow, and the dead helper removeRefreshLoopStepTriggers_.
+
 Rollback note:
 
 - The new files are additive. D32 remains an untouched rollback point, and the user-provided D45 attachment remains available in /root/.openclaw/media/inbound/.
