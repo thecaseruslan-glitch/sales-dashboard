@@ -700,3 +700,36 @@ Rollback note:
 
 - D30 remains unchanged and is the rollback point.
 - D31 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D46 Cold-Start Reload And 60-Second Loading Bar - 2026-05-31
+
+Request: create D46 from D45 and make a full browser refresh behave like a true first load while still pulling the latest prepared snapshot. Also make the dashboard loading bar progress smoothly over 60 seconds.
+
+Base version:
+
+- sales-dashboard/D45
+- sales-dashboard/D45.html
+
+Changed files:
+
+- sales-dashboard/D46
+- sales-dashboard/D46.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Kept the D45 backend as-is and copied it into a new D46 variant.
+- Made the frontend show the cold-start loading screen on every authenticated page load, so a browser refresh visibly restarts the dashboard bootstrap instead of appearing inert.
+- Kept local snapshot bootstrap enabled, but stopped hiding the loading overlay immediately after the cached snapshot is painted. The dashboard now stays in loading mode until the fresh server payload is applied or the bootstrap fails.
+- Replaced the old stepped loading timer with an elapsed-time progress timer that advances linearly across 60 seconds and updates the loading step text in stages.
+
+Verification:
+
+- Ran node --check sales-dashboard/D46.
+- Extracted and syntax-checked 6 inline JS script blocks from D46.html with vm.Script.
+- Ran git diff --check -- sales-dashboard/D46 sales-dashboard/D46.html.
+
+Rollback note:
+
+- D45 remains the rollback point.
+- D46 is local code only; no Apps Script deployment or production Sheet write was performed.
