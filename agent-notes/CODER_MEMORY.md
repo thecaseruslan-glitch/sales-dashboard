@@ -277,6 +277,7 @@ Tag cycle update:
 - Added a dedicated client-tag refresh start/stop pair in D45: RUN_46_startClientTagMapRefreshTrigger and RUN_47_stopClientTagMapRefreshTrigger.
 - New client-tag scheduler runs at 09:00, 14:00, and 17:00 via clientTagMapDailySchedulerTick_, then continues through the existing continuation trigger until the refresh completes.
 - installClientTagMapDailyTrigger() is now a compatibility alias to the new start function.
+- startRefreshLoop() / stopRefreshLoop() now also manage the client-tag refresh trigger so the tag cycle starts and stops together with the main loop.
 
 Rollback note:
 

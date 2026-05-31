@@ -6248,12 +6248,14 @@ function startRefreshLoop() {
  var triggerInfo = installRefreshLoopTrigger();
  var archiveTriggerInfo = startSalesArchiveRebuildTrigger();
  var snapshotTriggerInfo = installDashboardSnapshotRefreshTrigger();
+ var clientTagTriggerInfo = startClientTagMapRefreshTrigger();
  return {
   ok: true,
   mode: 'd45_atomic_minute_scheduler_with_prepared_files',
   trigger: triggerInfo,
   archive_rebuild_trigger: archiveTriggerInfo,
   snapshot_refresh_trigger: snapshotTriggerInfo,
+  client_tag_map_refresh_trigger: clientTagTriggerInfo,
   first_tick: { ok: true, skipped: true, reason: 'deferred_to_minute_trigger' },
   state: getRefreshLoopState()
  };
@@ -6264,6 +6266,7 @@ function stopRefreshLoop() {
  removeLegacyRefreshLoopTriggers_();
  var archiveStop = stopSalesArchiveRebuildTrigger();
  var snapshotStop = stopDashboardSnapshotRefreshTrigger();
+ var clientTagStop = stopClientTagMapRefreshTrigger();
  clearRefreshLoopCurrentTaskState_();
  setRefreshLoopState_(getRefreshLoopIndex_(), 0, {
   last_status: 'stopped',
@@ -6274,7 +6277,8 @@ function stopRefreshLoop() {
   mode: 'd45_atomic_minute_scheduler_with_prepared_files',
   stopped: true,
   archive_rebuild_trigger: archiveStop,
-  snapshot_refresh_trigger: snapshotStop
+  snapshot_refresh_trigger: snapshotStop,
+  client_tag_map_refresh_trigger: clientTagStop
  };
 }
 
