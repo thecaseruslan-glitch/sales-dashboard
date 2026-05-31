@@ -352,3 +352,26 @@ Verification:
 - Static invariants passed for three-stage loop, resumable sales phase, independent snapshot scheduler, one gzip snapshot, OKR normalization, and removed unused open-time work.
 
 Deployment: not performed.
+
+## 2026-05-31 - D31 Snapshot Retry Timestamp Fix
+
+Base: D30 copied to D31. D30 remains unchanged rollback.
+
+Goal: make the independent snapshot scheduler retry correctly after a failed JSON rebuild.
+
+Fix:
+
+- Snapshot scheduler no longer records a successful 20-minute run before JSON publication completes.
+- Added a separate last-attempt timestamp for diagnostics.
+- Last-success timestamp is saved only after the new gzip JSON snapshot is atomically published.
+- Caught build failures clear the active-build marker, so the next 5-minute scheduler tick can retry.
+- Last attempt and last success are exposed in System metadata.
+
+Verification:
+
+- `node --check sales-dashboard/D31`.
+- Extracted and syntax-checked 5 inline JS blocks from `D31.html`.
+- `git diff --no-index --check` passed against D30 files.
+- Static invariants passed for separate attempt/success timestamps, post-publication success recording, retry behavior, one gzip JSON snapshot, and the independent three-stage main loop.
+
+Deployment: not performed.

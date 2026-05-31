@@ -620,3 +620,39 @@ Rollback note:
 
 - D29 remains unchanged and is the rollback point.
 - D30 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D31 Snapshot Retry Timestamp Fix - 2026-05-31
+
+Request: explain and fix why an independent 20-minute JSON snapshot refresh could still fail to publish a new snapshot after the sales loop reported an error.
+
+Base version:
+
+- `sales-dashboard/D30`
+- `sales-dashboard/D30.html`
+
+Changed files:
+
+- `sales-dashboard/D31`
+- `sales-dashboard/D31.html`
+- `agent-notes/CODER_MEMORY.md`
+- `agent-notes/SALES_DASHBOARD_MEMORY.md`
+
+Implementation:
+
+- Found that `dashboardSnapshotSchedulerTick_()` stored the last-run timestamp before snapshot publication completed. A failed build therefore delayed the next attempt for another 20-minute interval.
+- Added a separate `dashboard_server_snapshot_scheduler_last_attempt_at` meta field.
+- The existing last-run timestamp is now written only after the new gzip JSON snapshot has been built and atomically published successfully.
+- Caught snapshot-build failures clear the active-build marker, allowing the next 5-minute scheduler tick to retry instead of waiting for the full interval.
+- Exposed last-attempt and last-success timestamps in snapshot meta, refresh signal, and System status for diagnostics.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D31`.
+- Extracted and syntax-checked 5 inline JS blocks from `D31.html`.
+- Ran `git diff --no-index --check` against D30 files.
+- Ran static invariants for the three-task main loop, independent scheduler, separate attempt/success timestamps, post-publication success recording, retry-marker cleanup, and one gzip snapshot.
+
+Rollback note:
+
+- D30 remains unchanged and is the rollback point.
+- D31 is local code only; no Apps Script deployment or production Sheet write was performed.
