@@ -245,6 +245,18 @@ function RUN_45_stopDashboardSnapshotRefreshTrigger() {
  return result;
 }
 
+function RUN_46_startClientTagMapRefreshTrigger() {
+  const result = startClientTagMapRefreshTrigger();
+  Logger.log('RUN_46_startClientTagMapRefreshTrigger -> %s', JSON.stringify(result));
+  return result;
+}
+
+function RUN_47_stopClientTagMapRefreshTrigger() {
+  const result = stopClientTagMapRefreshTrigger();
+  Logger.log('RUN_47_stopClientTagMapRefreshTrigger -> %s', JSON.stringify(result));
+  return result;
+}
+
 function ensureClientLtvMetaSheet() {
   return ensureSystemSheet(getSpreadsheet(), SHEET_CLIENT_LTV_META, CLIENT_LTV_META_HEADERS);
 }
@@ -726,6 +738,8 @@ const DASHBOARD_SNAPSHOT_SCHEDULER_LAST_ATTEMPT_AT_META_KEY = 'dashboard_server_
 const DASHBOARD_SNAPSHOT_SCHEDULER_LAST_RUN_AT_META_KEY = 'dashboard_server_snapshot_scheduler_last_run_at';
 const DASHBOARD_SNAPSHOT_SCHEDULER_LAST_ERROR_META_KEY = 'dashboard_server_snapshot_scheduler_last_error';
 const CLIENT_TAG_MAP_REFRESH_META_PREFIX = 'client_tag_map_refresh_';
+const CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER = 'clientTagMapDailySchedulerTick_';
+const CLIENT_TAG_MAP_REFRESH_DAILY_HOURS = [9, 14, 17];
 const CLIENT_TAG_MAP_REFRESH_CONTINUATION_HANDLER = 'continueClientTagMapRefresh_';
 const CLIENT_TAG_MAP_REFRESH_VERSION = 'D14_TAG_MAP_FORCE_REWRITE_V3';
 
@@ -6400,32 +6414,41 @@ function schedulerTick_() {
   }
 }
 
-function installClientTagMapDailyTrigger() {
-  removeTriggersByHandler('refreshClientTagMapNow');
-  removeTriggersByHandler('refreshClientTagMapPart1Now');
-  removeTriggersByHandler('refreshClientTagMapPart2Now');
+function startClientTagMapRefreshTrigger() {
+  removeTriggersByHandler(CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER);
   clearClientTagMapContinuationTrigger_();
+  resetClientTagMapRefreshState_();
 
-  [9, 17].forEach(function(hour) {
-    ScriptApp.newTrigger('refreshClientTagMapPart1Now')
+  CLIENT_TAG_MAP_REFRESH_DAILY_HOURS.forEach(function(hour) {
+    ScriptApp.newTrigger(CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER)
       .timeBased()
       .everyDays(1)
       .atHour(hour)
-      .create();
-  });
-  [10, 18].forEach(function(hour) {
-    ScriptApp.newTrigger('refreshClientTagMapPart2Now')
-      .timeBased()
-      .everyDays(1)
-      .atHour(hour)
+      .nearMinute(0)
       .create();
   });
 
   return {
     ok: true,
-    handlers: ['refreshClientTagMapPart1Now', 'refreshClientTagMapPart2Now'],
-    schedule: 'part1 at 09:00/17:00, part2 at 10:00/18:00'
+    handler: CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER,
+    every_days: 1,
+    at_hours: CLIENT_TAG_MAP_REFRESH_DAILY_HOURS.slice(),
+    mode: 'client_tag_map_daily_cycle_with_continuation'
   };
+}
+
+function stopClientTagMapRefreshTrigger() {
+  removeTriggersByHandler(CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER);
+  clearClientTagMapContinuationTrigger_();
+  return {
+    ok: true,
+    handler: CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER,
+    stopped: true
+  };
+}
+
+function installClientTagMapDailyTrigger() {
+  return startClientTagMapRefreshTrigger();
 }
 
 function installProductStockDailyTrigger() {
@@ -6513,6 +6536,7 @@ function resetProjectStateSafe() {
     'runSalesRefreshLoopStep_',
     'runBalancesRefreshLoopStep_',
     'runStockRefreshLoopStep_',
+    CLIENT_TAG_MAP_REFRESH_DAILY_HANDLER,
     'refreshClientTagMapNow',
     'refreshClientTagMapPart1Now',
     'refreshClientTagMapPart2Now',
@@ -6751,6 +6775,38 @@ function refreshClientTagMapPart1Now() {
 
 function refreshClientTagMapPart2Now() {
   return refreshClientTagMapManualPart_(2);
+}
+
+function clientTagMapDailySchedulerTick_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: 'locked'
+    };
+  }
+
+  try {
+    resetClientTagMapRefreshState_();
+    const result = processClientTagMapRefreshBatches_({
+      started_at_ms: Date.now(),
+      chunk_limit: CLIENT_TAG_MAP_REFRESH_LIMIT
+    });
+    Logger.log('clientTagMapDailySchedulerTick_ -> %s', JSON.stringify(result));
+    return result;
+  } catch (err) {
+    const errorMessage = String(err && err.message ? err.message : err);
+    setClientTagMapRefreshState_({
+      active: '',
+      last_error: errorMessage,
+      last_batch_at: nowText()
+    });
+    clearClientTagMapContinuationTrigger_();
+    throw err;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function processClientTagMapRefreshBatches_(options) {

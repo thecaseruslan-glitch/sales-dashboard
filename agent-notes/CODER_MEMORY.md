@@ -272,6 +272,12 @@ Cleanup follow-up:
 
 - Removed obsolete legacy wrappers from D45: RUN_05B_refreshLoopHeartbeatNow, rebuildDashboardServerSnapshotFullNow_, rebuildDashboardServerSnapshotInsideLockedFlow_, refreshLoopHeartbeat_, refreshLoopWatchdog_, runSalesRefreshLoopStep_, runBalancesRefreshLoopStep_, runStockRefreshLoopStep_, publishSalesRefreshLoopStep_, publishBalancesRefreshLoopStep_, publishStockRefreshLoopStep_, refreshClientTagMapNow, and the dead helper removeRefreshLoopStepTriggers_.
 
+Tag cycle update:
+
+- Added a dedicated client-tag refresh start/stop pair in D45: RUN_46_startClientTagMapRefreshTrigger and RUN_47_stopClientTagMapRefreshTrigger.
+- New client-tag scheduler runs at 09:00, 14:00, and 17:00 via clientTagMapDailySchedulerTick_, then continues through the existing continuation trigger until the refresh completes.
+- installClientTagMapDailyTrigger() is now a compatibility alias to the new start function.
+
 Rollback note:
 
 - The new files are additive. D32 remains an untouched rollback point, and the user-provided D45 attachment remains available in /root/.openclaw/media/inbound/.
