@@ -583,3 +583,40 @@ Rollback note:
 
 - D28 remains unchanged and is the rollback point.
 - D29 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D30 Resumable Sales Step, OKR Read Fix, And Single-Snapshot Startup Optimization - 2026-05-31
+
+Request: keep the D29 architecture with an independent three-step sheet loop and one independent gzip JSON snapshot, fix the observed sales-loop retry state, restore reliable OKR plan reads, and speed up dashboard startup without splitting the snapshot into prepared files.
+
+Base version:
+
+- `sales-dashboard/D29`
+- `sales-dashboard/D29.html`
+
+Changed files:
+
+- `sales-dashboard/D30`
+- `sales-dashboard/D30.html`
+- `agent-notes/CODER_MEMORY.md`
+- `agent-notes/SALES_DASHBOARD_MEMORY.md`
+
+Implementation:
+
+- Kept the visible main loop exactly: sales -> balances -> stock. The independent 20-minute single gzip JSON snapshot scheduler remains unchanged.
+- Split scheduled sales refresh into two resumable internal phases: rewrite current-month source rows, then rebuild the current-month cache on the next scheduler pass. Manual `RUN_06_monthlyRepairNow()` still performs both phases in one call.
+- Added immediate stale-task healing when a timed-out sales execution already reached the cache-pending checkpoint.
+- Normalized OKR month keys and manager tags for live reads and writes, and bumped the frontend OKR localStorage cache key to invalidate stale cached plans.
+- Removed an unused full-archive `collectProductOptionsForAdmin()` computation from the normal snapshot-open path. The result was calculated but never returned to the browser.
+- Avoided an unnecessary `archive.concat(current)` allocation while building snapshot diagnostics.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D30`.
+- Extracted and syntax-checked 5 inline JS script blocks from `D30.html` with `new Function`.
+- Ran `git diff --no-index --check` against `D29` and `D29.html`.
+- Ran static invariants for the exact three-task loop, resumable sales phase, independent 20-minute scheduler, one gzip snapshot, removed unused open-time computation, and normalized OKR path.
+
+Rollback note:
+
+- D29 remains unchanged and is the rollback point.
+- D30 is local code only; no Apps Script deployment or production Sheet write was performed.

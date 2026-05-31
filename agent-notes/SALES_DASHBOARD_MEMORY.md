@@ -329,3 +329,26 @@ Verification:
 - Static invariants passed for three-step main loop, independent lock-free JSON rebuild, supported 5-minute scheduler tick, effective 20-minute snapshot interval, and independent browser heartbeat.
 
 Deployment: not performed. After deployment run manual first snapshot once, then start the loop.
+
+## 2026-05-31 - D30 Resumable Sales Step And Single-Snapshot Startup Optimization
+
+Base: D29 copied to D30. D29 remains unchanged rollback.
+
+Goal: keep one independent gzip JSON snapshot and the independent sales -> balances -> stock loop, while preventing the sales stage from getting stuck after an Apps Script timeout and fixing OKR plan visibility.
+
+Fix:
+
+- Scheduled sales refresh now has two internal resumable passes: rewrite source sales, then rebuild `sales_current_month`. It is still shown as one Sales stage in the three-stage loop.
+- If the first pass finishes but Apps Script times out before scheduler state cleanup, the next tick resumes the cache pass immediately instead of rerunning the full sales fetch.
+- OKR live reads and saves normalize month keys and manager tags; frontend OKR local cache moved to `v5` so stale cached plans do not mask Sheet values.
+- Normal dashboard opening no longer calculates unused product options across the full archive.
+- Snapshot remains one independently published gzip JSON file rebuilt every 20 minutes.
+
+Verification:
+
+- `node --check sales-dashboard/D30`.
+- Extracted and syntax-checked 5 inline JS blocks from `D30.html`.
+- `git diff --no-index --check` passed against D29 files.
+- Static invariants passed for three-stage loop, resumable sales phase, independent snapshot scheduler, one gzip snapshot, OKR normalization, and removed unused open-time work.
+
+Deployment: not performed.
