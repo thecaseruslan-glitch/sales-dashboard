@@ -831,3 +831,40 @@ Rollback note:
 
 - D51 remains the rollback point.
 - D52 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D53 Full Server Refresh Bootstrap and Quiet Background Sync - 2026-06-01
+
+Request: create D53 from D52. Make an ordinary browser refresh behave like a full dashboard opening instead of immediately painting a potentially stale local snapshot, and remove the user-facing service messages shown after cached/background synchronization.
+
+Base version:
+
+- sales-dashboard/D52
+- sales-dashboard/D52.html
+
+Changed files:
+
+- sales-dashboard/D53
+- sales-dashboard/D53.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Kept the D52 backend unchanged and copied it into D53.
+- Changed authenticated page load and post-login bootstrap to wait for the server dashboard payload before painting the normal dashboard state.
+- Kept IndexedDB dashboard snapshot reads only as the existing server-error fallback path.
+- Removed the green service status messages after normal loading and background prefetch/apply so background synchronization stays quiet.
+- Kept refresh-button state labels for the manual fallback case where automatic apply is temporarily blocked by an active input or modal.
+- Kept wake checks on pageshow, focus, and visibilitychange so an open tab can recover polling after browser sleep.
+
+Verification:
+
+- Ran node --check sales-dashboard/D53.
+- Extracted and syntax-checked 6 inline JS script blocks from D53.html with vm.Script.
+- Ran git diff --no-index --check against D52.html.
+- Verified D53 backend is byte-identical to D52.
+- Verified normal load/login use preferLocalSnapshot:false, server-error IndexedDB fallback remains present, removed service phrases are absent, and wake listeners remain present.
+
+Rollback note:
+
+- D52 remains the rollback point.
+- D53 is local code only; no Apps Script deployment or production Sheet write was performed.
