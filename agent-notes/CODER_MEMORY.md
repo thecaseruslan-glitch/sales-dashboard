@@ -929,6 +929,29 @@ Verification:
 Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
+
+## D54 Clients Side-Gutter Removal - 2026-06-03
+
+Request: remove the remaining side gutter from the `Клієнти` tab so it matches the flush outer width feel of `Товари`.
+
+Changed files:
+
+- `sales-dashboard/D54.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Removed the last horizontal padding from the `Клієнти` header and workspace shell.
+- Kept the inner cards and list panels padded, so the tab is flush on the outside but still readable inside.
+
+Verification:
+
+- Ran `git -C projects/sales-dashboard diff --check`.
+- Reviewed the focused diff for `sales-dashboard/D54.html`.
+
+Rollback note:
+
+- The previous `D54` HTML state remains available in git history.
 ## D54 Full-Width Grid Fix - 2026-06-03
 Request: fix the dashboard grid so the main blocks use the full available display width and do not leave empty side space on wide screens.
 Changed files:
