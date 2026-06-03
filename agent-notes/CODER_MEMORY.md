@@ -868,3 +868,41 @@ Rollback note:
 
 - D52 remains the rollback point.
 - D53 is local code only; no Apps Script deployment or production Sheet write was performed.
+
+## D54 Clients 360 Variant - 2026-06-03
+
+Request: create a new sales dashboard version with a visually structured `Клієнти` tab between `Менеджери` and `Баланси`, focused on a read-only client 360 card without contact/task buttons.
+
+Base version:
+
+- `sales-dashboard/D53`
+- `sales-dashboard/D53.html`
+
+Changed files:
+
+- `sales-dashboard/D54`
+- `sales-dashboard/D54.html`
+
+Implementation:
+
+- Copied D53 to D54 so D53 remains the rollback point; backend is unchanged.
+- Added `Клієнти` to sidebar and top navigation.
+- Added a two-column client workspace: prioritized searchable client list on the left and a detailed client 360 card on the right.
+- Added client KPI blocks for revenue, typical monthly turnover, cycle progress, average check, interval, basket potential, balance, and overdue debt.
+- Added a single primary recommendation that prioritizes overdue debt before sales recommendations.
+- Added compact revenue trend and basket structure charts.
+- Added basket-gap recommendations based on similar active clients by annual revenue quartile, with estimated potential and in-stock SKU suggestions.
+- Added in-stock recurring products that are due for replenishment and regular products not purchased for 90+ days.
+- Kept the feature read-only: no task buttons, no contact log, no Google Sheet writes, and no Apps Script deployment.
+
+Verification:
+
+- Confirmed `sales-dashboard/D54` is byte-identical to `sales-dashboard/D53`.
+- Ran `node --check sales-dashboard/D54`.
+- Extracted and syntax-checked 5 inline JS blocks from `D54.html` with `new Function`.
+- Ran a no-index diff whitespace check between D53.html and D54.html.
+- Checked HTML ID / `getElementById` references; D54 introduces no new missing IDs. The existing D53 `toggleAdminBtn` missing reference remains unchanged.
+
+Rollback note:
+
+- D53 remains unchanged and is the rollback point.
