@@ -930,6 +930,30 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## D54 Clients Moved Into Efficiency - 2026-06-03
+
+Request: move the `Клієнти` tab into the `Ефективність` view as the lower block and keep the efficiency grid width / wrapper behavior.
+
+Changed files:
+
+- `sales-dashboard/D54.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Embedded the full `Клієнти 360°` block as the last `efficiency-span-12` section inside `Ефективність`.
+- Removed the separate standalone `Клієнти` tab view state and made the Clients nav point to the efficiency page plus the embedded block.
+- Kept the existing client 360 rendering logic intact and wired it to render from within the efficiency view.
+
+Verification:
+
+- Ran `git -C projects/sales-dashboard diff --check`.
+- Checked that `clientsView` appears only once in `D54.html` and now sits within the efficiency layout.
+
+Rollback note:
+
+- The previous `D54` HTML state remains available in git history.
+
 ## D54 Clients Side-Gutter Removal - 2026-06-03
 
 Request: remove the remaining side gutter from the `Клієнти` tab so it matches the flush outer width feel of `Товари`.

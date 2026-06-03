@@ -8028,87 +8028,6 @@ html, body{
         </div>
       </div>
 
-      <div id="clientsView" class="card clients-view-card hidden-view">
-        <div class="block-title clients-view-head">
-          <div>
-            <h2>Клієнти 360°</h2>
-            <div id="clientsViewMeta" class="hint">Єдина картка клієнта: стан, потенціал, фінанси та товарні підказки.</div>
-          </div>
-          <div class="clients-toolbar">
-            <input id="clientsSearchInput" type="text" placeholder="Пошук клієнта">
-            <select id="clientsStatusFilter">
-              <option value="all">Усі статуси</option>
-              <option value="attention">Потребують уваги</option>
-              <option value="growth">Є потенціал розвитку</option>
-              <option value="debt">Є протермінування</option>
-              <option value="stopped">60+ днів без закупівлі</option>
-            </select>
-            <select id="clientsSortMode">
-              <option value="priority">Сортувати: пріоритет</option>
-              <option value="potential">Сортувати: потенціал</option>
-              <option value="days">Сортувати: дні без закупівлі</option>
-              <option value="ltv">Сортувати: LTV</option>
-              <option value="debt">Сортувати: борг</option>
-            </select>
-          </div>
-        </div>
-        <div class="clients-workspace">
-          <aside class="clients-list-panel">
-            <div class="clients-list-title">
-              <strong>Клієнти</strong>
-              <span id="clientsListMeta">0</span>
-            </div>
-            <div id="clientsList" class="clients-list"></div>
-          </aside>
-          <section id="client360Panel" class="client360-panel">
-            <div id="client360Empty" class="client360-empty">Обери клієнта зліва, щоб відкрити картку 360°.</div>
-            <div id="client360Content" class="hidden-view">
-              <div class="client360-hero">
-                <div>
-                  <div class="client360-eyebrow">Картка клієнта 360°</div>
-                  <h2 id="client360Title">—</h2>
-                  <div id="client360Sub" class="client360-sub">—</div>
-                </div>
-                <div id="client360Status" class="client360-status">—</div>
-              </div>
-              <div id="client360Kpis" class="client360-kpi-grid"></div>
-              <div id="client360Progress" class="client360-progress"></div>
-              <div id="client360Action" class="client360-action"></div>
-              <div class="client360-grid">
-                <div class="client360-card client360-span-12">
-                  <div class="client360-card-head"><h3>Динаміка клієнтів (у %)</h3><span id="client360DynamicsMeta">місяць до попереднього місяця</span></div>
-                  <div id="client360Dynamics" class="client360-dynamics"></div>
-                </div>
-                <div class="client360-card client360-span-7">
-                  <div class="client360-card-head"><h3>Динаміка обороту</h3><span id="client360RevenueMeta">—</span></div>
-                  <div class="client360-chart-shell"><canvas id="client360RevenueChart"></canvas></div>
-                </div>
-                <div class="client360-card client360-span-5">
-                  <div class="client360-card-head"><h3>Структура кошика</h3><span>за 12 місяців</span></div>
-                  <div class="client360-chart-shell donut"><canvas id="client360BasketChart"></canvas></div>
-                </div>
-                <div class="client360-card client360-span-12">
-                  <div class="client360-card-head"><h3>Що запропонувати</h3><span>прогалини кошика та доступні SKU</span></div>
-                  <div id="client360Opportunities" class="client360-opportunities"></div>
-                </div>
-                <div class="client360-card client360-span-12">
-                  <div class="client360-card-head"><h3>Аналіз клієнта</h3><span id="client360AnalysisMeta">поточний місяць проти попереднього</span></div>
-                  <div id="client360Analysis"></div>
-                </div>
-                <div class="client360-card client360-span-6">
-                  <div class="client360-card-head"><h3>Час поповнювати</h3><span>регулярні SKU у залишку</span></div>
-                  <div id="client360DueProducts" class="client360-list-block"></div>
-                </div>
-                <div class="client360-card client360-span-6">
-                  <div class="client360-card-head"><h3>Перестав купувати</h3><span>регулярні SKU, пауза 90+ днів</span></div>
-                  <div id="client360DormantProducts" class="client360-list-block"></div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-
       <div id="paymentsView" class="card payments-view-card hidden-view">
         <div class="block-title">
           <h2>Баланси клієнтів</h2>
@@ -8984,6 +8903,166 @@ html, body{
               <div id="efficiencyPlanProgressList" class="okr-progress-stack"></div>
             </div>
           </div>
+      <div id="clientsView" class="card clients-view-card">
+        <div class="block-title clients-view-head">
+          <div>
+            <h2>Клієнти 360°</h2>
+            <div id="clientsViewMeta" class="hint">Єдина картка клієнта: стан, потенціал, фінанси та товарні підказки.</div>
+          </div>
+          <div class="clients-toolbar">
+            <input id="clientsSearchInput" type="text" placeholder="Пошук клієнта">
+            <select id="clientsStatusFilter">
+              <option value="all">Усі статуси</option>
+              <option value="attention">Потребують уваги</option>
+              <option value="growth">Є потенціал розвитку</option>
+              <option value="debt">Є протермінування</option>
+              <option value="stopped">60+ днів без закупівлі</option>
+            </select>
+            <select id="clientsSortMode">
+              <option value="priority">Сортувати: пріоритет</option>
+              <option value="potential">Сортувати: потенціал</option>
+              <option value="days">Сортувати: дні без закупівлі</option>
+              <option value="ltv">Сортувати: LTV</option>
+              <option value="debt">Сортувати: борг</option>
+            </select>
+          </div>
+        </div>
+        <div class="clients-workspace">
+          <aside class="clients-list-panel">
+            <div class="clients-list-title">
+              <strong>Клієнти</strong>
+              <span id="clientsListMeta">0</span>
+            </div>
+            <div id="clientsList" class="clients-list"></div>
+          </aside>
+          <section id="client360Panel" class="client360-panel">
+            <div id="client360Empty" class="client360-empty">Обери клієнта зліва, щоб відкрити картку 360°.</div>
+            <div id="client360Content" class="hidden-view">
+              <div class="client360-hero">
+                <div>
+                  <div class="client360-eyebrow">Картка клієнта 360°</div>
+                  <h2 id="client360Title">—</h2>
+                  <div id="client360Sub" class="client360-sub">—</div>
+                </div>
+                <div id="client360Status" class="client360-status">—</div>
+              </div>
+              <div id="client360Kpis" class="client360-kpi-grid"></div>
+              <div id="client360Progress" class="client360-progress"></div>
+              <div id="client360Action" class="client360-action"></div>
+              <div class="client360-grid">
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Динаміка клієнтів (у %)</h3><span id="client360DynamicsMeta">місяць до попереднього місяця</span></div>
+                  <div id="client360Dynamics" class="client360-dynamics"></div>
+                </div>
+                <div class="client360-card client360-span-7">
+                  <div class="client360-card-head"><h3>Динаміка обороту</h3><span id="client360RevenueMeta">—</span></div>
+                  <div class="client360-chart-shell"><canvas id="client360RevenueChart"></canvas></div>
+                </div>
+                <div class="client360-card client360-span-5">
+                  <div class="client360-card-head"><h3>Структура кошика</h3><span>за 12 місяців</span></div>
+                  <div class="client360-chart-shell donut"><canvas id="client360BasketChart"></canvas></div>
+                </div>
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Що запропонувати</h3><span>прогалини кошика та доступні SKU</span></div>
+                  <div id="client360Opportunities" class="client360-opportunities"></div>
+                </div>
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Аналіз клієнта</h3><span id="client360AnalysisMeta">поточний місяць проти попереднього</span></div>
+                  <div id="client360Analysis"></div>
+                </div>
+                <div class="client360-card client360-span-6">
+                  <div class="client360-card-head"><h3>Час поповнювати</h3><span>регулярні SKU у залишку</span></div>
+                  <div id="client360DueProducts" class="client360-list-block"></div>
+                </div>
+                <div class="client360-card client360-span-6">
+                  <div class="client360-card-head"><h3>Перестав купувати</h3><span>регулярні SKU, пауза 90+ днів</span></div>
+                  <div id="client360DormantProducts" class="client360-list-block"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+        </div>
+      </div>
+
+        <div class="block-title clients-view-head">
+          <div>
+            <h2>Клієнти 360°</h2>
+            <div id="clientsViewMeta" class="hint">Єдина картка клієнта: стан, потенціал, фінанси та товарні підказки.</div>
+          </div>
+          <div class="clients-toolbar">
+            <input id="clientsSearchInput" type="text" placeholder="Пошук клієнта">
+            <select id="clientsStatusFilter">
+              <option value="all">Усі статуси</option>
+              <option value="attention">Потребують уваги</option>
+              <option value="growth">Є потенціал розвитку</option>
+              <option value="debt">Є протермінування</option>
+              <option value="stopped">60+ днів без закупівлі</option>
+            </select>
+            <select id="clientsSortMode">
+              <option value="priority">Сортувати: пріоритет</option>
+              <option value="potential">Сортувати: потенціал</option>
+              <option value="days">Сортувати: дні без закупівлі</option>
+              <option value="ltv">Сортувати: LTV</option>
+              <option value="debt">Сортувати: борг</option>
+            </select>
+          </div>
+        </div>
+        <div class="clients-workspace">
+          <aside class="clients-list-panel">
+            <div class="clients-list-title">
+              <strong>Клієнти</strong>
+              <span id="clientsListMeta">0</span>
+            </div>
+            <div id="clientsList" class="clients-list"></div>
+          </aside>
+          <section id="client360Panel" class="client360-panel">
+            <div id="client360Empty" class="client360-empty">Обери клієнта зліва, щоб відкрити картку 360°.</div>
+            <div id="client360Content" class="hidden-view">
+              <div class="client360-hero">
+                <div>
+                  <div class="client360-eyebrow">Картка клієнта 360°</div>
+                  <h2 id="client360Title">—</h2>
+                  <div id="client360Sub" class="client360-sub">—</div>
+                </div>
+                <div id="client360Status" class="client360-status">—</div>
+              </div>
+              <div id="client360Kpis" class="client360-kpi-grid"></div>
+              <div id="client360Progress" class="client360-progress"></div>
+              <div id="client360Action" class="client360-action"></div>
+              <div class="client360-grid">
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Динаміка клієнтів (у %)</h3><span id="client360DynamicsMeta">місяць до попереднього місяця</span></div>
+                  <div id="client360Dynamics" class="client360-dynamics"></div>
+                </div>
+                <div class="client360-card client360-span-7">
+                  <div class="client360-card-head"><h3>Динаміка обороту</h3><span id="client360RevenueMeta">—</span></div>
+                  <div class="client360-chart-shell"><canvas id="client360RevenueChart"></canvas></div>
+                </div>
+                <div class="client360-card client360-span-5">
+                  <div class="client360-card-head"><h3>Структура кошика</h3><span>за 12 місяців</span></div>
+                  <div class="client360-chart-shell donut"><canvas id="client360BasketChart"></canvas></div>
+                </div>
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Що запропонувати</h3><span>прогалини кошика та доступні SKU</span></div>
+                  <div id="client360Opportunities" class="client360-opportunities"></div>
+                </div>
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Аналіз клієнта</h3><span id="client360AnalysisMeta">поточний місяць проти попереднього</span></div>
+                  <div id="client360Analysis"></div>
+                </div>
+                <div class="client360-card client360-span-6">
+                  <div class="client360-card-head"><h3>Час поповнювати</h3><span>регулярні SKU у залишку</span></div>
+                  <div id="client360DueProducts" class="client360-list-block"></div>
+                </div>
+                <div class="client360-card client360-span-6">
+                  <div class="client360-card-head"><h3>Перестав купувати</h3><span>регулярні SKU, пауза 90+ днів</span></div>
+                  <div id="client360DormantProducts" class="client360-list-block"></div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -11149,10 +11228,6 @@ html, body{
         renderManagerDashboard();
         managerDashboardDirty = false;
       }
-      if (activeDashboardView === 'clients' && (force || clientsDashboardDirty)) {
-        renderClientsDashboard();
-        clientsDashboardDirty = false;
-      }
       if (activeDashboardView === 'products' && (force || productsDashboardDirty)) {
         renderProductsDashboard();
         productsDashboardDirty = false;
@@ -11169,9 +11244,10 @@ html, body{
         renderBonusesDashboard();
         bonusesDashboardDirty = false;
       }
-      if (activeDashboardView === 'efficiency' && (force || efficiencyDashboardDirty)) {
+      if (activeDashboardView === 'efficiency' && (force || efficiencyDashboardDirty || clientsDashboardDirty)) {
         renderEfficiencyDashboard();
         efficiencyDashboardDirty = false;
+        clientsDashboardDirty = false;
       }
     }
 
@@ -12924,7 +13000,7 @@ html, body{
       activeDashboardView = view === 'managers'
         ? 'managers'
         : view === 'clients'
-          ? 'clients'
+          ? 'efficiency'
         : view === 'payments'
           ? 'payments'
           : view === 'okr'
@@ -12934,24 +13010,24 @@ html, body{
               : view === 'efficiency'
                 ? 'efficiency'
                 : 'products';
+      dashboardFocusSection = view === 'clients' ? 'clients' : '';
       if (navProductsBtn) navProductsBtn.classList.toggle('active', activeDashboardView === 'products');
       if (navManagersBtn) navManagersBtn.classList.toggle('active', activeDashboardView === 'managers');
-      if (navClientsBtn) navClientsBtn.classList.toggle('active', activeDashboardView === 'clients');
+      if (navClientsBtn) navClientsBtn.classList.toggle('active', dashboardFocusSection === 'clients');
       if (navPaymentsBtn) navPaymentsBtn.classList.toggle('active', activeDashboardView === 'payments');
       if (navOkrBtn) navOkrBtn.classList.toggle('active', activeDashboardView === 'okr');
       if (navBonusesBtn) navBonusesBtn.classList.toggle('active', activeDashboardView === 'bonuses');
       if (navEfficiencyBtn) navEfficiencyBtn.classList.toggle('active', activeDashboardView === 'efficiency');
       if (topProductsTabBtn) topProductsTabBtn.classList.toggle('active', activeDashboardView === 'products');
       if (topManagersTabBtn) topManagersTabBtn.classList.toggle('active', activeDashboardView === 'managers');
-      if (topClientsTabBtn) topClientsTabBtn.classList.toggle('active', activeDashboardView === 'clients');
+      if (topClientsTabBtn) topClientsTabBtn.classList.toggle('active', dashboardFocusSection === 'clients');
       if (topPaymentsTabBtn) topPaymentsTabBtn.classList.toggle('active', activeDashboardView === 'payments');
       if (topOkrTabBtn) topOkrTabBtn.classList.toggle('active', activeDashboardView === 'okr');
       if (topBonusesTabBtn) topBonusesTabBtn.classList.toggle('active', activeDashboardView === 'bonuses');
-      if (topEfficiencyTabBtn) topEfficiencyTabBtn.classList.toggle('active', activeDashboardView === 'efficiency');
+      if (topEfficiencyTabBtn) topEfficiencyTabBtn.classList.toggle('active', activeDashboardView === 'efficiency' && dashboardFocusSection !== 'clients');
 
       productsViewItems.forEach(item => item.classList.toggle('hidden-view', activeDashboardView !== 'products'));
       if (managerView) managerView.classList.toggle('hidden-view', activeDashboardView !== 'managers');
-      if (clientsView) clientsView.classList.toggle('hidden-view', activeDashboardView !== 'clients');
       if (paymentsView) paymentsView.classList.toggle('hidden-view', activeDashboardView !== 'payments');
       if (okrView) okrView.classList.toggle('hidden-view', activeDashboardView !== 'okr');
       if (bonusesView) bonusesView.classList.toggle('hidden-view', activeDashboardView !== 'bonuses');
@@ -12960,8 +13036,6 @@ html, body{
       if (dashboardTitle) {
         dashboardTitle.textContent = activeDashboardView === 'managers'
           ? 'Аналітика по менеджерах'
-          : activeDashboardView === 'clients'
-            ? 'Клієнти 360°'
           : activeDashboardView === 'payments'
             ? 'Баланси / Контроль клієнтів'
           : activeDashboardView === 'okr'
@@ -12975,8 +13049,6 @@ html, body{
       if (dashboardSubtitle) {
         dashboardSubtitle.textContent = activeDashboardView === 'managers'
           ? 'Вкладка працює на тих самих уже завантажених даних і не втручається в логін чи старт дашборду.'
-          : activeDashboardView === 'clients'
-            ? 'Єдина картка клієнта: стан, потенціал розвитку, фінансові стоп-фактори та конкретні товарні підказки.'
           : activeDashboardView === 'payments'
             ? 'Беремо поточні баланси з balances і показуємо тільки тих клієнтів, які реально присутні в sales.'
           : activeDashboardView === 'okr'
@@ -16855,6 +16927,8 @@ html, body{
         }
       }
       renderEfficiencyPlanProgress(okrMonthKey);
+      renderClientsDashboard();
+      clientsDashboardDirty = false;
     }
     }
 
@@ -22852,7 +22926,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
           invalidateManagerRenderCache();
           renderManagerPredictiveActions();
           clientsDashboardDirty = true;
-          if (activeDashboardView === 'clients') renderClientsDashboard();
+          if (activeDashboardView === 'efficiency') renderClientsDashboard();
           hideStatus();
         } catch (err) {
           showStatus('Не вдалося завантажити залишки: ' + err.message);
@@ -23120,7 +23194,12 @@ function renderClientNameForLtv(clientName, extraHtml) {
     if (navClientsBtn) {
       navClientsBtn.addEventListener('click', () => {
         void switchDashboardViewWithLoader('clients', {
-          afterSwitch: () => Promise.resolve(ensureManagerStockLoaded()).catch(() => {})
+          afterSwitch: async () => {
+            await Promise.resolve(ensureManagerStockLoaded()).catch(() => {});
+            requestAnimationFrame(() => {
+              clientsView && clientsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
         });
       });
     }
@@ -23132,7 +23211,12 @@ function renderClientNameForLtv(clientName, extraHtml) {
     if (topClientsTabBtn) {
       topClientsTabBtn.addEventListener('click', () => {
         void switchDashboardViewWithLoader('clients', {
-          afterSwitch: () => Promise.resolve(ensureManagerStockLoaded()).catch(() => {})
+          afterSwitch: async () => {
+            await Promise.resolve(ensureManagerStockLoaded()).catch(() => {});
+            requestAnimationFrame(() => {
+              clientsView && clientsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
         });
       });
     }
@@ -23181,7 +23265,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     [clientsSearchInput, clientsStatusFilter, clientsSortMode].forEach(control => {
       if (!control) return;
       control.addEventListener(control === clientsSearchInput ? 'input' : 'change', () => {
-        if (activeDashboardView === 'clients') renderClientsDashboard();
+        if (activeDashboardView === 'efficiency') renderClientsDashboard();
       });
     });
     if (topPaymentsTabBtn) {
@@ -24169,6 +24253,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let slowProductsProgressSortDirection = 0;
     let slowProductsLastSaleSortDirection = 0;
 	    let activeDashboardView = 'products';
+	    let dashboardFocusSection = '';
 	    let managerDeferredRenderToken = 0;
     let managerDeferredRenderPromise = Promise.resolve();
 	    let managerLifetimeLtvCache = new Map();
