@@ -7201,7 +7201,8 @@ html, body{
 </style>
 
 <style>
-  .clients-view-card{width:100%;max-width:100%;padding:22px}
+  #clientsView,.clients-view-card{width:100% !important;max-width:100% !important;margin-left:0 !important;margin-right:0 !important;box-sizing:border-box !important;grid-column:1/-1 !important;justify-self:stretch !important}
+  .clients-view-card{padding:22px}
   .clients-view-head{align-items:flex-start}
   .clients-toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .clients-toolbar input{min-width:230px}.clients-toolbar select{min-width:190px}
@@ -7222,14 +7223,17 @@ html, body{
   .client360-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
   .client360-kpi{border:1px solid #e3ebf5;background:#fff;border-radius:18px;padding:13px;min-width:0}.client360-kpi .label{display:block;font-size:12px;color:#718198;margin-bottom:5px}.client360-kpi .value{display:block;font-size:20px;font-weight:900;color:#172033;overflow:hidden;text-overflow:ellipsis}.client360-kpi .sub{display:block;margin-top:4px;font-size:11px;color:#8a9aaf}
   .client360-action{border:1px solid #bfdbfe;background:linear-gradient(135deg,#eff6ff,#f8fbff);border-radius:20px;padding:16px 18px;margin-bottom:14px;color:#1e3a5f;line-height:1.45}.client360-action.bad{border-color:#fecaca;background:linear-gradient(135deg,#fff1f2,#fff7f7);color:#881337}.client360-action strong{display:block;margin-bottom:4px;font-size:15px}
+  .client360-progress{border:1px solid #dbe7f5;background:#fff;border-radius:20px;padding:15px 18px;margin-bottom:14px}.client360-progress-top{display:grid;grid-template-columns:minmax(180px,1fr) auto auto;gap:14px;align-items:center;margin-bottom:10px}.client360-progress-title{font-size:13px;font-weight:850;color:#243b5a}.client360-progress-value{font-size:13px;font-weight:900;color:#172033}.client360-progress-sub{font-size:12px;color:#64748b}.client360-progress-bar{height:11px;border-radius:999px;background:#e8eef7;overflow:hidden}.client360-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#0ea5e9,#22c55e);transition:width .25s ease}
   .client360-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.client360-span-12{grid-column:span 12}.client360-span-7{grid-column:span 7}.client360-span-6{grid-column:span 6}.client360-span-5{grid-column:span 5}
   .client360-card{border:1px solid #e3ebf5;background:#fff;border-radius:22px;padding:16px;min-width:0}.client360-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.client360-card-head h3{margin:0;font-size:17px}.client360-card-head span{font-size:12px;color:#718198;text-align:right}
   .client360-chart-shell{height:230px;position:relative}.client360-chart-shell.donut{height:230px}
-  .client360-opportunities{display:flex;flex-direction:column;gap:9px}.client360-opportunity{display:grid;grid-template-columns:minmax(170px,1.4fr) repeat(3,minmax(90px,.7fr)) minmax(210px,1.5fr);gap:10px;align-items:center;padding:11px 12px;border:1px solid #e7eef7;border-radius:15px;background:#fbfdff;font-size:12px}.client360-opportunity .name{font-weight:850;color:#243b5a}.client360-opportunity .potential{font-weight:900;color:#0369a1}.client360-opportunity .skus{color:#51657d}
+  .client360-opportunities{display:flex;flex-direction:column;gap:9px}.client360-opportunity{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(110px,.7fr) minmax(110px,.7fr) minmax(260px,1.8fr);gap:10px;align-items:center;padding:11px 12px;border:1px solid #e7eef7;border-radius:15px;background:#fbfdff;font-size:12px}.client360-opportunity .name{font-weight:850;color:#243b5a}.client360-opportunity .potential{font-weight:900;color:#0369a1}.client360-opportunity .skus{color:#51657d}
+  .client360-dynamics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.client360-dynamic-item{border:1px solid #e7eef7;background:#fbfdff;border-radius:15px;padding:11px;min-width:0}.client360-dynamic-month{font-size:11px;color:#718198;margin-bottom:6px}.client360-dynamic-value{font-size:18px;font-weight:900;color:#172033}.client360-dynamic-value.good{color:#15803d}.client360-dynamic-value.bad{color:#b91c1c}.client360-dynamic-sub{font-size:11px;color:#718198;margin-top:5px}.client360-dynamic-bar{height:5px;border-radius:999px;background:#e8eef7;overflow:hidden;margin-top:8px}.client360-dynamic-fill{height:100%;border-radius:999px;background:#2563eb}.client360-dynamic-fill.good{background:#22c55e}.client360-dynamic-fill.bad{background:#ef4444}
+  .client360-analysis-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}.client360-analysis-stat{border:1px solid #e7eef7;background:#fbfdff;border-radius:15px;padding:12px}.client360-analysis-stat .label{display:block;font-size:11px;color:#718198}.client360-analysis-stat .value{display:block;font-size:18px;font-weight:900;margin-top:5px;color:#172033}.client360-analysis-stat .value.good{color:#15803d}.client360-analysis-stat .value.bad{color:#b91c1c}.client360-analysis-sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.client360-analysis-section{border:1px solid #e7eef7;border-radius:15px;padding:13px;color:#51657d;font-size:12px;line-height:1.5}.client360-analysis-section h4{margin:0 0 7px;color:#243b5a;font-size:13px}
   .client360-list-block{display:flex;flex-direction:column;gap:8px}.client360-product{padding:10px 11px;border:1px solid #e7eef7;border-radius:14px;background:#fbfdff}.client360-product .name{font-size:13px;font-weight:800;color:#243b5a}.client360-product .sub{font-size:11px;color:#718198;margin-top:4px}
   .client360-muted{padding:14px;border:1px dashed #d4deea;border-radius:14px;color:#8190a3;font-size:13px;text-align:center}
-  @media(max-width:1180px){.clients-workspace{grid-template-columns:280px minmax(0,1fr)}.client360-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.client360-span-7,.client360-span-5{grid-column:span 12}.client360-opportunity{grid-template-columns:1fr 1fr}.client360-opportunity .skus{grid-column:1/-1}}
-  @media(max-width:820px){.clients-workspace{grid-template-columns:1fr}.clients-list-panel{position:static;max-height:360px}.clients-list{max-height:290px}.client360-span-6{grid-column:span 12}.clients-toolbar{justify-content:stretch}.clients-toolbar input,.clients-toolbar select{width:100%;min-width:0}}
+  @media(max-width:1180px){.clients-workspace{grid-template-columns:280px minmax(0,1fr)}.client360-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.client360-span-7,.client360-span-5{grid-column:span 12}.client360-opportunity{grid-template-columns:1fr 1fr}.client360-opportunity .skus{grid-column:1/-1}.client360-dynamics{grid-template-columns:repeat(3,minmax(0,1fr))}.client360-analysis-sections{grid-template-columns:1fr}}
+  @media(max-width:820px){.clients-workspace{grid-template-columns:1fr}.clients-list-panel{position:static;max-height:360px}.clients-list{max-height:290px}.client360-span-6{grid-column:span 12}.clients-toolbar{justify-content:stretch}.clients-toolbar input,.clients-toolbar select{width:100%;min-width:0}.client360-progress-top{grid-template-columns:1fr}.client360-analysis-stats,.client360-dynamics{grid-template-columns:1fr}}
 </style>
 
 </head>
@@ -8068,8 +8072,13 @@ html, body{
                 <div id="client360Status" class="client360-status">—</div>
               </div>
               <div id="client360Kpis" class="client360-kpi-grid"></div>
+              <div id="client360Progress" class="client360-progress"></div>
               <div id="client360Action" class="client360-action"></div>
               <div class="client360-grid">
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Динаміка клієнтів (у %)</h3><span id="client360DynamicsMeta">місяць до попереднього місяця</span></div>
+                  <div id="client360Dynamics" class="client360-dynamics"></div>
+                </div>
                 <div class="client360-card client360-span-7">
                   <div class="client360-card-head"><h3>Динаміка обороту</h3><span id="client360RevenueMeta">—</span></div>
                   <div class="client360-chart-shell"><canvas id="client360RevenueChart"></canvas></div>
@@ -8079,8 +8088,12 @@ html, body{
                   <div class="client360-chart-shell donut"><canvas id="client360BasketChart"></canvas></div>
                 </div>
                 <div class="client360-card client360-span-12">
-                  <div class="client360-card-head"><h3>Що запропонувати</h3><span>порівняння зі схожими активними клієнтами</span></div>
+                  <div class="client360-card-head"><h3>Що запропонувати</h3><span>прогалини кошика та доступні SKU</span></div>
                   <div id="client360Opportunities" class="client360-opportunities"></div>
+                </div>
+                <div class="client360-card client360-span-12">
+                  <div class="client360-card-head"><h3>Аналіз клієнта</h3><span id="client360AnalysisMeta">поточний місяць проти попереднього</span></div>
+                  <div id="client360Analysis"></div>
                 </div>
                 <div class="client360-card client360-span-6">
                   <div class="client360-card-head"><h3>Час поповнювати</h3><span>регулярні SKU у залишку</span></div>
@@ -9874,11 +9887,16 @@ html, body{
     const client360Sub = document.getElementById('client360Sub');
     const client360Status = document.getElementById('client360Status');
     const client360Kpis = document.getElementById('client360Kpis');
+    const client360Progress = document.getElementById('client360Progress');
     const client360Action = document.getElementById('client360Action');
+    const client360DynamicsMeta = document.getElementById('client360DynamicsMeta');
+    const client360Dynamics = document.getElementById('client360Dynamics');
     const client360RevenueMeta = document.getElementById('client360RevenueMeta');
     const client360RevenueCanvas = document.getElementById('client360RevenueChart');
     const client360BasketCanvas = document.getElementById('client360BasketChart');
     const client360Opportunities = document.getElementById('client360Opportunities');
+    const client360AnalysisMeta = document.getElementById('client360AnalysisMeta');
+    const client360Analysis = document.getElementById('client360Analysis');
     const client360DueProducts = document.getElementById('client360DueProducts');
     const client360DormantProducts = document.getElementById('client360DormantProducts');
     const paymentsRankingCard = document.getElementById('paymentsRankingCard');
@@ -20578,9 +20596,12 @@ function renderClientNameForLtv(clientName, extraHtml) {
         item.potential = item.opportunities.slice(0, 3).reduce((sum, entry) => sum + entry.potential, 0);
         item.productInsights = buildClientProductInsights(item.allRows, referenceDate);
         item.ltv = item.action.avgMonthlyRevenue || item.revenue / 12;
-        const due = Math.abs(parseNumber(item.balance && item.balance.dueAmount));
-        if (due > 5) {
-          item.tone = 'bad'; item.status = 'Спочатку оплата';
+        const manualLifecycleStatus = getClientManualLifecycleStatus(item.client);
+        const newClientProfile = buildNewClientBonusProfile(item.client);
+        if (manualLifecycleStatus === 'return' || item.action.recoveredFromStoppedToday || (Number(item.action.gapBeforeLast || 0) >= 60 && item.daysSinceLast < 60)) {
+          item.tone = 'growth'; item.status = 'Повернутий після паузи';
+        } else if (manualLifecycleStatus === 'new' || newClientProfile && newClientProfile.active) {
+          item.tone = 'growth'; item.status = 'Новий';
         } else if (item.daysSinceLast >= 60) {
           item.tone = 'bad'; item.status = '60+ днів без закупівлі';
         } else if (item.action.status && item.action.status !== 'ok') {
@@ -20635,6 +20656,93 @@ function renderClientNameForLtv(clientName, extraHtml) {
       client360BasketChart = new Chart(client360BasketCanvas, { type: 'doughnut', data: { labels: groups.map(row => row[0]), datasets: [{ data: groups.map(row => row[1]), backgroundColor: colorArray(groups.length), borderColor: '#fff', borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '58%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true } } } } });
     }
 
+    function getClient360Comparison(item) {
+      const monthly = buildClientMonthlyStats(item.allRows);
+      const map = new Map(monthly.map(row => [row.month, row]));
+      const referenceMonth = getClient360ReferenceDate().slice(0, 7);
+      const monthB = map.has(referenceMonth) ? referenceMonth : (monthly.length ? monthly[monthly.length - 1].month : referenceMonth);
+      const monthA = getMonthShiftKey(monthB, -1);
+      const previous = map.get(monthA) || { month: monthA, revenue: 0, orders: 0 };
+      const current = map.get(monthB) || { month: monthB, revenue: 0, orders: 0 };
+      const previousAvgCheck = previous.orders > 0 ? previous.revenue / previous.orders : 0;
+      const currentAvgCheck = current.orders > 0 ? current.revenue / current.orders : 0;
+      const sixMonthRows = [];
+      for (let shift = -5; shift <= 0; shift += 1) {
+        const month = getMonthShiftKey(monthB, shift);
+        const row = map.get(month) || { month, revenue: 0, orders: 0 };
+        const prior = map.get(getMonthShiftKey(month, -1)) || { revenue: 0 };
+        const pct = prior.revenue > 0 ? ((row.revenue - prior.revenue) / prior.revenue) * 100 : (row.revenue > 0 ? 100 : 0);
+        sixMonthRows.push({ month, revenue: row.revenue, pct });
+      }
+      const historyValues = sixMonthRows.map(row => row.revenue);
+      const avgRevenue = historyValues.length ? mean(historyValues) : 0;
+      return {
+        monthA,
+        monthB,
+        previousRevenue: previous.revenue,
+        currentRevenue: current.revenue,
+        previousAvgCheck,
+        currentAvgCheck,
+        sumDelta: current.revenue - previous.revenue,
+        ordersDelta: current.orders - previous.orders,
+        avgCheckPct: previousAvgCheck > 0 ? ((currentAvgCheck - previousAvgCheck) / previousAvgCheck) * 100 : (currentAvgCheck > 0 ? 100 : 0),
+        avgRevenue,
+        avgOrders: 0,
+        sixMonthRows
+      };
+    }
+
+    function renderClient360DynamicsBlock(comparison) {
+      if (!client360Dynamics) return;
+      const maxPct = Math.max(1, ...comparison.sixMonthRows.map(row => Math.abs(row.pct)));
+      if (client360DynamicsMeta) client360DynamicsMeta.textContent = `${formatShortMonthLabel(comparison.monthB)} проти попередніх місяців`;
+      client360Dynamics.innerHTML = comparison.sixMonthRows.map(row => {
+        const tone = row.pct > 0 ? 'good' : (row.pct < 0 ? 'bad' : '');
+        const width = Math.max(3, Math.min(100, Math.abs(row.pct) / maxPct * 100));
+        return `<div class="client360-dynamic-item"><div class="client360-dynamic-month">${formatShortMonthLabel(row.month)}</div><div class="client360-dynamic-value ${tone}">${row.pct >= 0 ? '+' : ''}${row.pct.toFixed(1)}%</div><div class="client360-dynamic-sub">оборот ${formatMoneyUsd(row.revenue)}</div><div class="client360-dynamic-bar"><div class="client360-dynamic-fill ${tone}" style="width:${width}%"></div></div></div>`;
+      }).join('');
+    }
+
+    function buildClient360Recommendation(item, comparison, due, overdueMaxDays) {
+      const action = item.action || {};
+      const topOpportunity = item.opportunities[0];
+      const dueProducts = item.productInsights && item.productInsights.due || [];
+      const sentences = [];
+      const progress = Number(action.progressPct || 0);
+      sentences.push(`Клієнт виконав ${progress.toFixed(1)}% свого звичного місячного обороту: зараз ${formatMoneyUsd(action.currentRevenue || 0)} із орієнтира ${formatMoneyUsd(action.targetRevenue || action.targetMonthlyRevenue || item.ltv)} та ${action.currentOrders || 0}/${action.targetOrdersRounded || 0} відгрузки.`);
+      if (topOpportunity) {
+        sentences.push(`Найбільший резерв розвитку — група «${topOpportunity.group}»: її частка у кошику клієнта лише ${(topOpportunity.actualShare * 100).toFixed(1)}%, а розрахунковий потенціал допродажу становить близько ${formatMoneyUsd(topOpportunity.potential)}.`);
+        const products = topOpportunity.products.map(product => `${product.sku} (${fmt(product.stock)} шт.)`).join(', ');
+        sentences.push(products ? `Менеджеру варто запропонувати ${products}, пояснивши це як доповнення до поточного асортименту клієнта.` : `Менеджеру варто підібрати доступні позиції цієї групи під поточний асортимент клієнта.`);
+      } else if (dueProducts.length) {
+        sentences.push(`Помітних прогалин кошика не виявлено, тому найкраща дія — повернути в замовлення регулярні позиції, які вже вийшли за звичний цикл: ${dueProducts.slice(0, 3).map(product => product.sku || product.name).join(', ')}.`);
+      } else {
+        sentences.push(`Критичних прогалин кошика не виявлено, тому варто підтримати звичний цикл закупівель і перевірити актуальність регулярних категорій клієнта.`);
+      }
+      if (due > 5) sentences.push(`Перед відвантаженням потрібно погодити оплату або ліміт: протерміновано ${formatMoneyUsd(item.balance && item.balance.dueAmount || 0)}${overdueMaxDays ? `, максимальна прострочка ${fmt(overdueMaxDays)} дн.` : '.'}`);
+      if (comparison.sumDelta < 0) sentences.push(`Оборот у ${formatShortMonthLabel(comparison.monthB)} нижчий за ${formatShortMonthLabel(comparison.monthA)} на ${formatMoneyUsd(Math.abs(comparison.sumDelta))}, тому пропозицію краще зробити точковою, без перевантаження кошика.`);
+      return sentences.slice(0, 4).join(' ');
+    }
+
+    function renderClient360AnalysisBlock(item, comparison) {
+      if (!client360Analysis) return;
+      const status = getCompareStatus(comparison.sumDelta, comparison.ordersDelta, comparison.avgCheckPct);
+      const avgDeviation = comparison.avgRevenue > 0 ? ((comparison.currentRevenue - comparison.avgRevenue) / comparison.avgRevenue) * 100 : 0;
+      const valueClass = value => value >= 0 ? 'good' : 'bad';
+      if (client360AnalysisMeta) client360AnalysisMeta.textContent = `${formatShortMonthLabel(comparison.monthB)} проти ${formatShortMonthLabel(comparison.monthA)}`;
+      client360Analysis.innerHTML = `
+        <div class="client360-analysis-stats">
+          <div class="client360-analysis-stat"><span class="label">Зміна суми</span><span class="value ${valueClass(comparison.sumDelta)}">${comparison.sumDelta >= 0 ? '+' : ''}${formatMoneyUsd(comparison.sumDelta)}</span></div>
+          <div class="client360-analysis-stat"><span class="label">Зміна замовлень</span><span class="value ${valueClass(comparison.ordersDelta)}">${comparison.ordersDelta >= 0 ? '+' : ''}${fmt(comparison.ordersDelta)} шт.</span></div>
+          <div class="client360-analysis-stat"><span class="label">Зміна чека</span><span class="value ${valueClass(comparison.avgCheckPct)}">${comparison.avgCheckPct >= 0 ? '+' : ''}${comparison.avgCheckPct.toFixed(1)}%</span></div>
+        </div>
+        <div class="client360-analysis-sections">
+          <div class="client360-analysis-section"><h4>Результат періоду</h4>${buildManagerAnalysisSummary(comparison, comparison.monthA, comparison.monthB)}</div>
+          <div class="client360-analysis-section"><h4>Історія та тренд</h4>Середній оборот за останні 6 місяців — <strong>${formatMoneyUsd(comparison.avgRevenue)}</strong>. Поточний місяць ${avgDeviation >= 0 ? 'вище' : 'нижче'} цієї норми на <strong>${Math.abs(avgDeviation).toFixed(1)}%</strong>.</div>
+          <div class="client360-analysis-section"><h4>План дій</h4>${buildManagerAnalysisPlan(status, comparison)}</div>
+        </div>`;
+    }
+
     function renderClient360Card(item) {
       if (!item) { client360Empty.classList.remove('hidden-view'); client360Content.classList.add('hidden-view'); return; }
       client360Empty.classList.add('hidden-view'); client360Content.classList.remove('hidden-view');
@@ -20657,22 +20765,20 @@ function renderClientNameForLtv(clientName, extraHtml) {
         ['Протерміновано', formatMoneyUsd(balance.dueAmount || 0), due > 5 ? `фінансовий стоп-фактор · до ${fmt(overdueMaxDays)} дн.` : 'критичної прострочки немає']
       ].map(([label, value, sub]) => `<div class="client360-kpi"><span class="label">${label}</span><span class="value">${value}</span><span class="sub">${sub}</span></div>`).join('');
 
-      const topOpportunity = item.opportunities[0];
+      const progressWidth = Math.max(0, Math.min(100, Number(action.progressPct || 0)));
+      client360Progress.innerHTML = `<div class="client360-progress-top"><span class="client360-progress-title">Прогрес клієнта в поточному періоді</span><span class="client360-progress-value">${action.currentOrders || 0}/${action.targetOrdersRounded || 0} відгрузки</span><span class="client360-progress-sub">${formatMoneyUsd(action.currentRevenue || 0)} / ${formatMoneyUsd(action.targetRevenue || action.targetMonthlyRevenue || 0)} · ${Number(action.progressPct || 0).toFixed(1)}%</span></div><div class="client360-progress-bar"><div class="client360-progress-fill" style="width:${progressWidth}%"></div></div>`;
+
+      const comparison = getClient360Comparison(item);
       client360Action.className = `client360-action${due > 5 ? ' bad' : ''}`;
-      if (due > 5) {
-        client360Action.innerHTML = `<strong>Головна рекомендація: спочатку оплата / погодження ліміту</strong>У клієнта протерміновано ${formatMoneyUsd(balance.dueAmount)}. До закриття фінансового питання не ставити допродаж головною дією.`;
-      } else if (topOpportunity) {
-        const skuText = topOpportunity.products.map(product => product.sku).join(', ') || 'підібрати актуальні SKU';
-        client360Action.innerHTML = `<strong>Головна рекомендація: розширити кошик у групі «${topOpportunity.group}»</strong>Частка клієнта ${(topOpportunity.actualShare * 100).toFixed(1)}%, у схожих клієнтів ${(topOpportunity.peerShare * 100).toFixed(1)}%. Потенціал ≈ ${formatMoneyUsd(topOpportunity.potential)}. Запропонувати: ${skuText}.`;
-      } else {
-        client360Action.innerHTML = `<strong>Головна рекомендація: підтримати звичний цикл</strong>${action.recommendation || 'Критичних прогалин кошика не виявлено. Перевірити регулярні позиції та не втратити наступну закупівлю.'}`;
-      }
+      client360Action.innerHTML = `<strong>Практична рекомендація менеджеру</strong>${buildClient360Recommendation(item, comparison, due, overdueMaxDays)}`;
 
       client360Opportunities.innerHTML = item.opportunities.length ? item.opportunities.map(entry => `
-        <div class="client360-opportunity"><div class="name">${entry.group}</div><div>Клієнт: <strong>${(entry.actualShare * 100).toFixed(1)}%</strong></div><div>Схожі: <strong>${(entry.peerShare * 100).toFixed(1)}%</strong></div><div class="potential">+${formatMoneyUsd(entry.potential)}</div><div class="skus">${entry.products.length ? entry.products.map(product => `${product.sku} (${fmt(product.stock)} шт)`).join(' · ') : 'Немає відповідних SKU у залишку'}</div></div>
-      `).join('') : '<div class="client360-muted">Помітних прогалин кошика відносно схожих клієнтів не виявлено.</div>';
+        <div class="client360-opportunity"><div class="name">${entry.group}</div><div>Частка клієнта: <strong>${(entry.actualShare * 100).toFixed(1)}%</strong></div><div class="potential">+${formatMoneyUsd(entry.potential)}</div><div class="skus">${entry.products.length ? entry.products.map(product => `${product.sku} (${fmt(product.stock)} шт)`).join(' · ') : 'Немає відповідних SKU у залишку'}</div></div>
+      `).join('') : '<div class="client360-muted">Помітних прогалин кошика для допродажу не виявлено.</div>';
       renderClient360ProductList(client360DueProducts, item.productInsights && item.productInsights.due, 'Немає позицій, які явно вийшли за звичний цикл.');
       renderClient360ProductList(client360DormantProducts, item.productInsights && item.productInsights.dormant, 'Немає регулярних позицій із паузою 90+ днів.');
+      renderClient360DynamicsBlock(comparison);
+      renderClient360AnalysisBlock(item, comparison);
       renderClient360Charts(item);
     }
 

@@ -906,3 +906,36 @@ Verification:
 Rollback note:
 
 - D53 remains unchanged and is the rollback point.
+
+## D54 Clients 360 Refinement - 2026-06-03
+
+Request: refine the existing D54 client card based on the first visual review: use the full available width, add deeper manager guidance, selected-client percentage dynamics, cycle progress, and a structured client analysis block.
+
+Changed files:
+
+- `sales-dashboard/D54.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Strengthened the full-width layout rules for the `Клієнти` view while keeping the searchable client list and client card workspace.
+- Replaced the short recommendation with a 2-4 sentence practical recommendation based on cycle progress, basket gaps, available SKU, month-to-month trend, and overdue debt when present.
+- Added a selected-client percentage dynamics block for the last six months.
+- Added a full-width current-period client progress scale matching the logic used in `Клієнти у зоні дії`.
+- Added a structured `Аналіз клієнта` block with amount, order, and average-check changes plus result, trend, and action-plan narratives.
+- Removed the visible similar-client percentage from opportunity rows and removed the `Спочатку оплата` header status.
+- Added `Новий` and `Повернутий після паузи` client statuses while retaining debt as a KPI and recommendation stop-factor.
+- Kept the backend, Google Sheets, and Apps Script deployment unchanged.
+
+Verification:
+
+- Confirmed `sales-dashboard/D54` remains byte-identical to `sales-dashboard/D53`.
+- Ran `node --check sales-dashboard/D54`.
+- Extracted and syntax-checked inline JavaScript blocks from `D54.html` with `new Function`.
+- Ran `git diff --check`.
+- Checked HTML ID / `getElementById` references; no new missing IDs were introduced. The existing `toggleAdminBtn` missing reference remains unchanged.
+- Confirmed the visible strings `Схожі:` and `Спочатку оплата` are absent from D54.
+
+Rollback note:
+
+- D53 remains unchanged and is the rollback point.
