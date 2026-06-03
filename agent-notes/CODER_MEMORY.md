@@ -907,6 +907,27 @@ Rollback note:
 
 - D53 remains unchanged and is the rollback point.
 
+## D57 Clients Separate Tab Entrypoint - 2026-06-03
+
+Request: ship version 57 and make the standalone Clients tab the active entrypoint, while keeping the wide efficiency-style grid and preventing routing into Efficiency.
+
+Changed files:
+
+- `sales-dashboard/D57.html`
+- `sales-dashboard/Index.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Copied the clean D56 clients-tab build to D57.
+- Added `Index.html` as the Apps Script entrypoint copy so `doGet()` resolves to the standalone Clients implementation.
+- Kept `clients` as its own dashboard view with the wide `efficiency-layout` / `efficiency-card` shell.
+
+Verification:
+
+- Confirmed no `clients -> efficiency` routing remains in `D57.html` or `Index.html`.
+- Ran `git diff --check` after creating the new files.
+
 ## D56 Clients Separate Tab Cleaned - 2026-06-03
 
 Request: ship a clean new version where `Клієнти` stays a standalone tab, without any routing into `Ефективність`, but still uses the same grid language.
