@@ -8030,7 +8030,8 @@ function rebuildMonthByYearMonth(year, month) {
   return {
     month: range.monthLabel,
     deleted_rows: monthRowNumbers.length,
-    inserted_rows: uniqueFreshRows.length
+    inserted_rows: uniqueFreshRows.length,
+    rows: uniqueFreshRows
   };
 }
 
@@ -8200,6 +8201,39 @@ function writeCurrentMonthServerCacheRows_(rows) {
   };
 }
 
+function writeArchiveMonthServerCacheRows_(year, month, rows) {
+  const archive = getOrCreateSheet(SHEET_ARCHIVE);
+  const range = getMonthRangeByYearMonth(year, month);
+  const safeRows = (Array.isArray(rows) ? rows : []).map(function(row) {
+    const normalizedRow = normalizeRowWidth_(row, HEADERS.length);
+    normalizedRow[1] = formatSheetDateValue_(normalizedRow[1], 'yyyy-MM-dd HH:mm:ss');
+    return normalizedRow;
+  });
+
+  ensureExactHeaders(archive, HEADERS);
+  const monthRowNumbers = getMonthRowNumbersByDateColumn(archive, range.monthPrefix, 2);
+  deleteRowsInBlocks(archive, monthRowNumbers);
+
+  if (safeRows.length) {
+    const startRow = archive.getLastRow() + 1;
+    archive.getRange(startRow, 1, safeRows.length, HEADERS.length).setValues(safeRows);
+  }
+
+  archive.setFrozenRows(1);
+  Logger.log(
+    'writeArchiveMonthServerCacheRows_ -> ' + range.monthLabel +
+    ', deleted old archive rows: ' + monthRowNumbers.length +
+    ', inserted archive rows: ' + safeRows.length
+  );
+
+  return {
+    ok: true,
+    month: range.monthLabel,
+    deleted_rows: monthRowNumbers.length,
+    archive_rows: safeRows.length
+  };
+}
+
 function rebuildCurrentMonthServerCacheOnly() {
   const main = ensureMainSheet();
   const current = getOrCreateSheet(SHEET_CURRENT);
@@ -8336,16 +8370,22 @@ function getPreviousMonthYearMonth_() {
 function refreshPreviousMonthNow() {
   const target = getPreviousMonthYearMonth_();
   const result = rebuildMonthByYearMonth(target.year, target.month);
-  const snapshotResult = rebuildSalesCacheAndSnapshot_();
+  const archiveCacheResult = writeArchiveMonthServerCacheRows_(target.year, target.month, result.rows || []);
+  const fastArchiveResult = rebuildDashboardReadyArchiveNow();
+  setSalesLastRefreshNow();
+  markDashboardServerSnapshotStale_('sales_previous_month_updated_manual');
   return {
     ok: true,
     month_key: String(target.year) + '-' + String(target.month).padStart(2, '0'),
     month: result.month,
     deleted_rows: result.deleted_rows,
     inserted_rows: result.inserted_rows,
-    cache_rebuilt: true,
-    snapshot_rebuilt: !!(snapshotResult && snapshotResult.ok),
-    snapshot_built_at: snapshotResult && snapshotResult.built_at ? snapshotResult.built_at : ''
+    archive_cache_updated: true,
+    archive_cache_deleted_rows: archiveCacheResult.deleted_rows || 0,
+    archive_cache_rows: archiveCacheResult.archive_rows || 0,
+    fast_archive_file: fastArchiveResult && fastArchiveResult.fast_file ? fastArchiveResult.fast_file : null,
+    snapshot_rebuilt: false,
+    message: 'Продажі минулого місяця, sales_archive і швидкий archive-файл переписано. Повний snapshot позначено застарілим без важкого повного rebuildServerCache.'
   };
 }
 

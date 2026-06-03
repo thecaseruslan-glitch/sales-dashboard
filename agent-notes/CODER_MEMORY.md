@@ -907,6 +907,33 @@ Rollback note:
 
 - D53 remains unchanged and is the rollback point.
 
+## D54 Manual Previous-Month Refresh Fix - 2026-06-03
+
+Request: make `RUN_11_refreshPreviousMonthNow` perform the same lightweight targeted refresh pattern as `RUN_06_monthlyRepairNow`, but keep RUN_11 manual-only for rewriting the previous month.
+
+Changed files:
+
+- `sales-dashboard/D54`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Kept `RUN_11_refreshPreviousMonthNow` as a standalone manual entry point and did not add it to the automatic refresh loop.
+- Changed `rebuildMonthByYearMonth` to expose its freshly fetched unique rows to internal callers.
+- Added `writeArchiveMonthServerCacheRows_` to replace only the selected month inside `sales_archive` instead of rebuilding the entire sales cache from `sales_lines_test`.
+- Changed `refreshPreviousMonthNow` to update the previous month in the main sales sheet, update the matching archive month, rebuild the prepared archive output, and mark the full dashboard snapshot stale.
+- Removed the heavy `rebuildSalesCacheAndSnapshot_` call from RUN_11, which was timing out after the month had already been rewritten.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D54`.
+- Ran `git diff --check`.
+- Confirmed `RUN_11_refreshPreviousMonthNow` is not present in `getRefreshLoopTasks_`; the automatic loop still references `RUN_06_monthlyRepairNow`.
+
+Rollback note:
+
+- Commit `1a91cef` is the rollback point for this backend-only RUN_11 change.
+
 ## D54 Clients 360 Refinement - 2026-06-03
 
 Request: refine the existing D54 client card based on the first visual review: use the full available width, add deeper manager guidance, selected-client percentage dynamics, cycle progress, and a structured client analysis block.
