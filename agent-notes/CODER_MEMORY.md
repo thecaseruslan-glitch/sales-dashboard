@@ -907,6 +907,37 @@ Rollback note:
 
 - D53 remains unchanged and is the rollback point.
 
+## D58 Clients Grid With D54 Values - 2026-06-03
+
+Request: create D58 from the user-supplied working D55 files, preserve the D55 `Клієнти` tab width/grid, and restore the client values and analysis available in GitHub D54.
+
+Changed files:
+
+- `sales-dashboard/D58`
+- `sales-dashboard/D58.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Copied the user-supplied D55 backend and HTML into new rollback-safe D58 files.
+- Preserved the D55 full-width clients shell and `310px + remaining width` desktop grid unchanged.
+- Restored D54 client calculations for lifecycle status, monthly target, cycle progress, average check, average interval, peer-based basket potential, balances, overdue stop-factor, and stock-backed product suggestions.
+- Restored the D54 percentage dynamics and structured `Аналіз клієнта` blocks inside the D55 grid.
+- Kept the backend code unchanged from the user-supplied D55 and did not deploy Apps Script or modify Google Sheets.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D58` successfully.
+- Parsed all inline `<script>` blocks in `D58.html` with `new Function` successfully.
+- Checked literal HTML ID / `getElementById` references; no new missing IDs were introduced. Existing `toggleAdminBtn` remains unchanged.
+- Confirmed the D55 clients width/grid CSS declarations are byte-identical in D58.
+- Ran whitespace checks against the new D58 HTML diff successfully.
+- Local browser preview was unavailable because browser policy blocked `localhost` navigation.
+
+Rollback note:
+
+- The user-supplied D55 files remain the direct rollback source; D54 remains available in git history for the restored client values.
+
 ## D57 Clients Separate Tab Entrypoint - 2026-06-03
 
 Request: ship version 57 and make the standalone Clients tab the active entrypoint, while keeping the wide efficiency-style grid and preventing routing into Efficiency.
