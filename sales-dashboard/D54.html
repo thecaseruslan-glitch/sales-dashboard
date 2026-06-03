@@ -5022,7 +5022,7 @@ html, body{
   .wrap{
     position:relative;
     z-index:1;
-    width:min(1560px, calc(100vw - 126px));
+    width:calc(100vw - 104px);
     margin-left:104px;
     padding:30px 28px 42px;
   }
@@ -7202,11 +7202,11 @@ html, body{
 
 <style>
   #clientsView,.clients-view-card{width:100% !important;max-width:100% !important;margin-left:0 !important;margin-right:0 !important;box-sizing:border-box !important;grid-column:1/-1 !important;justify-self:stretch !important}
-  .clients-view-card{padding:22px}
-  .clients-view-head{align-items:flex-start}
+  .clients-view-card{padding:0;overflow:hidden}
+  .clients-view-head{align-items:flex-start;padding:22px 22px 0}
   .clients-toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .clients-toolbar input{min-width:230px}.clients-toolbar select{min-width:190px}
-  .clients-workspace{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;align-items:start}
+  .clients-workspace{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;align-items:start;padding:22px}
   .clients-list-panel{background:#f7faff;border:1px solid #e1eaf5;border-radius:22px;padding:14px;position:sticky;top:92px;max-height:calc(100vh - 126px);overflow:hidden}
   .clients-list-title{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 12px;color:#51657d}
   .clients-list{display:flex;flex-direction:column;gap:9px;overflow:auto;max-height:calc(100vh - 190px);padding-right:3px}

@@ -907,6 +907,42 @@ Rollback note:
 
 - D53 remains unchanged and is the rollback point.
 
+## D54 Clients Full-Width Shell - 2026-06-03
+
+Request: make the `Клієнти` tab use the same full work-area width feel as `Товари`, without side padding on the outer shell.
+
+Changed files:
+
+- `sales-dashboard/D54.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Removed the outer padding from the `Клієнти` root card so the view shell reaches the full available width.
+- Moved the padding into the `Клієнти` header and workspace containers so the content still has internal spacing, but the outer edges remain flush.
+
+Verification:
+
+- Ran `git -C projects/sales-dashboard diff --check`.
+- Reviewed the focused diff for `sales-dashboard/D54.html`.
+
+Rollback note:
+
+- The previous `D54` HTML state remains available in git history.
+## D54 Full-Width Grid Fix - 2026-06-03
+Request: fix the dashboard grid so the main blocks use the full available display width and do not leave empty side space on wide screens.
+Changed files:
+- `sales-dashboard/D54.html`
+- `agent-notes/CODER_MEMORY.md`
+Implementation:
+- Removed the final large-screen width cap from the main `.wrap` container.
+- Kept the sidebar offset intact so the content still sits to the right of the fixed CRM rail, but now stretches to the full available viewport width.
+Verification:
+- Ran `git -C projects/sales-dashboard diff --check`.
+- Reviewed the resulting diff for `sales-dashboard/D54.html`.
+Rollback note:
+- The previous `D54` HTML state remains available in git history.
+
 ## D54 Manual Previous-Month Refresh Fix - 2026-06-03
 
 Request: make `RUN_11_refreshPreviousMonthNow` perform the same lightweight targeted refresh pattern as `RUN_06_monthlyRepairNow`, but keep RUN_11 manual-only for rewriting the previous month.
