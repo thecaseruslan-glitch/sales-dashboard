@@ -907,6 +907,29 @@ Rollback note:
 
 - D53 remains unchanged and is the rollback point.
 
+## D56 Clients Separate Tab Cleaned - 2026-06-03
+
+Request: ship a clean new version where `Клієнти` stays a standalone tab, without any routing into `Ефективність`, but still uses the same grid language.
+
+Changed files:
+
+- `sales-dashboard/D55.html`
+- `sales-dashboard/D56.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Removed the leftover `dashboardFocusSection` state from the clients navigation path.
+- Kept `clientsView` as its own hidden-view tab and left the efficiency grid shell inside the clients card.
+- Copied the cleaned `D55.html` into `D56.html` as the new versioned file.
+
+Verification:
+
+- Confirmed `clientsView` is separate in `D56.html`.
+- Confirmed there is no `clients -> efficiency` routing string left in `D56.html`.
+- Ran `git diff --check` successfully.
+- Parsed all inline `<script>` blocks in `D56.html` with `new Function` successfully.
+
 ## D54 Clients Full-Width Shell - 2026-06-03
 
 Request: make the `Клієнти` tab use the same full work-area width feel as `Товари`, without side padding on the outer shell.
