@@ -7270,11 +7270,10 @@ html, body{
   .clients-360-products-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .clients-360-top-products-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
   .clients-360-top-products-search{width:260px;max-width:100%;border:1px solid #d8e3f2;border-radius:12px;padding:9px 11px;color:#1b2b44}
-  .clients-360-top-products-list{display:grid;gap:8px;max-height:360px;overflow:auto}
-  .clients-360-top-product{display:grid;grid-template-columns:minmax(220px,1fr) minmax(80px,.32fr) minmax(92px,.38fr) minmax(100px,.42fr);gap:12px;align-items:center;border:1px solid #e4ebf5;border-radius:14px;background:#fbfdff;padding:10px 12px;color:#294266;font-size:12px}
-  .clients-360-top-product strong{display:block;color:#17243a;font-size:13px}
-  .clients-360-top-product span{display:block;color:#7d8da3;font-size:11px;margin-top:3px}
-  .clients-360-top-product .num{text-align:right;font-weight:950;color:#17243a}
+  .clients-360-top-products-list{max-height:520px}
+  .clients-360-top-products-list .top-item{grid-template-columns:minmax(0,1fr) minmax(92px,.34fr) minmax(58px,.24fr)}
+  .clients-360-top-products-list .top-name{white-space:normal;line-height:1.25}
+  .clients-360-top-product-meta{display:block;margin-top:4px;color:#7d8da3;font-size:11px;font-weight:700}
   .clients-360-product-item{border:1px solid #e4ebf5;border-radius:14px;padding:11px 12px}
   .clients-360-product-item strong{display:block;color:#294266;font-size:12px}
   .clients-360-product-item span{display:block;color:#7d8da3;font-size:11px;margin-top:5px}
@@ -7285,7 +7284,6 @@ html, body{
     .clients-360-chart-grid,.clients-360-products-grid{grid-template-columns:1fr}
     .clients-360-top-products-toolbar{align-items:stretch;flex-direction:column}
     .clients-360-top-products-search{width:100%}
-    .clients-360-top-product{grid-template-columns:1fr 1fr}
     .clients-360-donut-layout{grid-template-columns:1fr}
     .clients-360-dynamics{grid-template-columns:repeat(3,minmax(0,1fr))}.clients-360-analysis-sections{grid-template-columns:1fr}
   }
@@ -8197,7 +8195,7 @@ html, body{
                 <div class="clients-360-section-head" style="margin:0;"><h3>Топ позицій</h3><span id="clients360TopProductsMeta" class="clients-360-section-note">для вибраного клієнта</span></div>
                 <input id="clients360TopProductsSearch" class="clients-360-top-products-search" type="text" placeholder="Пошук позиції або коду">
               </div>
-              <div id="clients360TopProducts" class="clients-360-top-products-list"></div>
+              <div id="clients360TopProducts" class="top-list scroll-list clients-360-top-products-list"></div>
             </section>
           </main>
         </div>
@@ -21210,7 +21208,6 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
       grouped.forEach((allRows, client) => {
         const rows = getClients360PeriodRows(allRows, periodBounds);
-        if (!rows.length) return;
         const events = buildClientOrderEvents(allRows);
         const lastEvent = events[events.length - 1];
         if (!lastEvent) return;
@@ -21640,6 +21637,71 @@ function renderClientNameForLtv(clientName, extraHtml) {
       });
     }
 
+    function getClients360TrendCharts() {
+      return [clients360OrdersChart, clients360BasketPctChart, clients360TrendChart].filter(Boolean);
+    }
+
+    function buildClients360ChartActiveElements(chart, index) {
+      if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return [];
+      const elements = [];
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const points = Array.isArray(dataset && dataset.data) ? dataset.data : [];
+        if (typeof points[index] === 'undefined') return;
+        elements.push({ datasetIndex, index });
+      });
+      return elements;
+    }
+
+    function clearClients360ChartHover() {
+      if (clients360ChartHoverSyncLock) return;
+      clients360ChartHoverSyncLock = true;
+      try {
+        getClients360TrendCharts().forEach(chart => {
+          chart.setActiveElements([]);
+          if (chart.tooltip && typeof chart.tooltip.setActiveElements === 'function') {
+            chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+          }
+          chart.update('none');
+        });
+      } finally {
+        clients360ChartHoverSyncLock = false;
+      }
+    }
+
+    function syncClients360ChartHover(index) {
+      if (clients360ChartHoverSyncLock || !Number.isInteger(index) || index < 0) return;
+      clients360ChartHoverSyncLock = true;
+      try {
+        getClients360TrendCharts().forEach(chart => {
+          const activeElements = buildClients360ChartActiveElements(chart, index);
+          chart.setActiveElements(activeElements);
+          if (chart.tooltip && typeof chart.tooltip.setActiveElements === 'function') {
+            const anchorPoint = chart.getDatasetMeta(0) && chart.getDatasetMeta(0).data ? chart.getDatasetMeta(0).data[index] : null;
+            const position = anchorPoint ? { x: anchorPoint.x, y: anchorPoint.y } : { x: (chart.chartArea.left + chart.chartArea.right) / 2, y: chart.chartArea.top + 24 };
+            chart.tooltip.setActiveElements(activeElements, position);
+          }
+          chart.update('none');
+        });
+      } finally {
+        clients360ChartHoverSyncLock = false;
+      }
+    }
+
+    function bindClients360ChartHoverSync(chart) {
+      if (!chart || !chart.canvas) return chart;
+      chart.options.onHover = (event) => {
+        if (clients360ChartHoverSyncLock) return;
+        const points = chart.getElementsAtEventForMode(event, 'index', { intersect: false }, false);
+        if (points && points.length) {
+          syncClients360ChartHover(points[0].index);
+        } else {
+          clearClients360ChartHover();
+        }
+      };
+      chart.canvas.addEventListener('mouseleave', clearClients360ChartHover);
+      return chart;
+    }
+
     function renderClients360Charts(item) {
       const chartRows = getClients360ChartRows(item, clients360BasketScope);
       const monthly = buildClients360MonthlyChartStats(item, chartRows);
@@ -21660,6 +21722,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
           },
           options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: true, position: 'bottom' } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Замовлення' } }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Середній чек, $' } } } }
         });
+        bindClients360ChartHoverSync(clients360OrdersChart);
       }
       const ordersMeta = document.getElementById('clients360OrdersMeta');
       if (ordersMeta) ordersMeta.textContent = periodText;
@@ -21668,6 +21731,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (basketPctCanvas) {
         if (clients360BasketPctChart) clients360BasketPctChart.destroy();
         clients360BasketPctChart = new Chart(basketPctCanvas, { type: 'line', data: { labels, datasets: [{ label: '% кошика', data: monthly.map(row => row.basketPct), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,.13)', fill: true, tension: .3, pointRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: value => `${value}%` } } } } });
+        bindClients360ChartHoverSync(clients360BasketPctChart);
       }
       const basketPctMeta = document.getElementById('clients360BasketPctMeta');
       if (basketPctMeta) basketPctMeta.textContent = periodText;
@@ -21676,6 +21740,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (trendCanvas) {
         if (clients360TrendChart) clients360TrendChart.destroy();
         clients360TrendChart = new Chart(trendCanvas, { type: 'line', data: { labels, datasets: [{ label: 'Загальна сума ($)', data: monthly.map(row => row.revenue), borderColor: '#2e64e8', backgroundColor: 'rgba(46,100,232,.14)', fill: true, tension: .3, pointRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+        bindClients360ChartHoverSync(clients360TrendChart);
       }
       document.getElementById('clients360TrendMeta').textContent = periodText;
 
@@ -21760,6 +21825,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (!target) return;
       const query = normalizeSearchText(clients360TopProductsQuery || (searchInput && searchInput.value) || '');
       const products = buildClients360TopProducts(item);
+      const totalRevenue = products.reduce((sum, product) => sum + Number(product.revenue || 0), 0);
       const visible = products.filter(product => {
         if (!query) return true;
         return normalizeSearchText([product.name, product.sku, product.brand, product.category, product.group].join(' ')).includes(query);
@@ -21772,8 +21838,9 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }
       visible.forEach(product => {
         const row = document.createElement('div');
-        row.className = 'clients-360-top-product';
-        row.innerHTML = `<div><strong>${product.name}</strong><span>${product.sku ? `код ${product.sku} · ` : ''}${product.brand || '—'} · ${product.group || product.category || '—'}</span></div><div class="num">${formatMoneyUsd(product.revenue)}</div><div class="num">${fmt(product.quantity)} шт.</div><div class="num">${fmt(product.orders.size)} чеків</div>`;
+        row.className = 'top-item';
+        const pct = totalRevenue ? ((Number(product.revenue || 0) / totalRevenue) * 100).toFixed(1) : '0.0';
+        row.innerHTML = `<div class="top-name">${product.name}<span class="clients-360-top-product-meta">${product.sku ? `код ${product.sku} · ` : ''}${product.brand || '—'} · ${product.group || product.category || '—'} · ${fmt(product.quantity)} шт. · ${fmt(product.orders.size)} чеків</span></div><div class="top-val">${formatMoneyUsd(product.revenue)}</div><div class="top-pct">${pct}%</div>`;
         target.appendChild(row);
       });
     }
@@ -24673,6 +24740,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360OrdersChart = null;
     let clients360BasketPctChart = null;
     let clients360TrendChart = null;
+    let clients360ChartHoverSyncLock = false;
     let clients360BrandChart = null;
     let clients360CategoryChart = null;
     let clients360BasketChart = null;

@@ -408,6 +408,31 @@ Rollback note:
 
 - Previous D59 period-filter commit is 5af9cb7.
 
+## D59 Clients Top Products And Hover Sync - 2026-06-04
+
+Request: update D59 Clients tab so the selected client's Top Products list matches the Products tab list style with larger height, synchronize chart tooltips across all three client charts by period point, and keep the left client list stable regardless of the selected main period.
+
+Changed files:
+
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Converted Clients Top Products to the shared top-list/top-item visual pattern and increased list height.
+- Kept product meta inside each row: code, brand/group/category, quantity, and check count.
+- Removed the period-row existence requirement from the client list, so all clients with sales history remain visible even when the selected period has no sales for them.
+- Added synchronized hover state for the three Clients charts: orders + avg check, basket %, and total revenue.
+
+Verification:
+
+- Ran node --check sales-dashboard/D59.
+- Extracted and syntax-checked 5 inline JS script blocks from D59.html with new Function.
+- Ran git diff --check -- sales-dashboard/D59.html.
+
+Rollback note:
+
+- Previous D59 chart-scope commit is 28dd7d3.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
