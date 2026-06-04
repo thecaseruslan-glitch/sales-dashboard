@@ -7274,6 +7274,12 @@ html, body{
   .clients-360-top-products-list .top-item{grid-template-columns:minmax(0,1fr) minmax(92px,.34fr) minmax(58px,.24fr)}
   .clients-360-top-products-list .top-name{white-space:normal;line-height:1.25}
   .clients-360-top-product-meta{display:block;margin-top:4px;color:#7d8da3;font-size:11px;font-weight:700}
+  .clients-360-top-products-section{padding:0;border:0;background:transparent}
+  .clients-360-top-products-panel{min-height:620px}
+  .clients-360-top-products-panel .client-trend-products-head{padding:12px 14px}
+  .clients-360-top-products-panel .client-trend-products-head > div:first-child{flex:0 0 190px;min-width:180px}
+  .clients-360-top-products-controls{grid-template-columns:auto minmax(180px,1fr) minmax(130px,.72fr) minmax(130px,.72fr) minmax(150px,.82fr) auto}
+  .clients-360-top-products-panel .client-trend-products-list{max-height:640px;min-height:480px}
   .clients-360-product-item{border:1px solid #e4ebf5;border-radius:14px;padding:11px 12px}
   .clients-360-product-item strong{display:block;color:#294266;font-size:12px}
   .clients-360-product-item span{display:block;color:#7d8da3;font-size:11px;margin-top:5px}
@@ -7284,6 +7290,9 @@ html, body{
     .clients-360-chart-grid,.clients-360-products-grid{grid-template-columns:1fr}
     .clients-360-top-products-toolbar{align-items:stretch;flex-direction:column}
     .clients-360-top-products-search{width:100%}
+    .clients-360-top-products-panel .client-trend-products-head{flex-direction:column}
+    .clients-360-top-products-panel .client-trend-products-head > div:first-child{flex:auto;min-width:0}
+    .clients-360-top-products-controls{grid-template-columns:1fr}
     .clients-360-donut-layout{grid-template-columns:1fr}
     .clients-360-dynamics{grid-template-columns:repeat(3,minmax(0,1fr))}.clients-360-analysis-sections{grid-template-columns:1fr}
   }
@@ -8190,18 +8199,44 @@ html, body{
               <section class="clients-360-section"><div class="clients-360-section-head"><h3>Час поповнювати</h3><span class="clients-360-section-note">регулярні SKU</span></div><div id="clients360Refill" class="clients-360-product-list"></div></section>
               <section class="clients-360-section"><div class="clients-360-section-head"><h3>Перестав купувати</h3><span class="clients-360-section-note">пауза 90+ днів</span></div><div id="clients360Stopped" class="clients-360-product-list"></div></section>
             </div>
-            <section class="clients-360-section">
-              <div class="clients-360-top-products-toolbar">
-                <div class="clients-360-section-head" style="margin:0;"><h3>Топ позицій</h3><span id="clients360TopProductsMeta" class="clients-360-section-note">для вибраного клієнта</span></div>
-                <div class="clients-360-head-side">
-                  <div class="clients-360-period-toggle">
-                    <button id="clients360TopProductsAllBtn" class="clients-360-period-btn active" type="button">увесь</button>
-                    <button id="clients360TopProductsPeriodBtn" class="clients-360-period-btn" type="button">період</button>
+            <section class="clients-360-section clients-360-top-products-section">
+              <div class="client-trend-products clients-360-top-products-panel">
+                <div class="client-trend-products-head">
+                  <div>
+                    <div class="client-trend-products-title">Топ позицій</div>
+                    <div id="clients360TopProductsMeta" class="client-trend-products-meta">для вибраного клієнта</div>
                   </div>
-                  <input id="clients360TopProductsSearch" class="clients-360-top-products-search" type="text" placeholder="Пошук позиції або коду">
+                  <div class="client-trend-products-controls clients-360-top-products-controls">
+                    <div class="client-trend-period-control">
+                      <div class="clients-360-period-toggle">
+                        <button id="clients360TopProductsAllBtn" class="clients-360-period-btn active" type="button">увесь</button>
+                        <button id="clients360TopProductsPeriodBtn" class="clients-360-period-btn" type="button">період</button>
+                      </div>
+                    </div>
+                    <div class="client-trend-filter-stack">
+                      <label for="clients360TopProductsSearch">Пошук</label>
+                      <input id="clients360TopProductsSearch" class="client-trend-filter" type="text" placeholder="Позиція або код">
+                    </div>
+                    <div class="client-trend-filter-stack">
+                      <label for="clients360TopProductsBrandFilter">Бренд</label>
+                      <select id="clients360TopProductsBrandFilter" class="client-trend-filter"><option value="">Усі бренди</option></select>
+                    </div>
+                    <div class="client-trend-filter-stack">
+                      <label for="clients360TopProductsCategoryFilter">Категорія</label>
+                      <select id="clients360TopProductsCategoryFilter" class="client-trend-filter"><option value="">Усі категорії</option></select>
+                    </div>
+                    <div class="client-trend-filter-stack">
+                      <label for="clients360TopProductsGroupFilter">Група</label>
+                      <select id="clients360TopProductsGroupFilter" class="client-trend-filter"><option value="">Усі групи</option></select>
+                    </div>
+                    <div class="client-trend-products-sort-wrap">
+                      <div id="clients360TopProductsSortLabel" class="client-trend-products-sort">Сортування: модельна лінійка → серія → оборот</div>
+                      <button id="clients360TopProductsSortResetBtn" class="client-trend-products-sort-reset" type="button">Скинути</button>
+                    </div>
+                  </div>
                 </div>
+                <div id="clients360TopProducts" class="client-trend-products-list"></div>
               </div>
-              <div id="clients360TopProducts" class="top-list scroll-list clients-360-top-products-list"></div>
             </section>
           </main>
         </div>
@@ -21794,39 +21829,102 @@ function renderClientNameForLtv(clientName, extraHtml) {
     }
 
     function buildClients360TopProducts(item, scope) {
-      const productMap = new Map();
       const periodRows = Array.isArray(item && item.rows) ? item.rows : [];
       const allRows = Array.isArray(item && item.allRows) ? item.allRows : [];
       const sourceRows = scope === 'period' ? periodRows : allRows;
-      sourceRows.forEach(row => {
-        const sku = normalizeSkuValue(row.sku);
-        const name = normalizeText(row.product) || sku || 'Невідома позиція';
-        const key = sku || name;
-        if (!key) return;
-        if (!productMap.has(key)) {
-          productMap.set(key, {
-            sku,
-            name,
-            brand: normalizeText(row.brand),
-            category: normalizeText(row.category),
-            group: normalizeText(row.product_group || row.group),
-            revenue: 0,
-            quantity: 0,
-            orders: new Set(),
-            lastDate: ''
-          });
+      const clientTrendProducts = buildClientTrendProductRows(sourceRows);
+      clientTrendProducts.sourceLabel = scope === 'period' ? 'у вибраному періоді' : 'за всю історію клієнта';
+      return clientTrendProducts;
+    }
+
+    function getClients360TopProductsSortLabel() {
+      if (clients360TopProductsSortKey === 'product') {
+        return 'Сортування: позиція ' + (clients360TopProductsSortDir === 'asc' ? 'А→Я' : 'Я→А');
+      }
+      if (clients360TopProductsSortKey === 'code') {
+        return 'Сортування: код ' + (clients360TopProductsSortDir === 'asc' ? '↑' : '↓');
+      }
+      if (clients360TopProductsSortKey === 'revenue') {
+        return 'Сортування: сума ' + (clients360TopProductsSortDir === 'asc' ? '↑' : '↓');
+      }
+      if (clients360TopProductsSortKey === 'quantity') {
+        return 'Сортування: кількість ' + (clients360TopProductsSortDir === 'asc' ? '↑' : '↓');
+      }
+      if (clients360TopProductsSortKey === 'ordersCount') {
+        return 'Сортування: відгрузки ' + (clients360TopProductsSortDir === 'asc' ? '↑' : '↓');
+      }
+      if (clients360TopProductsSortKey === 'lastDate') {
+        return 'Сортування: останній продаж ' + (clients360TopProductsSortDir === 'asc' ? '↑' : '↓');
+      }
+      return 'Сортування: модельна лінійка → серія → оборот';
+    }
+
+    function updateClients360TopProductsSortUi() {
+      const label = document.getElementById('clients360TopProductsSortLabel');
+      const resetBtn = document.getElementById('clients360TopProductsSortResetBtn');
+      if (label) label.textContent = getClients360TopProductsSortLabel();
+      if (resetBtn) resetBtn.disabled = clients360TopProductsSortKey === 'default';
+    }
+
+    function sortClients360TopProducts(items) {
+      const sorted = Array.isArray(items) ? items.slice() : [];
+      if (clients360TopProductsSortKey === 'default') return sorted;
+      const direction = clients360TopProductsSortDir === 'asc' ? 1 : -1;
+      return sorted.sort((a, b) => {
+        let diff = 0;
+        if (clients360TopProductsSortKey === 'code') {
+          diff = normalizeText(a.sku || '').localeCompare(normalizeText(b.sku || ''), 'uk', { numeric: true });
+        } else if (clients360TopProductsSortKey === 'product') {
+          diff = normalizeText(a.product).localeCompare(normalizeText(b.product), 'uk');
+        } else if (clients360TopProductsSortKey === 'revenue') {
+          diff = Number(a.revenue || 0) - Number(b.revenue || 0);
+        } else if (clients360TopProductsSortKey === 'quantity') {
+          diff = Number(a.quantity || 0) - Number(b.quantity || 0);
+        } else if (clients360TopProductsSortKey === 'ordersCount') {
+          diff = Number(a.ordersCount || 0) - Number(b.ordersCount || 0);
+        } else if (clients360TopProductsSortKey === 'lastDate') {
+          diff = normalizeText(a.lastDate || '').localeCompare(normalizeText(b.lastDate || ''), 'uk');
         }
-        const itemBucket = productMap.get(key);
-        itemBucket.revenue += parseNumber(row.revenue);
-        itemBucket.quantity += parseNumber(row.quantity);
-        const dateIso = normalizeDate(row.date);
-        const orderKey = normalizeText(row.order_id) || normalizeText(row.order_no) || `${dateIso}||${key}`;
-        if (orderKey) itemBucket.orders.add(orderKey);
-        if (dateIso && (!itemBucket.lastDate || dateIso > itemBucket.lastDate)) itemBucket.lastDate = dateIso;
+        if (diff !== 0) return diff * direction;
+        return normalizeText(a.product).localeCompare(normalizeText(b.product), 'uk');
       });
-      const products = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue || b.quantity - a.quantity || a.name.localeCompare(b.name, 'uk'));
-      products.sourceLabel = scope === 'period' ? 'у вибраному періоді' : 'за всю історію клієнта';
-      return products;
+    }
+
+    function getClients360TopProductsSortIndicator(key) {
+      if (clients360TopProductsSortKey !== key) return '↕';
+      return clients360TopProductsSortDir === 'asc' ? '↑' : '↓';
+    }
+
+    function setClients360TopProductsSort(key) {
+      if (!key) return;
+      if (clients360TopProductsSortKey === key) {
+        clients360TopProductsSortDir = clients360TopProductsSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        clients360TopProductsSortKey = key;
+        clients360TopProductsSortDir = getClientTrendProductsSortDefaultDirection(key);
+      }
+      renderClients360Dashboard();
+    }
+
+    function resetClients360TopProductsSort() {
+      clients360TopProductsSortKey = 'default';
+      clients360TopProductsSortDir = 'desc';
+      updateClients360TopProductsSortUi();
+      renderClients360Dashboard();
+    }
+
+    function updateClients360TopProductsFilterOptions(filterId, values, fallbackLabel) {
+      const select = document.getElementById(filterId);
+      if (!select) return '';
+      const current = normalizeText(select.value);
+      const normalizedValues = Array.from(new Set((Array.isArray(values) ? values : []).map(normalizeText).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'uk'));
+      select.innerHTML = '<option value="">' + escapeManagerAnalysisText(fallbackLabel) + '</option>' + normalizedValues.map(value => '<option value="' + escapeManagerAnalysisText(value) + '">' + escapeManagerAnalysisText(value) + '</option>').join('');
+      if (current && normalizedValues.includes(current)) {
+        select.value = current;
+        return current;
+      }
+      select.value = '';
+      return '';
     }
 
     function renderClients360TopProducts(item) {
@@ -21840,24 +21938,54 @@ function renderClientNameForLtv(clientName, extraHtml) {
       const periodBtn = document.getElementById('clients360TopProductsPeriodBtn');
       if (allBtn) allBtn.classList.toggle('active', clients360TopProductsScope !== 'period');
       if (periodBtn) periodBtn.classList.toggle('active', clients360TopProductsScope === 'period');
-      const totalRevenue = products.reduce((sum, product) => sum + Number(product.revenue || 0), 0);
-      const visible = products.filter(product => {
+      const activeBrand = updateClients360TopProductsFilterOptions('clients360TopProductsBrandFilter', products.map(product => product.brand), 'Усі бренди');
+      const activeCategory = updateClients360TopProductsFilterOptions('clients360TopProductsCategoryFilter', products.map(product => product.category), 'Усі категорії');
+      const activeGroup = updateClients360TopProductsFilterOptions('clients360TopProductsGroupFilter', products.map(product => product.group), 'Усі групи');
+      const filtered = products.filter(product => {
+        if (activeBrand && normalizeText(product.brand) !== activeBrand) return false;
+        if (activeCategory && normalizeText(product.category) !== activeCategory) return false;
+        if (activeGroup && normalizeText(product.group) !== activeGroup) return false;
         if (!query) return true;
-        return normalizeSearchText([product.name, product.sku, product.brand, product.category, product.group].join(' ')).includes(query);
-      }).slice(0, 80);
-      if (meta) meta.textContent = `${fmt(visible.length)} із ${fmt(products.length)} позицій · ${products.sourceLabel || 'у вибірці'}`;
+        return normalizeSearchText([product.product, product.sku, product.brand, product.category, product.group].join(' ')).includes(query);
+      });
+      const tableRows = sortClients360TopProducts(filtered);
+      const tableRevenue = tableRows.reduce((sum, product) => sum + Number(product.revenue || 0), 0);
+      const tableQty = tableRows.reduce((sum, product) => sum + Number(product.quantity || 0), 0);
+      if (meta) {
+        meta.textContent = fmt(tableRows.length) + ' із ' + fmt(products.length) + ' позицій | ' + fmt(tableQty) + ' шт | ' + formatMetricValue(tableRevenue) + ' продажів · ' + (products.sourceLabel || 'у вибірці');
+      }
       target.innerHTML = '';
-      if (!visible.length) {
-        target.innerHTML = '<div class="clients-360-empty">Позицій не знайдено.</div>';
+      updateClients360TopProductsSortUi();
+      if (!tableRows.length) {
+        target.innerHTML = '<div class="client-trend-products-empty">Позицій не знайдено.</div>';
         return;
       }
-      visible.forEach(product => {
-        const row = document.createElement('div');
-        row.className = 'top-item';
-        const pct = totalRevenue ? ((Number(product.revenue || 0) / totalRevenue) * 100).toFixed(1) : '0.0';
-        row.innerHTML = `<div class="top-name">${product.name}<span class="clients-360-top-product-meta">${product.sku ? `код ${product.sku} · ` : ''}${product.brand || '—'} · ${product.group || product.category || '—'} · ${fmt(product.quantity)} шт. · ${fmt(product.orders.size)} чеків</span></div><div class="top-val">${formatMoneyUsd(product.revenue)}</div><div class="top-pct">${pct}%</div>`;
-        target.appendChild(row);
+      const table = document.createElement('table');
+      table.className = 'client-trend-products-table';
+      table.innerHTML =
+        '<thead><tr>' +
+          '<th><button class="client-trend-products-sort-btn ' + (clients360TopProductsSortKey === 'product' ? 'active' : '') + '" type="button" data-clients360-top-products-sort="product">Позиція <span class="client-trend-products-sort-indicator">' + getClients360TopProductsSortIndicator('product') + '</span></button></th>' +
+          '<th><button class="client-trend-products-sort-btn ' + (clients360TopProductsSortKey === 'code' ? 'active' : '') + '" type="button" data-clients360-top-products-sort="code">Код <span class="client-trend-products-sort-indicator">' + getClients360TopProductsSortIndicator('code') + '</span></button></th>' +
+          '<th><button class="client-trend-products-sort-btn ' + (clients360TopProductsSortKey === 'revenue' ? 'active' : '') + '" type="button" data-clients360-top-products-sort="revenue">Сума <span class="client-trend-products-sort-indicator">' + getClients360TopProductsSortIndicator('revenue') + '</span></button></th>' +
+          '<th><button class="client-trend-products-sort-btn ' + (clients360TopProductsSortKey === 'quantity' ? 'active' : '') + '" type="button" data-clients360-top-products-sort="quantity">Кількість <span class="client-trend-products-sort-indicator">' + getClients360TopProductsSortIndicator('quantity') + '</span></button></th>' +
+          '<th><button class="client-trend-products-sort-btn ' + (clients360TopProductsSortKey === 'ordersCount' ? 'active' : '') + '" type="button" data-clients360-top-products-sort="ordersCount">Відгрузок <span class="client-trend-products-sort-indicator">' + getClients360TopProductsSortIndicator('ordersCount') + '</span></button></th>' +
+          '<th><button class="client-trend-products-sort-btn ' + (clients360TopProductsSortKey === 'lastDate' ? 'active' : '') + '" type="button" data-clients360-top-products-sort="lastDate">Останній <span class="client-trend-products-sort-indicator">' + getClients360TopProductsSortIndicator('lastDate') + '</span></button></th>' +
+        '</tr></thead><tbody></tbody>';
+      const tbody = table.querySelector('tbody');
+      tableRows.forEach(product => {
+        const row = document.createElement('tr');
+        row.className = 'client-trend-product-row';
+        row.innerHTML =
+          '<td class="client-trend-product-name">' + escapeManagerAnalysisText(product.product) + '</td>' +
+          '<td class="client-trend-product-code">' + escapeManagerAnalysisText(product.sku || '—') + '</td>' +
+          '<td class="client-trend-product-num">' + formatMetricValue(product.revenue) + '</td>' +
+          '<td class="client-trend-product-num">' + fmt(product.quantity) + '</td>' +
+          '<td class="client-trend-product-num">' + fmt(product.ordersCount) + '</td>' +
+          '<td class="client-trend-product-code">' + (formatDisplayDate(product.lastDate) || '—') + '</td>';
+        tbody.appendChild(row);
       });
+      target.appendChild(table);
+      return;
     }
 
     function renderPaymentsDashboard() {
@@ -23694,6 +23822,23 @@ function renderClientNameForLtv(clientName, extraHtml) {
         renderClients360Dashboard();
       });
     }
+    ['clients360TopProductsBrandFilter', 'clients360TopProductsCategoryFilter', 'clients360TopProductsGroupFilter'].forEach(id => {
+      const filter = document.getElementById(id);
+      if (!filter) return;
+      filter.addEventListener('change', () => renderClients360Dashboard());
+    });
+    const clients360TopProductsSortResetBtn = document.getElementById('clients360TopProductsSortResetBtn');
+    if (clients360TopProductsSortResetBtn) {
+      clients360TopProductsSortResetBtn.addEventListener('click', () => resetClients360TopProductsSort());
+    }
+    const clients360TopProductsList = document.getElementById('clients360TopProducts');
+    if (clients360TopProductsList) {
+      clients360TopProductsList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-clients360-top-products-sort]');
+        if (!btn) return;
+        setClients360TopProductsSort(btn.dataset.clients360TopProductsSort || '');
+      });
+    }
     document.querySelectorAll('[data-clients360-basket-scope]').forEach(btn => {
       btn.addEventListener('click', () => {
         clients360BasketScope = btn.dataset.clients360BasketScope === 'all' ? 'all' : '12m';
@@ -24767,6 +24912,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360BasketScope = '12m';
     let clients360TopProductsQuery = '';
     let clients360TopProductsScope = 'all';
+    let clients360TopProductsSortKey = 'default';
+    let clients360TopProductsSortDir = 'desc';
     let clients360OrdersChart = null;
     let clients360BasketPctChart = null;
     let clients360TrendChart = null;
@@ -25469,7 +25616,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
             product,
             sku,
             brand: normalizeText(row.brand),
-            group: normalizeText(row.group),
+            category: normalizeText(row.category),
+            group: normalizeText(row.product_group || row.group),
             revenue: 0,
             quantity: 0,
             orders: new Set(),

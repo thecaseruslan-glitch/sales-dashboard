@@ -1248,6 +1248,33 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## D59 Clients Top Products Embedded Modal Clone - 2026-06-04
+
+Request: rebuild the `Топ позицій` block in the `Клієнти` tab so it matches the product/client modal list from the `Товари` tab, with its own independent filters.
+
+Changed files:
+
+- `sales-dashboard/D59.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Replaced the simple top-list in `Клієнти` with the same `client-trend-products` table pattern used by the `Товари` client modal.
+- Added independent controls for the embedded Clients block: `увесь/період`, search, brand filter, category filter, group filter, sortable columns, and reset sorting.
+- Reused `buildClientTrendProductRows` so the embedded block follows the same product grouping and default model-line sorting as the modal.
+- Added category/group metadata to the shared product-row builder so the new embedded filters have the needed values.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D59`.
+- Extracted and syntax-checked all inline script blocks from `sales-dashboard/D59.html` with `new Function`.
+- Verified the new `clients360TopProducts*` HTML IDs exist and are not duplicated.
+- Ran `git diff --check -- sales-dashboard/D59.html agent-notes/CODER_MEMORY.md`.
+
+Rollback note:
+
+- D58 remains unchanged as the rollback version; D59 history also contains the previous top-products implementation.
+
 ## D54 Clients Moved Into Efficiency - 2026-06-03
 
 Request: move the `Клієнти` tab into the `Ефективність` view as the lower block and keep the efficiency grid width / wrapper behavior.
