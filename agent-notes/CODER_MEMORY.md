@@ -1248,6 +1248,33 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## P6 Purchase Search Row Filters - 2026-06-04
+
+Request: place the Status, Carrier, and Sort filters in the same row as the search field, aligned to the right.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Converted the search row into a four-column grid: search on the left, then Status, Carrier, and Sort filters on the right.
+- Moved `statusFilter`, `carrierFilter`, and `sortFilter` out of the collapsible controls body so they remain visible next to search.
+- Left brand strip, analysis period controls, and KPI cards inside the collapsible panel.
+- Added responsive two-column and one-column fallbacks for narrower screens.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Verified `searchInput`, `statusFilter`, `carrierFilter`, and `sortFilter` each exist exactly once.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `4eaec7a` is the rollback point before this P6 search-row filters layout change.
+
 ## P6 Purchase Header Height Reduction - 2026-06-04
 
 Request: remove the `ЗК / Аналіз закупок / Згенеровано` header text and move refresh/status chips into the row with purchase/receipt navigation text to reduce empty top space.

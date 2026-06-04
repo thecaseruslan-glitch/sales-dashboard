@@ -205,6 +205,10 @@
       box-shadow:inset 0 1px 0 rgba(255,255,255,.84);
     }
     .purchase-search-row{
+      display:grid;
+      grid-template-columns:minmax(320px,1.7fr) repeat(3,minmax(170px,.7fr));
+      gap:8px;
+      align-items:end;
       padding:10px;
       margin:8px 0;
       border-radius:18px;
@@ -215,6 +219,9 @@
     .purchase-search-row input{
       height:42px;
       font-size:14px;
+    }
+    .purchase-search-row select{
+      height:42px;
     }
     .purchase-controls-panel{
       border:1px solid var(--line);
@@ -1375,7 +1382,7 @@
     .system-state-pill.done{background:#dcfce7;color:#166534;border-color:#bbf7d0}
     .system-state-pill.error{background:#fee2e2;color:#991b1b;border-color:#fecaca}
     @media (max-width:1450px){
-      .toolbar-row{grid-template-columns:1fr 1fr}
+      .toolbar-row,.purchase-search-row{grid-template-columns:1fr 1fr}
       .kpis{grid-template-columns:1fr 1fr}
       .order-grid{
         grid-template-columns:44px minmax(150px,1.4fr) repeat(4,minmax(110px,1fr));
@@ -1384,7 +1391,7 @@
     }
     @media (max-width:860px){
       .page{width:min(100vw - 12px,1880px)}
-      .toolbar-row,.kpis{grid-template-columns:1fr}
+      .toolbar-row,.purchase-search-row,.kpis{grid-template-columns:1fr}
       .purchase-controls-head{align-items:flex-start;flex-direction:column}
       .dashboard-nav .meta-strip{margin-left:0;justify-content:flex-start}
       .system-kpi-grid{grid-template-columns:1fr}
@@ -1500,8 +1507,34 @@
       </div>
 
       <div class="purchase-search-row">
-        <div class="field-note">Пошук</div>
-        <input id="searchInput" type="text" placeholder="Назва товару або код">
+        <div>
+          <div class="field-note">Пошук</div>
+          <input id="searchInput" type="text" placeholder="Назва товару або код">
+        </div>
+        <div>
+          <div class="field-note">Статус</div>
+          <select id="statusFilter">
+            <option value="">Усі статуси</option>
+            <option value="В дорозі">В дорозі</option>
+            <option value="Частково прийнято">Частково прийнято</option>
+            <option value="Прийнято">Прийнято</option>
+            <option value="Протерміновано в дорозі">Протерміновано</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-note">Перевізник</div>
+          <select id="carrierFilter"></select>
+        </div>
+        <div>
+          <div class="field-note">Сортування</div>
+          <select id="sortFilter">
+            <option value="eta_asc">Найближча дата приходу</option>
+            <option value="transit_desc">Найбільше днів у дорозі</option>
+            <option value="qty_desc">Найбільше товару в дорозі</option>
+            <option value="sales_desc">Топ продажів</option>
+            <option value="order_asc">Номер замовлення</option>
+          </select>
+        </div>
       </div>
 
       <div id="purchaseControlsPanel" class="purchase-controls-panel">
@@ -1545,32 +1578,6 @@
           </div>
 
           <div class="filters">
-            <div class="toolbar-row">
-              <div>
-                <div class="field-note">Статус</div>
-                <select id="statusFilter">
-                  <option value="">Усі статуси</option>
-                  <option value="В дорозі">В дорозі</option>
-                  <option value="Частково прийнято">Частково прийнято</option>
-                  <option value="Прийнято">Прийнято</option>
-                  <option value="Протерміновано в дорозі">Протерміновано</option>
-                </select>
-              </div>
-              <div>
-                <div class="field-note">Перевізник</div>
-                <select id="carrierFilter"></select>
-              </div>
-              <div>
-                <div class="field-note">Сортування</div>
-                <select id="sortFilter">
-                  <option value="eta_asc">Найближча дата приходу</option>
-                  <option value="transit_desc">Найбільше днів у дорозі</option>
-                  <option value="qty_desc">Найбільше товару в дорозі</option>
-                  <option value="sales_desc">Топ продажів</option>
-                  <option value="order_asc">Номер замовлення</option>
-                </select>
-              </div>
-            </div>
             <div id="brandStrip" class="brand-strip"></div>
           </div>
 
