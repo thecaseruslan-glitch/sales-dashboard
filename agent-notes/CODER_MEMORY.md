@@ -34,6 +34,33 @@ Rollback note:
 
 - Commit `2b9dde0` is the rollback point before this invalid-date fallback.
 
+## P6 Purchase Analysis Row Density - 2026-06-04
+
+Request: reorganize the purchase analysis list so the product name has enough width to fit in one row and more positions fit vertically.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Expanded the product column in the analysis table from 300px to 520px.
+- Tightened numeric/service columns and shortened several headers.
+- Reduced table cell padding from 12/11px to 9/8px.
+- Moved brand from a second line into a compact inline chip next to the product name.
+- Added single-line ellipsis behavior for long product names.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `83d6966` is the rollback point before this row-density layout change.
+
 ## Current Baseline - 2026-05-18
 
 - Repo: `thecaseruslan-glitch/sales-dashboard`.
