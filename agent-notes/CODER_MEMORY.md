@@ -300,6 +300,43 @@ Rollback note:
 
 - Previous D58 client KPI/charts commit is 07686d5.
 
+## D59 Clients Basket Coverage And Top Products - 2026-06-04
+
+Request: create new D59 version from D58 and apply additional Clients tab updates: show basket coverage percentage inside each donut, add 12 months/all-time toggles, replace "Потенціал кошика" KPI with client basket percentage, remove stock quantities from manager recommendations, extend client list to dashboard bottom, show LTV and manager tag per client card, and add searchable top products for the selected client.
+
+Base version:
+
+- sales-dashboard/D58
+- sales-dashboard/D58.html
+
+Changed files:
+
+- sales-dashboard/D59
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Copied D58 backend/frontend to D59.
+- Added Clients 360 basket coverage calculations for brands, categories, groups, and overall matrix coverage.
+- Added synchronized "12 міс / увесь" toggles for donut blocks; default is 12 months.
+- Added center percentages for brand/category/group donuts.
+- Replaced the basket KPI value with 12-month client basket coverage percentage.
+- Updated the KPI explanation modal for the new basket KPI.
+- Removed stock quantities from generated manager recommendation product suggestions.
+- Changed the client sidebar to stretch down the full dashboard column and show manager tag plus LTV in each client card.
+- Added a searchable "Топ позицій" block for the selected client.
+
+Verification:
+
+- Ran node --check sales-dashboard/D59.
+- Extracted and syntax-checked 5 inline JS script blocks from D59.html with new Function.
+- Ran git diff --check -- sales-dashboard/D59 sales-dashboard/D59.html.
+- Reviewed D58 -> D59 diff for the Clients 360 section.
+
+Rollback note:
+
+- D58 remains unchanged and is the rollback point.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
