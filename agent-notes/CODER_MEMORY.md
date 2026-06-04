@@ -337,6 +337,27 @@ Rollback note:
 
 - D58 remains unchanged and is the rollback point.
 
+## D59 Clients Sidebar Stretch Fix - 2026-06-04
+
+Request: fix D59 layout because only the left client list should stretch; the right-side Clients tab blocks must not be stretched.
+
+Changed files:
+
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Restored the Clients 360 grid alignment to start so right-side blocks keep natural height.
+- Kept the left client sidebar/list as a sticky fixed-height column with internal scrolling.
+
+Verification:
+
+- Ran git diff --check -- sales-dashboard/D59.html agent-notes/CODER_MEMORY.md.
+
+Rollback note:
+
+- Previous D59 commit is 06b21e4.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.

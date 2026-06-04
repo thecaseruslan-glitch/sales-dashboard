@@ -7202,9 +7202,9 @@ html, body{
   /* Clients 360 view: presentation-only layer over already loaded dashboard data. */
   .clients-view-card{width:100% !important;max-width:100% !important;box-sizing:border-box;grid-column:1 / -1 !important;justify-self:stretch !important;margin:0 !important;padding:0;background:transparent;border:0;box-shadow:none}
   .wrap > #clientsView{width:100% !important;max-width:100% !important;margin:0 !important}
-  .clients-360-layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:16px;align-items:stretch;width:100%;max-width:100%}
+  .clients-360-layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:16px;align-items:start;width:100%;max-width:100%}
   .clients-360-sidebar,.clients-360-main-card{background:#fff;border:1px solid #dfe8f5;border-radius:24px}
-  .clients-360-sidebar{position:relative;top:auto;height:100%;min-height:calc(100vh - 112px);max-height:none;overflow:hidden;display:flex;flex-direction:column}
+  .clients-360-sidebar{position:sticky;top:92px;height:calc(100vh - 112px);max-height:calc(100vh - 112px);overflow:hidden;display:flex;flex-direction:column}
   .clients-360-sidebar-head{padding:18px;border-bottom:1px solid #e7eef8}
   .clients-360-sidebar-title{display:flex;justify-content:space-between;gap:12px;font-size:18px;font-weight:900;color:#1b2b44;margin-bottom:12px}
   .clients-360-control{width:100%;box-sizing:border-box;border:1px solid #d8e3f2;border-radius:12px;padding:10px 12px;background:#fff;color:#1b2b44;margin-top:8px}
