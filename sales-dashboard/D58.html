@@ -7204,11 +7204,11 @@ html, body{
   .wrap > #clientsView{width:100% !important;max-width:100% !important;margin:0 !important}
   .clients-360-layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:16px;align-items:start;width:100%;max-width:100%}
   .clients-360-sidebar,.clients-360-main-card{background:#fff;border:1px solid #dfe8f5;border-radius:24px}
-  .clients-360-sidebar{position:sticky;top:92px;max-height:calc(100vh - 112px);overflow:hidden}
+  .clients-360-sidebar{position:sticky;top:92px;height:calc(100vh - 112px);max-height:calc(100vh - 112px);overflow:hidden;display:flex;flex-direction:column}
   .clients-360-sidebar-head{padding:18px;border-bottom:1px solid #e7eef8}
   .clients-360-sidebar-title{display:flex;justify-content:space-between;gap:12px;font-size:18px;font-weight:900;color:#1b2b44;margin-bottom:12px}
   .clients-360-control{width:100%;box-sizing:border-box;border:1px solid #d8e3f2;border-radius:12px;padding:10px 12px;background:#fff;color:#1b2b44;margin-top:8px}
-  .clients-360-list{padding:10px;overflow:auto;max-height:calc(100vh - 292px)}
+  .clients-360-list{padding:10px;overflow:auto;max-height:none;flex:1;min-height:0}
   .clients-360-item{width:100%;text-align:left;border:1px solid #e1e9f5;border-radius:16px;background:#fff;padding:12px;margin-bottom:8px;cursor:pointer}
   .clients-360-item.active{border-color:#9dbdff;background:#f0f5ff}
   .clients-360-item-status{display:inline-flex;align-items:center;margin-top:8px;padding:4px 8px;border-radius:999px;background:#eef2f7;color:#51657d;font-size:10px;font-weight:900}
@@ -7226,6 +7226,8 @@ html, body{
   .clients-360-badge{border-radius:999px;padding:8px 12px;background:rgba(255,255,255,.16);font-size:12px;font-weight:900;white-space:nowrap}
   .clients-360-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
   .clients-360-kpi{border:1px solid #e0e9f5;border-radius:18px;padding:14px;background:#fff;min-height:92px}
+  .clients-360-kpi.clickable{cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+  .clients-360-kpi.clickable:hover{border-color:#9dbdff;box-shadow:0 10px 24px rgba(37,99,235,.12);transform:translateY(-1px)}
   .clients-360-kpi .label{display:block;color:#71839c;font-size:12px;font-weight:800}
   .clients-360-kpi .value{display:block;color:#17243a;font-size:22px;font-weight:950;margin-top:8px}
   .clients-360-kpi .small{display:block;color:#8a9ab0;font-size:11px;margin-top:5px}
@@ -7236,6 +7238,7 @@ html, body{
   .clients-360-recommendation{border:1px solid #bdd3ff;border-radius:18px;padding:16px 18px;background:#f5f8ff;color:#294266;line-height:1.45}
   .clients-360-recommendation strong{display:block;color:#1c355c;margin-bottom:5px}
   .clients-360-chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.85fr);gap:14px}
+  .clients-360-chart-stack{display:grid;gap:14px}
   .clients-360-section{border:1px solid #e0e9f5;border-radius:20px;padding:16px;background:#fff;min-width:0}
   .clients-360-section-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
   .clients-360-section h3{margin:0;color:#17243a;font-size:19px}
@@ -8097,14 +8100,14 @@ html, body{
             </div>
 
             <div class="clients-360-kpis">
-              <div class="clients-360-kpi"><span class="label">Оборот за 12 міс.</span><span id="clients360Revenue" class="value">—</span><span id="clients360RevenueMeta" class="small">—</span></div>
-              <div class="clients-360-kpi"><span class="label">Звичний оборот / міс.</span><span id="clients360Monthly" class="value">—</span><span class="small">орієнтир для циклу</span></div>
-              <div class="clients-360-kpi"><span class="label">Виконання циклу</span><span id="clients360Cycle" class="value">—</span><span id="clients360CycleMeta" class="small">—</span></div>
-              <div class="clients-360-kpi"><span class="label">Середній чек</span><span id="clients360AvgCheck" class="value">—</span><span class="small">по історії клієнта</span></div>
-              <div class="clients-360-kpi"><span class="label">Сер. інтервал</span><span id="clients360Interval" class="value">—</span><span id="clients360IntervalMeta" class="small">—</span></div>
-              <div class="clients-360-kpi"><span class="label">Потенціал кошика</span><span id="clients360Potential" class="value">—</span><span class="small">розрахунковий резерв</span></div>
-              <div class="clients-360-kpi"><span class="label">Поточний баланс</span><span id="clients360Balance" class="value">—</span><span id="clients360BalanceMeta" class="small">—</span></div>
-              <div class="clients-360-kpi"><span class="label">Протерміновано</span><span id="clients360Overdue" class="value">—</span><span id="clients360OverdueMeta" class="small">—</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="revenue"><span class="label">Оборот за 12 міс.</span><span id="clients360Revenue" class="value">—</span><span id="clients360RevenueMeta" class="small">—</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="monthly"><span class="label">Звичний оборот / міс.</span><span id="clients360Monthly" class="value">—</span><span class="small">орієнтир для циклу</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="cycle"><span class="label">Виконання циклу</span><span id="clients360Cycle" class="value">—</span><span id="clients360CycleMeta" class="small">—</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="avg-check"><span class="label">Середній чек</span><span id="clients360AvgCheck" class="value">—</span><span class="small">по історії клієнта</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="interval"><span class="label">Сер. інтервал</span><span id="clients360Interval" class="value">—</span><span id="clients360IntervalMeta" class="small">—</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="potential"><span class="label">Потенціал кошика</span><span id="clients360Potential" class="value">—</span><span class="small">розрахунковий резерв</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="balance"><span class="label">Поточний баланс</span><span id="clients360Balance" class="value">—</span><span id="clients360BalanceMeta" class="small">—</span></div>
+              <div class="clients-360-kpi clickable" data-client-kpi="overdue"><span class="label">Протерміновано</span><span id="clients360Overdue" class="value">—</span><span id="clients360OverdueMeta" class="small">—</span></div>
             </div>
 
             <div class="clients-360-progress">
@@ -8114,14 +8117,34 @@ html, body{
             <div id="clients360Recommendation" class="clients-360-recommendation"><strong>Практична рекомендація менеджеру</strong>Оберіть клієнта зі списку.</div>
 
             <div class="clients-360-chart-grid">
-              <section class="clients-360-section">
-                <div class="clients-360-section-head"><h3>Динаміка обороту</h3><span id="clients360TrendMeta" class="clients-360-section-note">за 12 місяців</span></div>
-                <div class="clients-360-chart-shell"><canvas id="clients360TrendChart"></canvas></div>
-              </section>
-              <section class="clients-360-section">
-                <div class="clients-360-section-head"><h3>Структура кошика</h3><span class="clients-360-section-note">за 12 місяців</span></div>
-                <div class="clients-360-chart-shell"><canvas id="clients360BasketChart"></canvas><div id="clients360BasketCenter" class="clients-360-donut-center">—</div></div>
-              </section>
+              <div class="clients-360-chart-stack">
+                <section class="clients-360-section">
+                  <div class="clients-360-section-head"><h3>Замовлення + середній чек</h3><span id="clients360OrdersMeta" class="clients-360-section-note">за 12 місяців</span></div>
+                  <div class="clients-360-chart-shell"><canvas id="clients360OrdersChart"></canvas></div>
+                </section>
+                <section class="clients-360-section">
+                  <div class="clients-360-section-head"><h3>Зміна % кошика клієнта</h3><span id="clients360BasketPctMeta" class="clients-360-section-note">за 12 місяців</span></div>
+                  <div class="clients-360-chart-shell"><canvas id="clients360BasketPctChart"></canvas></div>
+                </section>
+                <section class="clients-360-section">
+                  <div class="clients-360-section-head"><h3>Загальна сума ($)</h3><span id="clients360TrendMeta" class="clients-360-section-note">за 12 місяців</span></div>
+                  <div class="clients-360-chart-shell"><canvas id="clients360TrendChart"></canvas></div>
+                </section>
+              </div>
+              <div class="clients-360-chart-stack">
+                <section class="clients-360-section">
+                  <div class="clients-360-section-head"><h3>Бренди</h3><span class="clients-360-section-note">структура кошика</span></div>
+                  <div class="clients-360-chart-shell"><canvas id="clients360BrandChart"></canvas></div>
+                </section>
+                <section class="clients-360-section">
+                  <div class="clients-360-section-head"><h3>Категорії</h3><span class="clients-360-section-note">структура кошика</span></div>
+                  <div class="clients-360-chart-shell"><canvas id="clients360CategoryChart"></canvas></div>
+                </section>
+                <section class="clients-360-section">
+                  <div class="clients-360-section-head"><h3>Групи</h3><span class="clients-360-section-note">структура кошика</span></div>
+                  <div class="clients-360-chart-shell"><canvas id="clients360BasketChart"></canvas><div id="clients360BasketCenter" class="clients-360-donut-center">—</div></div>
+                </section>
+              </div>
             </div>
 
             <section class="clients-360-section">
@@ -21228,6 +21251,114 @@ function renderClientNameForLtv(clientName, extraHtml) {
       renderClients360Analysis(item, comparison);
     }
 
+    function getClients360SelectedItem() {
+      const items = buildClients360Items();
+      return items.find(item => item.client === clients360SelectedClient) || null;
+    }
+
+    function buildClients360KpiDetail(type, item) {
+      if (!item) return null;
+      const action = item.action || {};
+      const balance = item.balance || {};
+      const overdue = Math.abs(parseNumber(balance.dueAmount));
+      const balanceDetails = item.balance ? getPaymentsClientShipmentDetails(item.balance) : [];
+      const overdueMaxDays = balanceDetails.reduce((max, row) => Math.max(max, row.isOverdueDebt ? Number(row.overdueDays || 0) : 0), 0);
+      const commonMeta = item.client;
+      const details = {
+        revenue: {
+          title: 'Оборот за 12 міс.',
+          value: formatMoneyUsd(item.revenue),
+          summary: 'Сума продажів клієнта за останні 12 місяців від останньої доступної дати в даних.',
+          entries: [
+            ['Період', 'останні 12 місяців'],
+            ['Днів із закупівлями', fmt(item.events.length)],
+            ['Для чого', 'Швидко показує масштаб клієнта та його вагу для менеджера.']
+          ]
+        },
+        monthly: {
+          title: 'Звичний оборот / міс.',
+          value: formatMoneyUsd(action.targetMonthlyRevenue || item.ltv),
+          summary: 'Орієнтир місячного обороту клієнта, з яким порівнюється поточний прогрес.',
+          entries: [
+            ['База розрахунку', 'історія продажів / predictive action'],
+            ['Поточний оборот', formatMoneyUsd(action.currentRevenue || 0)],
+            ['Для чого', 'Допомагає бачити, чи клієнт іде у своєму нормальному темпі.']
+          ]
+        },
+        cycle: {
+          title: 'Виконання циклу',
+          value: `${Number(action.progressPct || 0).toFixed(1)}%`,
+          summary: 'Показує, яку частину звичного плану закупівель клієнт уже виконав у поточному періоді.',
+          entries: [
+            ['Відгрузки', `${action.currentOrders || 0}/${action.targetOrdersRounded || 0}`],
+            ['Оборот', `${formatMoneyUsd(action.currentRevenue || 0)} / ${formatMoneyUsd(action.targetRevenue || action.targetMonthlyRevenue || item.ltv)}`],
+            ['Для чого', 'Дає сигнал, чи треба активніше дотискати повторну закупівлю.']
+          ]
+        },
+        'avg-check': {
+          title: 'Середній чек',
+          value: formatMoneyUsd(action.avgOrderValue || 0),
+          summary: 'Середня сума одного клієнтського чека/дня закупівлі за історією клієнта.',
+          entries: [
+            ['Правило підрахунку', 'кілька відвантажень одного клієнта в один день = один чек'],
+            ['Днів із закупівлями', fmt(item.events.length)],
+            ['Для чого', 'Показує якість замовлення: клієнт бере мало, нормально чи великими партіями.']
+          ]
+        },
+        interval: {
+          title: 'Сер. інтервал',
+          value: `${fmt(action.avgDaysBetweenOrders || 0)} дн.`,
+          summary: 'Середній проміжок між закупівлями клієнта.',
+          entries: [
+            ['Остання закупівля', formatDisplayDate(item.lastEvent.date) || '—'],
+            ['Зараз без закупівлі', `${fmt(item.daysSinceLast)} дн.`],
+            ['Для чого', 'Допомагає зрозуміти, чи клієнт уже запізнюється з повторним замовленням.']
+          ]
+        },
+        potential: {
+          title: 'Потенціал кошика',
+          value: formatMoneyUsd(item.potential),
+          summary: 'Розрахунковий резерв допродажу за групами, які схожі клієнти купують активніше.',
+          entries: (item.opportunities || []).slice(0, 5).map(entry => [entry.group, `${formatMoneyUsd(entry.potential)} · частка клієнта ${(entry.actualShare * 100).toFixed(1)}%`]).concat([['Для чого', 'Підказує менеджеру, що саме можна запропонувати для розширення кошика.']])
+        },
+        balance: {
+          title: 'Поточний баланс',
+          value: formatMoneyUsd(balance.currentBalance || 0),
+          summary: 'Поточний фінансовий баланс клієнта за даними client_balances.',
+          entries: [
+            ['Статус', balance.statusLabel || 'немає даних'],
+            ['Протерміновано', formatMoneyUsd(balance.dueAmount || 0)],
+            ['Для чого', 'Показує фінансовий контекст перед новим відвантаженням.']
+          ]
+        },
+        overdue: {
+          title: 'Протерміновано',
+          value: formatMoneyUsd(balance.dueAmount || 0),
+          summary: 'Сума боргу, яка вже вийшла за допустимий строк оплати.',
+          entries: [
+            ['Максимальна прострочка', overdue > 5 ? `${fmt(overdueMaxDays)} дн.` : 'критичної прострочки немає'],
+            ['Фактор для менеджера', overdue > 5 ? 'спочатку оплата/умови, потім нова продажа' : 'фінансового стоп-фактора не видно'],
+            ['Для чого', 'Не дає менеджеру ігнорувати борг під час планування продажу.']
+          ]
+        }
+      };
+      const data = details[type];
+      if (!data) return null;
+      return {
+        title: data.title,
+        meta: `${commonMeta} • ${data.value}`,
+        summary: data.summary,
+        nameHead: 'Показник',
+        valueHead: 'Пояснення',
+        entries: data.entries
+      };
+    }
+
+    function openClients360KpiModal(type) {
+      const data = buildClients360KpiDetail(type, getClients360SelectedItem());
+      if (data) openCustomKpiDetailModal(data);
+    }
+
     function getClients360Comparison(item) {
       const monthly = buildClientMonthlyStats(item.allRows);
       const map = new Map(monthly.map(row => [row.month, row]));
@@ -21305,18 +21436,113 @@ function renderClientNameForLtv(clientName, extraHtml) {
       target.innerHTML = `<div class="clients-360-analysis-stats"><div class="clients-360-analysis-stat"><span class="label">Зміна суми</span><span class="value ${valueClass(comparison.sumDelta)}">${comparison.sumDelta >= 0 ? '+' : ''}${formatMoneyUsd(comparison.sumDelta)}</span></div><div class="clients-360-analysis-stat"><span class="label">Зміна замовлень</span><span class="value ${valueClass(comparison.ordersDelta)}">${comparison.ordersDelta >= 0 ? '+' : ''}${fmt(comparison.ordersDelta)} шт.</span></div><div class="clients-360-analysis-stat"><span class="label">Зміна чека</span><span class="value ${valueClass(comparison.avgCheckPct)}">${comparison.avgCheckPct >= 0 ? '+' : ''}${comparison.avgCheckPct.toFixed(1)}%</span></div></div><div class="clients-360-analysis-sections"><div class="clients-360-analysis-section"><h4>Результат періоду</h4>${buildManagerAnalysisSummary(comparison, comparison.monthA, comparison.monthB)}</div><div class="clients-360-analysis-section"><h4>Історія та тренд</h4>Середній оборот за останні 6 місяців — <strong>${formatMoneyUsd(comparison.avgRevenue)}</strong>. Поточний місяць ${avgDeviation >= 0 ? 'вище' : 'нижче'} цієї норми на <strong>${Math.abs(avgDeviation).toFixed(1)}%</strong>.</div><div class="clients-360-analysis-section"><h4>План дій</h4>${buildManagerAnalysisPlan(status, comparison)}</div></div>`;
     }
 
+    function getClients360BasketPctForRows(rows) {
+      const safeRows = Array.isArray(rows) ? rows : [];
+      const brands = new Set();
+      const categories = new Set();
+      const groups = new Set();
+      safeRows.forEach(row => {
+        const brand = normalizeText(row.brand);
+        const category = normalizeText(row.category);
+        const group = normalizeText(row.product_group || row.group);
+        if (isValidClientBasketDimension('brands', brand)) brands.add(brand);
+        if (isValidClientBasketDimension('categories', category)) categories.add(category);
+        if (isValidClientBasketDimension('groups', group)) groups.add(group);
+      });
+      const totalAvailable = (clientBasketMatrixBrands.length || 0) + (clientBasketMatrixCategories.length || 0) + (clientBasketMatrixGroups.length || 0);
+      return totalAvailable > 0 ? ((brands.size + categories.size + groups.size) / totalAvailable) * 100 : 0;
+    }
+
+    function buildClients360MonthlyChartStats(item) {
+      const rows = Array.isArray(item && item.allRows) ? item.allRows : [];
+      const monthMap = new Map();
+      rows.forEach(row => {
+        const monthKey = normalizeDate(row.date).slice(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(monthKey)) return;
+        if (!monthMap.has(monthKey)) monthMap.set(monthKey, { month: monthKey, revenue: 0, orders: new Set(), rows: [] });
+        const bucket = monthMap.get(monthKey);
+        bucket.revenue += parseNumber(row.revenue);
+        const key = getClientDayKey(row);
+        if (key) bucket.orders.add(key);
+        bucket.rows.push(row);
+      });
+      return Array.from(monthMap.values()).map(row => {
+        const orderCount = row.orders.size;
+        const basketPct = getClients360BasketPctForRows(row.rows);
+        return {
+          month: row.month,
+          revenue: row.revenue,
+          orders: orderCount,
+          avgCheck: orderCount > 0 ? row.revenue / orderCount : 0,
+          basketPct
+        };
+      }).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+    }
+
+    function buildClients360DimensionEntries(rows, field) {
+      const map = new Map();
+      (Array.isArray(rows) ? rows : []).forEach(row => {
+        const name = normalizeText(field === 'group' ? (row.product_group || row.group) : row[field]);
+        if (!name) return;
+        map.set(name, (map.get(name) || 0) + parseNumber(row.revenue));
+      });
+      return Array.from(map.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'uk')).slice(0, 8);
+    }
+
+    function renderClients360Donut(chartRef, canvasId, entries) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return chartRef;
+      if (chartRef) chartRef.destroy();
+      const labels = entries.map(item => item[0]);
+      return new Chart(canvas, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: entries.map(item => item[1]), backgroundColor: colorArray(entries.length) }] },
+        options: { ...baseDonutOptions(labels), cutout: '62%', plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+      });
+    }
+
     function renderClients360Charts(item) {
-      const monthly = buildClientMonthlyStats(item.allRows).slice(-12);
+      const monthly = buildClients360MonthlyChartStats(item);
       const labels = monthly.map(row => row.month);
-      const values = monthly.map(row => row.revenue);
+      const periodText = monthly.length ? `${monthly[0].month} → ${monthly[monthly.length - 1].month}` : 'немає даних';
+
+      const ordersCanvas = document.getElementById('clients360OrdersChart');
+      if (ordersCanvas) {
+        if (clients360OrdersChart) clients360OrdersChart.destroy();
+        clients360OrdersChart = new Chart(ordersCanvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { type: 'bar', label: 'Замовлення', data: monthly.map(row => row.orders), backgroundColor: 'rgba(46,100,232,.28)', borderColor: '#2e64e8', borderWidth: 1, yAxisID: 'y' },
+              { type: 'line', label: 'Середній чек', data: monthly.map(row => row.avgCheck), borderColor: '#0f9f6e', backgroundColor: 'rgba(15,159,110,.14)', tension: .3, pointRadius: 3, yAxisID: 'y1' }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: true, position: 'bottom' } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Замовлення' } }, y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Середній чек, $' } } } }
+        });
+      }
+      const ordersMeta = document.getElementById('clients360OrdersMeta');
+      if (ordersMeta) ordersMeta.textContent = periodText;
+
+      const basketPctCanvas = document.getElementById('clients360BasketPctChart');
+      if (basketPctCanvas) {
+        if (clients360BasketPctChart) clients360BasketPctChart.destroy();
+        clients360BasketPctChart = new Chart(basketPctCanvas, { type: 'line', data: { labels, datasets: [{ label: '% кошика', data: monthly.map(row => row.basketPct), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,.13)', fill: true, tension: .3, pointRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: value => `${value}%` } } } } });
+      }
+      const basketPctMeta = document.getElementById('clients360BasketPctMeta');
+      if (basketPctMeta) basketPctMeta.textContent = periodText;
+
       const trendCanvas = document.getElementById('clients360TrendChart');
-      if (clients360TrendChart) clients360TrendChart.destroy();
-      clients360TrendChart = new Chart(trendCanvas, {type:'line',data:{labels,datasets:[{data:values,borderColor:'#2e64e8',backgroundColor:'rgba(46,100,232,.14)',fill:true,tension:.3,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-      document.getElementById('clients360TrendMeta').textContent = monthly.length ? `${monthly[0].month} → ${monthly[monthly.length - 1].month}` : 'немає даних';
-      const basketEntries = Array.from(item.groupRevenue.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8);
-      const basketCanvas = document.getElementById('clients360BasketChart');
-      if (clients360BasketChart) clients360BasketChart.destroy();
-      clients360BasketChart = new Chart(basketCanvas,{type:'doughnut',data:{labels:basketEntries.map(x=>x[0]),datasets:[{data:basketEntries.map(x=>x[1]),backgroundColor:colorArray(basketEntries.length)}]},options:{...baseDonutOptions(basketEntries.map(x=>x[0])),cutout:'62%',plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+      if (trendCanvas) {
+        if (clients360TrendChart) clients360TrendChart.destroy();
+        clients360TrendChart = new Chart(trendCanvas, { type: 'line', data: { labels, datasets: [{ label: 'Загальна сума ($)', data: monthly.map(row => row.revenue), borderColor: '#2e64e8', backgroundColor: 'rgba(46,100,232,.14)', fill: true, tension: .3, pointRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+      }
+      document.getElementById('clients360TrendMeta').textContent = periodText;
+
+      clients360BrandChart = renderClients360Donut(clients360BrandChart, 'clients360BrandChart', buildClients360DimensionEntries(item.rows, 'brand'));
+      clients360CategoryChart = renderClients360Donut(clients360CategoryChart, 'clients360CategoryChart', buildClients360DimensionEntries(item.rows, 'category'));
+      const basketEntries = buildClients360DimensionEntries(item.rows, 'group');
+      clients360BasketChart = renderClients360Donut(clients360BasketChart, 'clients360BasketChart', basketEntries);
       const basketSnapshot = clientBasketФіналізаціяMap.get(item.client);
       document.getElementById('clients360BasketCenter').textContent = basketSnapshot ? `${basketSnapshot.overallPct.toFixed(1)}%` : `${Math.min(100, item.groupRevenue.size * 8).toFixed(1)}%`;
     }
@@ -23988,6 +24214,9 @@ function renderClientNameForLtv(clientName, extraHtml) {
     if (clientBasketCategoryCard) clientBasketCategoryCard.addEventListener('click', () => openClientBasketDetailModal('categories'));
     if (clientBasketGroupCard) clientBasketGroupCard.addEventListener('click', () => openClientBasketDetailModal('groups'));
     if (clientBasketOverallCard) clientBasketOverallCard.addEventListener('click', () => openClientBasketDetailModal('overall'));
+    document.querySelectorAll('[data-client-kpi]').forEach(card => {
+      card.addEventListener('click', () => openClients360KpiModal(card.dataset.clientKpi));
+    });
     if (positionExplorerManagerChip) positionExplorerManagerChip.addEventListener('click', () => openPositionExplorerManagerModal());
     if (closeKpiDetailModalBtn) closeKpiDetailModalBtn.addEventListener('click', closeKpiDetailModal);
     if (kpiDetailModal) kpiDetailModal.addEventListener('click', (e) => { if (e.target === kpiDetailModal) closeKpiDetailModal(); });
@@ -24214,7 +24443,11 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clientsDashboardDirty = true;
     let paymentsDashboardDirty = false;
     let clients360SelectedClient = '';
+    let clients360OrdersChart = null;
+    let clients360BasketPctChart = null;
     let clients360TrendChart = null;
+    let clients360BrandChart = null;
+    let clients360CategoryChart = null;
     let clients360BasketChart = null;
     let okrDashboardDirty = false;
     let bonusesDashboardDirty = false;

@@ -239,6 +239,39 @@ Verification:
 - Ran node --check sales-dashboard/D20.
 - Extracted and syntax-checked 5 inline JS script blocks from D20.html with new Function.
 
+## D58 Clients Tab KPI And Charts Update - 2026-06-04
+
+Request: continue from D58 and update the "Клієнти" tab: make all client KPI cards clickable with explanation modals, add two more vertical charts and two more vertical donut diagrams, and extend the client list to the bottom of its sidebar block.
+
+Base version:
+
+- sales-dashboard/D58
+- sales-dashboard/D58.html
+
+Changed files:
+
+- sales-dashboard/D58.html
+
+Implementation:
+
+- Made all Clients 360 KPI cards clickable via the existing KPI detail modal.
+- Added per-KPI Ukrainian business explanations and current selected-client values.
+- Rebuilt the Clients 360 chart area into two vertical stacks: three line/bar charts and three donut diagrams.
+- Added charts for "Замовлення + середній чек", "Зміна % кошика клієнта", and "Загальна сума ($)" using existing client rows.
+- Added donut diagrams for brand, category, and group structure, without reverse analytics.
+- Changed the client sidebar to a flex column so the client list fills the available block height.
+
+Verification:
+
+- Ran node --check sales-dashboard/D58.
+- Extracted and syntax-checked 5 inline JS script blocks from D58.html with new Function.
+- Ran git diff --check -- sales-dashboard/D58.html.
+- Checked references for new chart canvas IDs and meta IDs.
+
+Rollback note:
+
+- Previous D58 state is available through Git history; older D54-D57 versions remain unchanged.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
