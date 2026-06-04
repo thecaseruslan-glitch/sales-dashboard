@@ -1248,6 +1248,32 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## D59 Clients Point Products Modal Width Fix - 2026-06-04
+
+Request: make product names in the chart-point sold-products modal fit into one row by using the empty space on the right.
+
+Changed files:
+
+- `sales-dashboard/D59.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Added a dedicated `clients-360-point-products-modal` layout class for the chart-point products modal only.
+- Expanded the product-name column to 68% and made both columns single-line with ellipsis for very long values.
+- Added modal class support to the shared KPI detail modal opener while clearing the class for other modal uses.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D59`.
+- Extracted and syntax-checked all inline script blocks from `sales-dashboard/D59.html` with `new Function`.
+- Verified the point-products modal layout tokens exist.
+- Ran `git diff --check -- sales-dashboard/D59.html`.
+
+Rollback note:
+
+- Commit `dad7140` is the rollback point before this modal width fix.
+
 ## D59 Clients Chart Point Products Modal - 2026-06-04
 
 Request: allow clicking a point on any Clients tab chart to open a modal with the sold products for that point's period.

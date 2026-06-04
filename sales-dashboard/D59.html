@@ -3130,6 +3130,23 @@
       color:#be123c;
       font-weight:800;
     }
+    .kpi-detail-modal-card.clients-360-point-products-modal{
+      width:min(1500px,98vw);
+    }
+    .kpi-detail-modal-card.clients-360-point-products-modal .kpi-detail-table td:first-child,
+    .kpi-detail-modal-card.clients-360-point-products-modal .kpi-detail-table th:first-child{
+      width:68%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .kpi-detail-modal-card.clients-360-point-products-modal .kpi-detail-table td:last-child,
+    .kpi-detail-modal-card.clients-360-point-products-modal .kpi-detail-table th:last-child{
+      width:32%;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .kpi-entry-badge{
       display:inline-flex;
       align-items:center;
@@ -11490,6 +11507,11 @@ html, body{
 
     function openCustomKpiDetailModal(data) {
       if (!kpiDetailModal || !kpiDetailBody || !data) return;
+      const detailCard = kpiDetailModal.querySelector('.kpi-detail-modal-card');
+      if (detailCard) {
+        detailCard.classList.remove('clients-360-point-products-modal');
+        if (data.modalClass) detailCard.classList.add(data.modalClass);
+      }
 
       kpiDetailTitle.textContent = data.title || 'Деталізація KPI';
       kpiDetailMeta.textContent = data.meta || '';
@@ -21748,6 +21770,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       const totalQty = products.reduce((sum, product) => sum + Number(product.quantity || 0), 0);
       openCustomKpiDetailModal({
         title: 'Продані позиції за ' + formatShortMonthLabel(point.month),
+        modalClass: 'clients-360-point-products-modal',
         meta: (item && item.client ? item.client + ' • ' : '') + fmt(products.length) + ' позицій • ' + fmt(totalQty) + ' шт • ' + formatMetricValue(totalRevenue) + ' продажів',
         summary: 'Список позицій, які були продані клієнту в місяці вибраної точки графіка.',
         nameHead: 'Позиція',
