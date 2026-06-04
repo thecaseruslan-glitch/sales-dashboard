@@ -819,6 +819,31 @@
     .analysis-table .analysis-muted{
       display:none;
     }
+    .analysis-columns-cell{
+      width:44px;
+      min-width:44px;
+      text-align:center;
+    }
+    .analysis-columns-btn{
+      width:28px;
+      height:28px;
+      border-radius:10px;
+      border:1px solid #d8e6fb;
+      background:#fff;
+      color:#476586;
+      font-size:16px;
+      font-weight:950;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 4px 12px rgba(30,58,95,.08);
+    }
+    .analysis-columns-btn:hover{
+      color:#2f68ef;
+      border-color:#bcd2ff;
+      background:#f7fbff;
+    }
     .risk-cell.danger{color:#c2413b}
     .risk-cell.warn{color:#b45309}
     .risk-cell.good{color:#167247}
@@ -1325,6 +1350,47 @@
       flex-direction:column;
       gap:14px;
     }
+    .column-modal{
+      width:min(440px,calc(100vw - 32px));
+      max-height:min(720px,calc(100vh - 32px));
+      overflow:auto;
+      border-radius:24px;
+      border:1px solid #d9e6f5;
+      background:#fff;
+      box-shadow:0 28px 80px rgba(17,34,68,.24);
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .column-settings-list{
+      display:grid;
+      gap:8px;
+    }
+    .column-settings-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:38px;
+      padding:8px 10px;
+      border:1px solid #e4edf8;
+      border-radius:12px;
+      background:#f9fbff;
+      color:#1d2c44;
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+    }
+    .column-settings-item input{
+      width:16px;
+      height:16px;
+      accent-color:#2f68ef;
+    }
+    .column-settings-item.disabled{
+      opacity:.64;
+      cursor:not-allowed;
+    }
     .kpi-modal-list{
       border:1px solid #dfe9f5;
       border-radius:16px;
@@ -1497,6 +1563,19 @@
     </div>
   </div>
 
+  <div id="columnModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="columnModalTitle">
+    <div class="column-modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="columnModalTitle" class="modal-title">Колонки списку</h2>
+          <div id="columnModalNote" class="modal-note">Оберіть, які колонки показувати в таблиці аналізу.</div>
+        </div>
+        <button id="columnModalClose" class="modal-close" type="button">Закрити</button>
+      </div>
+      <div id="columnSettingsList" class="column-settings-list"></div>
+    </div>
+  </div>
+
   <div class="page">
     <section class="card shell">
       <div class="view-tabs" id="viewTabs">
@@ -1635,6 +1714,27 @@
   <script>
     window.__INITIAL_DATA__ = <?!= initialDataJson ?>;
 
+    const ANALYSIS_COLUMN_STORAGE_KEY = 'purchaseDashboardP6.analysisColumns.v1';
+    const ANALYSIS_COLUMNS = [
+      { key: 'product', label: 'Позиція', required: true },
+      { key: 'code', label: 'Код' },
+      { key: 'stock_qty', label: 'Залишок' },
+      { key: 'in_transit_qty', label: 'Очікуємо' },
+      { key: 'period_sold_qty', label: 'Продано' },
+      { key: 'available_with_transit_qty', label: 'Доступно' },
+      { key: 'sales_total_all', label: 'Продано весь час' },
+      { key: 'period_shipments', label: 'Відгрузок' },
+      { key: 'avg_monthly_qty', label: 'Сер./міс' },
+      { key: 'status', label: 'Статус' },
+      { key: 'reorder_enabled', label: 'Закуп.' },
+      { key: 'days_cover', label: 'Днів запасу' },
+      { key: 'target_stock_days_effective', label: 'Термін + запас' },
+      { key: 'forecast_order_qty', label: 'Добрати' },
+      { key: 'manual_order_qty', label: 'Корекція' },
+      { key: 'final_order_qty', label: 'До замовл.' },
+      { key: 'comment', label: 'Коментар' }
+    ];
+
     const state = {
       data: window.__INITIAL_DATA__ || {},
       rows: [],
@@ -1666,6 +1766,8 @@
       manualSaveLoading: false,
       openManualMenu: '',
       kpiModalOpen: false,
+      columnModalOpen: false,
+      analysisColumnVisibility: loadAnalysisColumnVisibility(),
       filtersCollapsed: false,
       analysisSortField: 'product',
       analysisSortDir: 'asc'
@@ -1682,6 +1784,52 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+
+    function defaultAnalysisColumnVisibility() {
+      return ANALYSIS_COLUMNS.reduce((map, column) => {
+        map[column.key] = true;
+        return map;
+      }, {});
+    }
+
+    function loadAnalysisColumnVisibility() {
+      const defaults = defaultAnalysisColumnVisibility();
+      try {
+        const raw = window.localStorage && window.localStorage.getItem(ANALYSIS_COLUMN_STORAGE_KEY);
+        if (!raw) return defaults;
+        const parsed = JSON.parse(raw);
+        ANALYSIS_COLUMNS.forEach(column => {
+          if (column.required) defaults[column.key] = true;
+          else if (Object.prototype.hasOwnProperty.call(parsed, column.key)) defaults[column.key] = parsed[column.key] !== false;
+        });
+      } catch (error) {
+        return defaults;
+      }
+      return defaults;
+    }
+
+    function saveAnalysisColumnVisibility() {
+      try {
+        if (!window.localStorage) return;
+        window.localStorage.setItem(ANALYSIS_COLUMN_STORAGE_KEY, JSON.stringify(state.analysisColumnVisibility));
+      } catch (error) {
+        // Local browser storage can be unavailable in restricted contexts.
+      }
+    }
+
+    function isAnalysisColumnVisible(key) {
+      const column = ANALYSIS_COLUMNS.find(item => item.key === key);
+      if (column && column.required) return true;
+      return state.analysisColumnVisibility[key] !== false;
+    }
+
+    function renderAnalysisColumnHeader(key, html) {
+      return isAnalysisColumnVisible(key) ? html : '';
+    }
+
+    function renderAnalysisColumnCell(key, html) {
+      return isAnalysisColumnVisible(key) ? html : '';
+    }
 
     function setLoader(progress, step) {
       $('progressFill').style.width = progress + '%';
@@ -2961,6 +3109,29 @@
       $('kpiModal').classList.add('hidden');
     }
 
+    function renderColumnSettingsModal() {
+      $('columnSettingsList').innerHTML = ANALYSIS_COLUMNS.map(column => {
+        const checked = isAnalysisColumnVisible(column.key) ? ' checked' : '';
+        const disabled = column.required ? ' disabled' : '';
+        const className = column.required ? 'column-settings-item disabled' : 'column-settings-item';
+        return '<label class="' + className + '">' +
+          '<input type="checkbox" data-analysis-column-toggle="' + esc(column.key) + '"' + checked + disabled + '>' +
+          '<span>' + esc(column.label) + '</span>' +
+        '</label>';
+      }).join('');
+    }
+
+    function openColumnModal() {
+      renderColumnSettingsModal();
+      state.columnModalOpen = true;
+      $('columnModal').classList.remove('hidden');
+    }
+
+    function closeColumnModal() {
+      state.columnModalOpen = false;
+      $('columnModal').classList.add('hidden');
+    }
+
     function statusClass(status) {
       const clean = text(status);
       if (clean === 'Протерміновано в дорозі') return 'overdue';
@@ -3222,23 +3393,24 @@
 
       return '<div class="analysis-table-wrap"><table class="analysis-table">' +
         '<thead><tr>' +
-          renderAnalysisSortHeader('Позиція', 'product', '', 'width:620px') +
-          renderAnalysisSortHeader('Код', 'code', '', 'width:70px') +
-          renderAnalysisSortHeader('Залишок', 'stock_qty', 'num metric-group metric-start', 'width:78px') +
-          renderAnalysisSortHeader('Очікуємо', 'in_transit_qty', 'num metric-group', 'width:78px') +
-          renderAnalysisSortHeader('Продано', 'period_sold_qty', 'num metric-group', 'width:78px') +
-          renderAnalysisSortHeader('Доступно', 'available_with_transit_qty', 'num metric-group', 'width:78px') +
-          renderAnalysisSortHeader('Продано весь час', 'sales_total_all', 'num metric-group metric-end', 'width:108px') +
-          renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px') +
-          renderAnalysisSortHeader('Сер./міс', 'avg_monthly_qty', 'num', 'width:90px') +
-          renderAnalysisSortHeader('Статус', 'status', 'center', 'width:100px') +
-          renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px') +
-          renderAnalysisSortHeader('Днів запасу', 'days_cover', 'num', 'width:94px') +
-          renderAnalysisSortHeader('Термін + запас', 'target_stock_days_effective', 'num', 'width:108px') +
-          renderAnalysisSortHeader('Добрати', 'forecast_order_qty', 'num', 'width:88px') +
-          renderAnalysisSortHeader('Корекція', 'manual_order_qty', 'num', 'width:104px') +
-          renderAnalysisSortHeader('До замовл.', 'final_order_qty', 'num', 'width:108px') +
-          renderAnalysisSortHeader('Коментар', 'comment', '', 'width:145px') +
+          renderAnalysisColumnHeader('product', renderAnalysisSortHeader('Позиція', 'product', '', 'width:620px')) +
+          renderAnalysisColumnHeader('code', renderAnalysisSortHeader('Код', 'code', '', 'width:70px')) +
+          renderAnalysisColumnHeader('stock_qty', renderAnalysisSortHeader('Залишок', 'stock_qty', 'num metric-group metric-start', 'width:78px')) +
+          renderAnalysisColumnHeader('in_transit_qty', renderAnalysisSortHeader('Очікуємо', 'in_transit_qty', 'num metric-group', 'width:78px')) +
+          renderAnalysisColumnHeader('period_sold_qty', renderAnalysisSortHeader('Продано', 'period_sold_qty', 'num metric-group', 'width:78px')) +
+          renderAnalysisColumnHeader('available_with_transit_qty', renderAnalysisSortHeader('Доступно', 'available_with_transit_qty', 'num metric-group', 'width:78px')) +
+          renderAnalysisColumnHeader('sales_total_all', renderAnalysisSortHeader('Продано весь час', 'sales_total_all', 'num metric-group metric-end', 'width:108px')) +
+          renderAnalysisColumnHeader('period_shipments', renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px')) +
+          renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер./міс', 'avg_monthly_qty', 'num', 'width:90px')) +
+          renderAnalysisColumnHeader('status', renderAnalysisSortHeader('Статус', 'status', 'center', 'width:100px')) +
+          renderAnalysisColumnHeader('reorder_enabled', renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px')) +
+          renderAnalysisColumnHeader('days_cover', renderAnalysisSortHeader('Днів запасу', 'days_cover', 'num', 'width:94px')) +
+          renderAnalysisColumnHeader('target_stock_days_effective', renderAnalysisSortHeader('Термін + запас', 'target_stock_days_effective', 'num', 'width:108px')) +
+          renderAnalysisColumnHeader('forecast_order_qty', renderAnalysisSortHeader('Добрати', 'forecast_order_qty', 'num', 'width:88px')) +
+          renderAnalysisColumnHeader('manual_order_qty', renderAnalysisSortHeader('Корекція', 'manual_order_qty', 'num', 'width:104px')) +
+          renderAnalysisColumnHeader('final_order_qty', renderAnalysisSortHeader('До замовл.', 'final_order_qty', 'num', 'width:108px')) +
+          renderAnalysisColumnHeader('comment', renderAnalysisSortHeader('Коментар', 'comment', '', 'width:145px')) +
+          '<th class="analysis-columns-cell"><button class="analysis-columns-btn" type="button" data-open-column-settings title="Налаштувати колонки">⚙</button></th>' +
         '</tr></thead><tbody>' +
         sorted.map(row => {
           const daysCover = row.days_cover >= 999 ? '∞' : fmtInt(Math.floor(row.days_cover));
@@ -3248,27 +3420,24 @@
           const statusValue = text(row.actuality_status || row.product_status || 'new');
           const reorderValue = text(row.reorder_enabled).toLowerCase() === 'no' ? 'no' : 'yes';
           return '<tr data-analysis-key="' + esc(row.key) + '">' +
-            '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div></div></td>' +
-            '<td class="code">' + (row.code ? esc(row.code) : '<span class="dash">—</span>') + '</td>' +
-            '<td class="num metric-group metric-start">' + fmt(row.stock_qty) + '</td>' +
-            '<td class="num metric-group">' + fmt(row.in_transit_qty) + '</td>' +
-            '<td class="num metric-group">' + fmt(row.period_sold_qty) + '</td>' +
-            '<td class="num metric-group">' + fmt(row.available_with_transit_qty) + '</td>' +
-            '<td class="num metric-group metric-end">' + fmt(row.sales_total_all) + '</td>' +
-            '<td class="num">' + fmtInt(row.period_shipments) + '</td>' +
-            '<td class="num">' + fmt(row.avg_monthly_qty) + '</td>' +
-            '<td class="center">' + renderChoiceMenu(row, 'status', statusValue, ['new','active','basic','low','in archive']) + '</td>' +
-            '<td class="center">' +
-              renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>' +
-            '<td class="num risk-cell ' + riskClass + '">' + esc(daysCover) + '</td>' +
-            '<td class="num">' +
-              '<input class="analysis-input" data-analysis-edit="target_stock_days" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(targetValue) + '" placeholder="' + esc(fmtInt(row.target_stock_days_effective)) + '">' +
-              '<div class="analysis-muted">' + fmtInt(row.lead_time_days_effective) + ' дн. доставка</div>' +
-            '</td>' +
-            '<td class="num">' + fmt(row.forecast_order_qty) + '</td>' +
-            '<td class="num"><input class="analysis-input" data-analysis-edit="manual_order_qty" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(manualValue) + '" placeholder="' + esc(fmt(row.forecast_order_qty)) + '"></td>' +
-            '<td class="num">' + fmt(row.final_order_qty) + (row.manual_order_active ? '<div class="analysis-muted">ручна</div>' : '') + '</td>' +
-            '<td><input class="analysis-input analysis-comment" data-analysis-edit="comment" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(row.settings_comment) + '" placeholder="Коментар"></td>' +
+            renderAnalysisColumnCell('product', '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div></div></td>') +
+            renderAnalysisColumnCell('code', '<td class="code">' + (row.code ? esc(row.code) : '<span class="dash">—</span>') + '</td>') +
+            renderAnalysisColumnCell('stock_qty', '<td class="num metric-group metric-start">' + fmt(row.stock_qty) + '</td>') +
+            renderAnalysisColumnCell('in_transit_qty', '<td class="num metric-group">' + fmt(row.in_transit_qty) + '</td>') +
+            renderAnalysisColumnCell('period_sold_qty', '<td class="num metric-group">' + fmt(row.period_sold_qty) + '</td>') +
+            renderAnalysisColumnCell('available_with_transit_qty', '<td class="num metric-group">' + fmt(row.available_with_transit_qty) + '</td>') +
+            renderAnalysisColumnCell('sales_total_all', '<td class="num metric-group metric-end">' + fmt(row.sales_total_all) + '</td>') +
+            renderAnalysisColumnCell('period_shipments', '<td class="num">' + fmtInt(row.period_shipments) + '</td>') +
+            renderAnalysisColumnCell('avg_monthly_qty', '<td class="num">' + fmt(row.avg_monthly_qty) + '</td>') +
+            renderAnalysisColumnCell('status', '<td class="center">' + renderChoiceMenu(row, 'status', statusValue, ['new','active','basic','low','in archive']) + '</td>') +
+            renderAnalysisColumnCell('reorder_enabled', '<td class="center">' + renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>') +
+            renderAnalysisColumnCell('days_cover', '<td class="num risk-cell ' + riskClass + '">' + esc(daysCover) + '</td>') +
+            renderAnalysisColumnCell('target_stock_days_effective', '<td class="num"><input class="analysis-input" data-analysis-edit="target_stock_days" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(targetValue) + '" placeholder="' + esc(fmtInt(row.target_stock_days_effective)) + '"><div class="analysis-muted">' + fmtInt(row.lead_time_days_effective) + ' дн. доставка</div></td>') +
+            renderAnalysisColumnCell('forecast_order_qty', '<td class="num">' + fmt(row.forecast_order_qty) + '</td>') +
+            renderAnalysisColumnCell('manual_order_qty', '<td class="num"><input class="analysis-input" data-analysis-edit="manual_order_qty" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(manualValue) + '" placeholder="' + esc(fmt(row.forecast_order_qty)) + '"></td>') +
+            renderAnalysisColumnCell('final_order_qty', '<td class="num">' + fmt(row.final_order_qty) + (row.manual_order_active ? '<div class="analysis-muted">ручна</div>' : '') + '</td>') +
+            renderAnalysisColumnCell('comment', '<td><input class="analysis-input analysis-comment" data-analysis-edit="comment" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(row.settings_comment) + '" placeholder="Коментар"></td>') +
+            '<td class="analysis-columns-cell"></td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
@@ -3841,6 +4010,13 @@
     $('navBackBtn').addEventListener('click', goDashboardBack);
     $('navForwardBtn').addEventListener('click', goDashboardForward);
     $('ordersList').addEventListener('click', event => {
+      const columnSettingsBtn = event.target.closest('[data-open-column-settings]');
+      if (columnSettingsBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        openColumnModal();
+        return;
+      }
       const sortBtn = event.target.closest('[data-analysis-sort]');
       if (sortBtn) {
         event.preventDefault();
@@ -3980,6 +4156,23 @@
         copyTextToClipboard(copyBtn.dataset.copyValue, copyBtn);
       }
     });
+    $('columnModalClose').addEventListener('click', closeColumnModal);
+    $('columnModal').addEventListener('click', event => {
+      if (event.target.id === 'columnModal') closeColumnModal();
+    });
+    $('columnSettingsList').addEventListener('change', event => {
+      const input = event.target.closest('[data-analysis-column-toggle]');
+      if (!input) return;
+      const key = input.dataset.analysisColumnToggle;
+      const column = ANALYSIS_COLUMNS.find(item => item.key === key);
+      if (column && column.required) {
+        input.checked = true;
+        return;
+      }
+      state.analysisColumnVisibility[key] = input.checked;
+      saveAnalysisColumnVisibility();
+      renderAnalysis();
+    });
     $('refreshReadyBtn').addEventListener('click', refreshDisplayedData);
     $('manualSaveBtn').addEventListener('click', savePendingManualChanges);
     document.addEventListener('keydown', event => {
@@ -3988,6 +4181,7 @@
         closeChoiceMenus();
       }
       if (state.kpiModalOpen) closeKpiModal();
+      if (state.columnModalOpen) closeColumnModal();
       if (state.systemModalOpen) closeSystemModal();
     });
 

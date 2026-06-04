@@ -113,6 +113,33 @@ Rollback note:
 
 - Commit `de5a751` is the rollback point before this full-name visibility change.
 
+## P6 Purchase Analysis Column Settings - 2026-06-04
+
+Request: add a MoySklad-like gear at the end of the purchase analysis list so the user can choose which columns are visible, with the selection remembered after reopening the dashboard.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Added a small gear column at the far right of the analysis table header.
+- Added a column settings modal with checkboxes for all analysis table columns.
+- Stores visibility settings in browser `localStorage` under `purchaseDashboardP6.analysisColumns.v1`.
+- Keeps the product/name column required so the table cannot be hidden completely by mistake.
+- Renders hidden columns out of both the table header and body rows.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `9b342b6` is the rollback point before the column-settings modal.
+
 ## Current Baseline - 2026-05-18
 
 - Repo: `thecaseruslan-glitch/sales-dashboard`.
