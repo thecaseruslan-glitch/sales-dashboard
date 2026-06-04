@@ -10,6 +10,30 @@ This file records dashboard coding work for rollback and continuity.
 - Record every task with: date, request, base version, changed files, verification, rollback note.
 - Do not deploy Apps Script or change production spreadsheet data from this repo without explicit approval.
 
+## P6 Purchase Invalid Date Fallback - 2026-06-04
+
+Request: hide unclear raw date fragments such as `01.24` that appear in the purchase dashboard list.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Hardened `formatDateUa` to format only valid ISO dates (`YYYY-MM-DD...`) or already formatted full Ukrainian dates (`DD.MM.YYYY`).
+- Ambiguous/incomplete raw values now display as `—` instead of leaking into the list.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `2b9dde0` is the rollback point before this invalid-date fallback.
+
 ## Current Baseline - 2026-05-18
 
 - Repo: `thecaseruslan-glitch/sales-dashboard`.

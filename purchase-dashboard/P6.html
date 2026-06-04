@@ -1830,11 +1830,21 @@
     }
 
     function formatDateUa(value) {
-      const clean = text(value).slice(0, 10);
-      if (!clean) return '—';
-      const date = new Date(clean + 'T00:00:00');
-      if (Number.isNaN(date.getTime())) return clean;
-      return new Intl.DateTimeFormat('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+      const raw = text(value);
+      if (!raw) return '—';
+      const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        const year = Number(isoMatch[1]);
+        const month = Number(isoMatch[2]);
+        const day = Number(isoMatch[3]);
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return new Intl.DateTimeFormat('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+        }
+        return '—';
+      }
+      if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) return raw;
+      return '—';
     }
 
     function toInputDate(date) {
