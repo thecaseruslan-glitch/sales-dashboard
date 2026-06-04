@@ -358,6 +358,31 @@ Rollback note:
 
 - Previous D59 commit is 06b21e4.
 
+## D59 Clients Main Period Dependency Fix - 2026-06-04
+
+Request: fix D59 Clients tab blocks so they react to the main month/period filter.
+
+Changed files:
+
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Added Clients 360 period bounds based on the main dateFrom/dateTo filters.
+- When a main period is selected, client rows, KPIs, donut entries, charts, and top products use that period.
+- When no main period is selected, Clients 360 keeps the default last-12-month behavior.
+- Kept the all-time basket toggle available for donut coverage comparisons.
+
+Verification:
+
+- Ran node --check sales-dashboard/D59.
+- Extracted and syntax-checked 5 inline JS script blocks from D59.html with new Function.
+- Ran git diff --check -- sales-dashboard/D59.html.
+
+Rollback note:
+
+- Previous D59 layout-fix commit is d7694cb.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.

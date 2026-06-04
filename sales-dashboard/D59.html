@@ -21092,8 +21092,40 @@ function renderClientNameForLtv(clientName, extraHtml) {
     }
 
     function getClients360ReferenceDate() {
+      const selectedTo = getDateInputIso(dateTo);
+      const selectedFrom = getDateInputIso(dateFrom);
+      if (selectedTo || selectedFrom) return selectedTo || selectedFrom;
       const dates = getClients360BaseRows().map(row => normalizeDate(row.date)).filter(Boolean).sort();
       return dates.length ? dates[dates.length - 1] : toInputDate(startOfDay(new Date()));
+    }
+
+    function getClients360PeriodBounds(referenceDate) {
+      const selectedFrom = getDateInputIso(dateFrom);
+      const selectedTo = getDateInputIso(dateTo);
+      if (selectedFrom || selectedTo) {
+        return {
+          from: selectedFrom || '',
+          to: selectedTo || selectedFrom || referenceDate,
+          isGlobalPeriod: true
+        };
+      }
+      return {
+        from: addDaysIso(referenceDate, -365),
+        to: referenceDate,
+        isGlobalPeriod: false
+      };
+    }
+
+    function getClients360PeriodRows(rows, bounds) {
+      const from = bounds && bounds.from;
+      const to = bounds && bounds.to;
+      return (Array.isArray(rows) ? rows : []).filter(row => {
+        const dateIso = normalizeDate(row.date);
+        if (!dateIso) return false;
+        if (from && dateIso < from) return false;
+        if (to && dateIso > to) return false;
+        return parseNumber(row.revenue) > 0;
+      });
     }
 
     function buildClients360StockIndex(rows) {
@@ -21157,7 +21189,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
     function buildClients360Items() {
       const referenceDate = getClients360ReferenceDate();
-      const yearFrom = addDaysIso(referenceDate, -365);
+      const periodBounds = getClients360PeriodBounds(referenceDate);
       const activeFrom = addDaysIso(referenceDate, -90);
       const recentProductFrom = addDaysIso(referenceDate, -180);
       const grouped = getGroupedManagerRowsAllClients();
@@ -21166,7 +21198,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       const base = [];
 
       grouped.forEach((allRows, client) => {
-        const rows = allRows.filter(row => normalizeDate(row.date) >= yearFrom && parseNumber(row.revenue) > 0);
+        const rows = getClients360PeriodRows(allRows, periodBounds);
         if (!rows.length) return;
         const events = buildClientOrderEvents(allRows);
         const lastEvent = events[events.length - 1];
@@ -21532,7 +21564,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     }
 
     function buildClients360MonthlyChartStats(item) {
-      const rows = Array.isArray(item && item.allRows) ? item.allRows : [];
+      const rows = Array.isArray(item && item.rows) ? item.rows : [];
       const monthMap = new Map();
       rows.forEach(row => {
         const monthKey = normalizeDate(row.date).slice(0, 7);
@@ -21680,7 +21712,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
     function buildClients360TopProducts(item) {
       const productMap = new Map();
-      (Array.isArray(item && item.allRows) ? item.allRows : []).forEach(row => {
+      (Array.isArray(item && item.rows) ? item.rows : []).forEach(row => {
         const sku = normalizeSkuValue(row.sku);
         const name = normalizeText(row.product) || sku || 'Невідома позиція';
         const key = sku || name;
