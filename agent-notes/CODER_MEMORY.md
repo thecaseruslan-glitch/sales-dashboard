@@ -1248,6 +1248,36 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## P6 Purchase Dashboard Collapsible Header - 2026-06-04
+
+Request: create new purchase dashboard files `P6` from `P5` and redesign the top area so tabs remain visible, search is separate, and filters/KPI can collapse to give more height to the lists.
+
+Changed files:
+
+- `purchase-dashboard/P6.gs`
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Copied `P5.gs` and `P5.html` to new rollback-safe `P6` files.
+- Kept the tab row and dashboard navigation outside the collapsible area so all purchase tabs remain accessible.
+- Moved the search input into a dedicated row that stays visible when filters are collapsed.
+- Combined status/carrier/sort filters, brand strip, analysis period controls, and KPI cards into one `Фільтри та KPI` panel.
+- Added a collapse/expand arrow button; collapsed mode hides the filter/KPI body and leaves search + tabs visible, allowing the lower lists to use more height.
+- Kept `P6.gs` byte-identical to `P5.gs`; this is a frontend layout-only change.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Verified new layout/control tokens exist.
+- Ran `git diff --check -- purchase-dashboard/P6.gs purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- `P5` remains unchanged and is the rollback version.
+
 ## D59 Clients Point Products Modal Width Fix - 2026-06-04
 
 Request: make product names in the chart-point sold-products modal fit into one row by using the empty space on the right.
