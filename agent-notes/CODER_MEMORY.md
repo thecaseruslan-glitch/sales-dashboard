@@ -87,6 +87,32 @@ Rollback note:
 
 - Commit `acba995` is the rollback point before this pseudo-product filter and extra row compaction.
 
+## P6 Purchase Analysis Full Product Name - 2026-06-04
+
+Request: make the full product name visible in the purchase analysis list and remove the extra brand chip shown next to each product name.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Removed the inline brand chip from each analysis table row.
+- Expanded the product column from 520px to 620px.
+- Allowed product names to wrap instead of using ellipsis, so the full name remains visible.
+- Increased the analysis table min-width to keep the wider product column without squeezing numeric columns.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `de5a751` is the rollback point before this full-name visibility change.
+
 ## Current Baseline - 2026-05-18
 
 - Repo: `thecaseruslan-glitch/sales-dashboard`.

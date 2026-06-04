@@ -721,7 +721,7 @@
     }
     .analysis-table{
       width:100%;
-      min-width:2050px;
+      min-width:2140px;
       border-collapse:separate;
       border-spacing:0;
       table-layout:fixed;
@@ -798,21 +798,17 @@
       min-width:0;
     }
     .analysis-product-line{
-      display:flex;
-      align-items:center;
-      gap:8px;
+      display:block;
       min-width:0;
-      white-space:nowrap;
     }
     .analysis-product{
       font-size:12px;
       font-weight:950;
       line-height:1.25;
       min-width:0;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      flex:1 1 auto;
+      overflow:visible;
+      text-overflow:clip;
+      white-space:normal;
     }
     .analysis-muted{
       margin-top:4px;
@@ -822,20 +818,6 @@
     }
     .analysis-table .analysis-muted{
       display:none;
-    }
-    .analysis-brand-chip{
-      flex:0 0 auto;
-      max-width:150px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      border:1px solid #dbe7f6;
-      background:#f7fbff;
-      border-radius:999px;
-      padding:2px 7px;
-      color:#6f83a0;
-      font-size:10px;
-      font-weight:950;
     }
     .risk-cell.danger{color:#c2413b}
     .risk-cell.warn{color:#b45309}
@@ -3240,7 +3222,7 @@
 
       return '<div class="analysis-table-wrap"><table class="analysis-table">' +
         '<thead><tr>' +
-          renderAnalysisSortHeader('Позиція', 'product', '', 'width:520px') +
+          renderAnalysisSortHeader('Позиція', 'product', '', 'width:620px') +
           renderAnalysisSortHeader('Код', 'code', '', 'width:70px') +
           renderAnalysisSortHeader('Залишок', 'stock_qty', 'num metric-group metric-start', 'width:78px') +
           renderAnalysisSortHeader('Очікуємо', 'in_transit_qty', 'num metric-group', 'width:78px') +
@@ -3266,7 +3248,7 @@
           const statusValue = text(row.actuality_status || row.product_status || 'new');
           const reorderValue = text(row.reorder_enabled).toLowerCase() === 'no' ? 'no' : 'yes';
           return '<tr data-analysis-key="' + esc(row.key) + '">' +
-            '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div>' + (row.brand ? '<span class="analysis-brand-chip" title="' + esc(row.brand) + '">' + esc(row.brand) + '</span>' : '') + '</div></td>' +
+            '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div></div></td>' +
             '<td class="code">' + (row.code ? esc(row.code) : '<span class="dash">—</span>') + '</td>' +
             '<td class="num metric-group metric-start">' + fmt(row.stock_qty) + '</td>' +
             '<td class="num metric-group">' + fmt(row.in_transit_qty) + '</td>' +
