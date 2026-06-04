@@ -21736,6 +21736,29 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }
     }
 
+    function openClients360ChartPointProducts(index) {
+      if (!Number.isInteger(index) || index < 0) return;
+      const point = Array.isArray(clients360ChartMonthlyCache) ? clients360ChartMonthlyCache[index] : null;
+      if (!point || !point.month) return;
+      const item = getClients360SelectedItem();
+      const rows = (Array.isArray(clients360ChartRowsCache) ? clients360ChartRowsCache : [])
+        .filter(row => normalizeDate(row.date).startsWith(point.month));
+      const products = buildClientTrendProductRows(rows);
+      const totalRevenue = products.reduce((sum, product) => sum + Number(product.revenue || 0), 0);
+      const totalQty = products.reduce((sum, product) => sum + Number(product.quantity || 0), 0);
+      openCustomKpiDetailModal({
+        title: 'Продані позиції за ' + formatShortMonthLabel(point.month),
+        meta: (item && item.client ? item.client + ' • ' : '') + fmt(products.length) + ' позицій • ' + fmt(totalQty) + ' шт • ' + formatMetricValue(totalRevenue) + ' продажів',
+        summary: 'Список позицій, які були продані клієнту в місяці вибраної точки графіка.',
+        nameHead: 'Позиція',
+        valueHead: 'Продажі',
+        entries: products.map(product => ({
+          name: (product.product || 'Невідома позиція') + (product.sku ? ' · код ' + product.sku : ''),
+          value: formatMetricValue(product.revenue) + ' • ' + fmt(product.quantity) + ' шт • ' + fmt(product.ordersCount) + ' відгрузок • останній ' + (formatDisplayDate(product.lastDate) || '—')
+        }))
+      });
+    }
+
     function bindClients360ChartHoverSync(chart) {
       if (!chart || !chart.canvas) return chart;
       chart.options.onHover = (event) => {
@@ -21747,6 +21770,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
           clearClients360ChartHover();
         }
       };
+      chart.options.onClick = (event) => {
+        const points = chart.getElementsAtEventForMode(event, 'index', { intersect: false }, false);
+        if (points && points.length) openClients360ChartPointProducts(points[0].index);
+      };
       chart.canvas.addEventListener('mouseleave', clearClients360ChartHover);
       return chart;
     }
@@ -21754,6 +21781,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
     function renderClients360Charts(item) {
       const chartRows = getClients360ChartRows(item, clients360BasketScope);
       const monthly = buildClients360MonthlyChartStats(item, chartRows);
+      clients360ChartRowsCache = chartRows;
+      clients360ChartMonthlyCache = monthly;
       const labels = monthly.map(row => row.month);
       const periodText = monthly.length ? `${monthly[0].month} → ${monthly[monthly.length - 1].month}` : 'немає даних';
 
@@ -24935,6 +24964,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360TopProductsScope = 'all';
     let clients360TopProductsSortKey = 'default';
     let clients360TopProductsSortDir = 'desc';
+    let clients360ChartRowsCache = [];
+    let clients360ChartMonthlyCache = [];
     let clients360OrdersChart = null;
     let clients360BasketPctChart = null;
     let clients360TrendChart = null;

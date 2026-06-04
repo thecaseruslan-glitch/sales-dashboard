@@ -1248,6 +1248,33 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## D59 Clients Chart Point Products Modal - 2026-06-04
+
+Request: allow clicking a point on any Clients tab chart to open a modal with the sold products for that point's period.
+
+Changed files:
+
+- `sales-dashboard/D59.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Added cached Clients 360 chart source rows and monthly buckets while rendering the three client charts.
+- Added `openClients360ChartPointProducts(index)` to collect rows for the clicked month and aggregate products with the same product-row builder used by the top-products table.
+- Added Chart.js `onClick` handling in the existing Clients 360 chart hover-sync binding, so all three charts open the same sold-products modal by point index.
+- Reused the existing KPI detail modal for the products list: product/code plus revenue, quantity, shipment count, and last sale date.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D59`.
+- Extracted and syntax-checked all inline script blocks from `sales-dashboard/D59.html` with `new Function`.
+- Verified the chart-click tokens exist.
+- Ran `git diff --check -- sales-dashboard/D59.html`.
+
+Rollback note:
+
+- Commit `f931ab4` is the rollback point before this chart-click modal change.
+
 ## D59 Clients Live Search Performance Fix - 2026-06-04
 
 Request: fix lag when typing in live search fields for products and clients; typing was freezing for a few seconds before text appeared.
