@@ -1248,6 +1248,33 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## D59 Clients Live Search Performance Fix - 2026-06-04
+
+Request: fix lag when typing in live search fields for products and clients; typing was freezing for a few seconds before text appeared.
+
+Changed files:
+
+- `sales-dashboard/D59.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Debounced the `Клієнти` list search so the full Clients 360 dashboard is not rebuilt synchronously on every keypress.
+- Changed the embedded `Топ позицій` search/filter/sort controls to rerender only the top-products table for the selected client instead of the full Clients tab.
+- Added a Clients 360 items cache for this lightweight table rerender.
+- Debounced the client search input in the `Товари` modal and precomputed lowercase client names for faster suggestion filtering.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D59`.
+- Extracted and syntax-checked all inline script blocks from `sales-dashboard/D59.html` with `new Function`.
+- Verified the new search optimization tokens exist.
+- Ran `git diff --check -- sales-dashboard/D59.html`.
+
+Rollback note:
+
+- Commit `eaebba1` is the rollback point before this live-search performance hotfix.
+
 ## D59 Clients Top Products Embedded Modal Clone - 2026-06-04
 
 Request: rebuild the `Топ позицій` block in the `Клієнти` tab so it matches the product/client modal list from the `Товари` tab, with its own independent filters.

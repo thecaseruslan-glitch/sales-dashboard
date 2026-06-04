@@ -21342,6 +21342,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     function renderClients360Dashboard() {
       if (!clientsView) return;
       const items = buildClients360Items();
+      clients360ItemsCache = items;
       const searchEl = document.getElementById('clients360Search');
       const statusEl = document.getElementById('clients360Status');
       const sortEl = document.getElementById('clients360Sort');
@@ -21381,6 +21382,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
       });
       if (!visible.length) list.innerHTML = '<div class="clients-360-empty">Клієнтів не знайдено.</div>';
       renderClients360Card(items.find(item => item.client === clients360SelectedClient) || null, items);
+    }
+
+    function renderClients360SelectedTopProductsOnly() {
+      const items = clients360ItemsCache && clients360ItemsCache.length ? clients360ItemsCache : buildClients360Items();
+      if (!clients360ItemsCache || !clients360ItemsCache.length) clients360ItemsCache = items;
+      const item = items.find(entry => entry.client === clients360SelectedClient) || null;
+      renderClients360TopProducts(item);
     }
 
     function renderClients360Card(item, allItems) {
@@ -21903,14 +21911,14 @@ function renderClientNameForLtv(clientName, extraHtml) {
         clients360TopProductsSortKey = key;
         clients360TopProductsSortDir = getClientTrendProductsSortDefaultDirection(key);
       }
-      renderClients360Dashboard();
+      renderClients360SelectedTopProductsOnly();
     }
 
     function resetClients360TopProductsSort() {
       clients360TopProductsSortKey = 'default';
       clients360TopProductsSortDir = 'desc';
       updateClients360TopProductsSortUi();
-      renderClients360Dashboard();
+      renderClients360SelectedTopProductsOnly();
     }
 
     function updateClients360TopProductsFilterOptions(filterId, values, fallbackLabel) {
@@ -23798,6 +23806,11 @@ function renderClientNameForLtv(clientName, extraHtml) {
       const control = document.getElementById(id);
       if (!control) return;
       control.addEventListener(id === 'clients360Search' ? 'input' : 'change', () => {
+        if (id === 'clients360Search') {
+          clearTimeout(clients360SearchTimer);
+          clients360SearchTimer = setTimeout(() => renderClients360Dashboard(), 140);
+          return;
+        }
         renderClients360Dashboard();
       });
     });
@@ -23805,7 +23818,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
     if (clients360TopProductsSearch) {
       clients360TopProductsSearch.addEventListener('input', () => {
         clients360TopProductsQuery = clients360TopProductsSearch.value || '';
-        renderClients360Dashboard();
+        clearTimeout(clients360TopProductsSearchTimer);
+        clients360TopProductsSearchTimer = setTimeout(() => renderClients360SelectedTopProductsOnly(), 90);
       });
     }
     const clients360TopProductsAllBtn = document.getElementById('clients360TopProductsAllBtn');
@@ -23813,19 +23827,19 @@ function renderClientNameForLtv(clientName, extraHtml) {
     if (clients360TopProductsAllBtn) {
       clients360TopProductsAllBtn.addEventListener('click', () => {
         clients360TopProductsScope = 'all';
-        renderClients360Dashboard();
+        renderClients360SelectedTopProductsOnly();
       });
     }
     if (clients360TopProductsPeriodBtn) {
       clients360TopProductsPeriodBtn.addEventListener('click', () => {
         clients360TopProductsScope = 'period';
-        renderClients360Dashboard();
+        renderClients360SelectedTopProductsOnly();
       });
     }
     ['clients360TopProductsBrandFilter', 'clients360TopProductsCategoryFilter', 'clients360TopProductsGroupFilter'].forEach(id => {
       const filter = document.getElementById(id);
       if (!filter) return;
-      filter.addEventListener('change', () => renderClients360Dashboard());
+      filter.addEventListener('change', () => renderClients360SelectedTopProductsOnly());
     });
     const clients360TopProductsSortResetBtn = document.getElementById('clients360TopProductsSortResetBtn');
     if (clients360TopProductsSortResetBtn) {
@@ -24756,7 +24770,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
     if (clientTrendPeriodNextBtn) clientTrendPeriodNextBtn.addEventListener('click', () => shiftClientTrendPeriod(1));
     if (clientTrendClientInput) {
       clientTrendClientInput.addEventListener('focus', () => renderClientTrendClientSuggestions(true));
-      clientTrendClientInput.addEventListener('input', () => renderClientTrendClientSuggestions(true));
+      clientTrendClientInput.addEventListener('input', () => {
+        clearTimeout(clientTrendClientSearchTimer);
+        clientTrendClientSearchTimer = setTimeout(() => renderClientTrendClientSuggestions(true), 110);
+      });
     }
     if (clientTrendClientToggle) {
       clientTrendClientToggle.addEventListener('click', (e) => {
@@ -24868,6 +24885,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clientTrendCategoryFilterValue = '';
     let clientTrendGroupFilterValue = '';
     let clientTrendClientOptionsCache = [];
+    let clientTrendClientSearchTimer = null;
     let clientCompareOpen = false;
     let clientCompareYearsState = [];
     let topSalesCache = [];
@@ -24909,6 +24927,9 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clientsDashboardDirty = true;
     let paymentsDashboardDirty = false;
     let clients360SelectedClient = '';
+    let clients360ItemsCache = [];
+    let clients360SearchTimer = null;
+    let clients360TopProductsSearchTimer = null;
     let clients360BasketScope = '12m';
     let clients360TopProductsQuery = '';
     let clients360TopProductsScope = 'all';
@@ -25358,7 +25379,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         clients.unshift([activeClientTrendClient, 0]);
       }
 
-      clientTrendClientOptionsCache = clients.map(([name, revenue]) => ({ name, revenue }));
+      clientTrendClientOptionsCache = clients.map(([name, revenue]) => ({ name, revenue, searchName: normalizeText(name).toLowerCase() }));
       if (clientTrendClientFilter) clientTrendClientFilter.innerHTML = '';
       clients.forEach(([client, revenue]) => {
         const option = document.createElement('option');
@@ -25402,7 +25423,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       const query = showAll ? '' : normalizeText(clientTrendClientInput.value).toLowerCase();
       const selected = normalizeText(activeClientTrendClient);
       const visible = clientTrendClientOptionsCache
-        .filter(item => !query || item.name.toLowerCase().includes(query))
+        .filter(item => !query || item.searchName.includes(query))
         .slice(0, 80);
 
       clientTrendClientSuggestions.innerHTML = '';
