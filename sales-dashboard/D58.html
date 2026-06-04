@@ -7244,6 +7244,11 @@ html, body{
   .clients-360-section h3{margin:0;color:#17243a;font-size:19px}
   .clients-360-section-note{color:#71839c;font-size:12px}
   .clients-360-chart-shell{height:260px;position:relative}
+  .clients-360-donut-layout{display:grid;grid-template-columns:minmax(150px,220px) minmax(180px,1fr);gap:12px;align-items:stretch}
+  .clients-360-donut-layout .clients-360-chart-shell{height:236px}
+  .clients-360-donut-list{max-height:236px;overflow:auto;border:1px solid #e4ebf5;border-radius:16px;background:#fbfdff;padding:8px}
+  .clients-360-donut-list .top-item{grid-template-columns:minmax(0,1fr) minmax(70px,.5fr) minmax(48px,.32fr);padding:9px 10px;border-radius:12px}
+  .clients-360-donut-list .top-name{white-space:normal;line-height:1.25}
   .clients-360-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:22px;font-weight:950;color:#1b2b44}
   .clients-360-offer-list,.clients-360-product-list{display:grid;gap:8px}
   .clients-360-row{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(120px,.55fr) minmax(180px,1fr);gap:12px;align-items:center;border:1px solid #e4ebf5;border-radius:14px;padding:11px 12px;color:#294266;font-size:12px}
@@ -7267,6 +7272,7 @@ html, body{
     .clients-360-layout{grid-template-columns:270px minmax(0,1fr)}
     .clients-360-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
     .clients-360-chart-grid,.clients-360-products-grid{grid-template-columns:1fr}
+    .clients-360-donut-layout{grid-template-columns:1fr}
     .clients-360-dynamics{grid-template-columns:repeat(3,minmax(0,1fr))}.clients-360-analysis-sections{grid-template-columns:1fr}
   }
 </style>
@@ -8134,15 +8140,24 @@ html, body{
               <div class="clients-360-chart-stack">
                 <section class="clients-360-section">
                   <div class="clients-360-section-head"><h3>Бренди</h3><span class="clients-360-section-note">структура кошика</span></div>
-                  <div class="clients-360-chart-shell"><canvas id="clients360BrandChart"></canvas></div>
+                  <div class="clients-360-donut-layout">
+                    <div class="clients-360-chart-shell"><canvas id="clients360BrandChart"></canvas></div>
+                    <div id="clients360BrandList" class="clients-360-donut-list"></div>
+                  </div>
                 </section>
                 <section class="clients-360-section">
                   <div class="clients-360-section-head"><h3>Категорії</h3><span class="clients-360-section-note">структура кошика</span></div>
-                  <div class="clients-360-chart-shell"><canvas id="clients360CategoryChart"></canvas></div>
+                  <div class="clients-360-donut-layout">
+                    <div class="clients-360-chart-shell"><canvas id="clients360CategoryChart"></canvas></div>
+                    <div id="clients360CategoryList" class="clients-360-donut-list"></div>
+                  </div>
                 </section>
                 <section class="clients-360-section">
                   <div class="clients-360-section-head"><h3>Групи</h3><span class="clients-360-section-note">структура кошика</span></div>
-                  <div class="clients-360-chart-shell"><canvas id="clients360BasketChart"></canvas><div id="clients360BasketCenter" class="clients-360-donut-center">—</div></div>
+                  <div class="clients-360-donut-layout">
+                    <div class="clients-360-chart-shell"><canvas id="clients360BasketChart"></canvas><div id="clients360BasketCenter" class="clients-360-donut-center">—</div></div>
+                    <div id="clients360GroupList" class="clients-360-donut-list"></div>
+                  </div>
                 </section>
               </div>
             </div>
@@ -21497,7 +21512,25 @@ function renderClientNameForLtv(clientName, extraHtml) {
       return new Chart(canvas, {
         type: 'doughnut',
         data: { labels, datasets: [{ data: entries.map(item => item[1]), backgroundColor: colorArray(entries.length) }] },
-        options: { ...baseDonutOptions(labels), cutout: '62%', plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        options: { ...baseDonutOptions(labels), cutout: '62%', layout: { padding: { left: 0, right: 4, top: 4, bottom: 4 } }, plugins: { legend: { display: false } } }
+      });
+    }
+
+    function renderClients360DonutList(containerId, entries) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const total = entries.reduce((sum, item) => sum + Number(item[1] || 0), 0);
+      el.innerHTML = '';
+      if (!entries.length) {
+        el.innerHTML = '<div class="top-item"><div class="top-name">Немає даних</div><div></div><div></div></div>';
+        return;
+      }
+      entries.forEach(([name, value]) => {
+        const row = document.createElement('div');
+        row.className = 'top-item';
+        const pct = total ? ((Number(value || 0) / total) * 100).toFixed(1) : '0.0';
+        row.innerHTML = `<div class="top-name">${name}</div><div class="top-val">${formatMetricValue(value)}</div><div class="top-pct">${pct}%</div>`;
+        el.appendChild(row);
       });
     }
 
@@ -21539,10 +21572,15 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }
       document.getElementById('clients360TrendMeta').textContent = periodText;
 
-      clients360BrandChart = renderClients360Donut(clients360BrandChart, 'clients360BrandChart', buildClients360DimensionEntries(item.rows, 'brand'));
-      clients360CategoryChart = renderClients360Donut(clients360CategoryChart, 'clients360CategoryChart', buildClients360DimensionEntries(item.rows, 'category'));
+      const brandEntries = buildClients360DimensionEntries(item.rows, 'brand');
+      const categoryEntries = buildClients360DimensionEntries(item.rows, 'category');
+      clients360BrandChart = renderClients360Donut(clients360BrandChart, 'clients360BrandChart', brandEntries);
+      clients360CategoryChart = renderClients360Donut(clients360CategoryChart, 'clients360CategoryChart', categoryEntries);
       const basketEntries = buildClients360DimensionEntries(item.rows, 'group');
       clients360BasketChart = renderClients360Donut(clients360BasketChart, 'clients360BasketChart', basketEntries);
+      renderClients360DonutList('clients360BrandList', brandEntries);
+      renderClients360DonutList('clients360CategoryList', categoryEntries);
+      renderClients360DonutList('clients360GroupList', basketEntries);
       const basketSnapshot = clientBasketФіналізаціяMap.get(item.client);
       document.getElementById('clients360BasketCenter').textContent = basketSnapshot ? `${basketSnapshot.overallPct.toFixed(1)}%` : `${Math.min(100, item.groupRevenue.size * 8).toFixed(1)}%`;
     }

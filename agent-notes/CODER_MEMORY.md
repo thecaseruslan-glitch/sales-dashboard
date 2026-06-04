@@ -272,6 +272,34 @@ Rollback note:
 
 - Previous D58 state is available through Git history; older D54-D57 versions remain unchanged.
 
+## D58 Clients Donut Lists Update - 2026-06-04
+
+Request: in the Clients tab donut blocks, move the circles as far left as possible and add a scrollable list on the right for brands, categories, and groups, matching the Products tab list pattern with a different layout.
+
+Base version:
+
+- sales-dashboard/D58.html at commit 07686d5
+
+Changed files:
+
+- sales-dashboard/D58.html
+
+Implementation:
+
+- Converted each Clients 360 donut block into a two-column layout: donut on the left, scrollable list on the right.
+- Disabled Chart.js bottom legends for these donut charts so the right-side lists become the primary legend/detail.
+- Added right-side scroll lists with name, value, and percentage for brand/category/group entries.
+
+Verification:
+
+- Ran node --check sales-dashboard/D58.
+- Extracted and syntax-checked 5 inline JS script blocks from D58.html with new Function.
+- Ran git diff --check -- sales-dashboard/D58.html.
+
+Rollback note:
+
+- Previous D58 client KPI/charts commit is 07686d5.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
