@@ -457,6 +457,31 @@ Rollback note:
 
 - Previous D59 top-products/hover commit is 0d09f6e.
 
+## D59 Clients Top Products Scope Toggle - 2026-06-04
+
+Request: add a small all/period toggle to the Clients tab Top Products block, with all-time selected by default.
+
+Changed files:
+
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Added an all/period toggle in the Top Products toolbar.
+- Default Top Products scope is all client history.
+- Period scope shows products only from the selected main period.
+- Search continues to filter within the selected Top Products scope.
+
+Verification:
+
+- Ran node --check sales-dashboard/D59.
+- Extracted and syntax-checked 5 inline JS script blocks from D59.html with new Function.
+- Ran git diff --check -- sales-dashboard/D59.html.
+
+Rollback note:
+
+- Previous D59 top-products empty-state commit is 3648edd.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
