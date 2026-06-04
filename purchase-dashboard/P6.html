@@ -728,10 +728,10 @@
     }
     .analysis-table th,
     .analysis-table td{
-      padding:9px 8px;
+      padding:6px 7px;
       border-bottom:1px solid var(--line-soft);
       vertical-align:middle;
-      font-size:12px;
+      font-size:11px;
       font-weight:800;
       color:#1d2c44;
     }
@@ -805,7 +805,7 @@
       white-space:nowrap;
     }
     .analysis-product{
-      font-size:13px;
+      font-size:12px;
       font-weight:950;
       line-height:1.25;
       min-width:0;
@@ -819,6 +819,9 @@
       color:#7b8fa8;
       font-size:11px;
       font-weight:850;
+    }
+    .analysis-table .analysis-muted{
+      display:none;
     }
     .analysis-brand-chip{
       flex:0 0 auto;
@@ -839,10 +842,10 @@
     .risk-cell.good{color:#167247}
     .analysis-input,
     .analysis-select{
-      height:34px;
-      border-radius:11px;
-      font-size:12px;
-      padding:0 9px;
+      height:28px;
+      border-radius:9px;
+      font-size:11px;
+      padding:0 7px;
     }
     .analysis-input{
       text-align:right;
@@ -1876,6 +1879,14 @@
       return '—';
     }
 
+    function isBlockedAnalysisPseudoProduct(row) {
+      const product = text(row && row.product);
+      const code = text(row && row.code);
+      const key = text(row && row.key);
+      const looksLikeShortDate = value => /^\d{2}\.\d{2}$/.test(value);
+      return looksLikeShortDate(product) || looksLikeShortDate(code) || looksLikeShortDate(key);
+    }
+
     function toInputDate(date) {
       if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
       const pad = value => String(value).padStart(2, '0');
@@ -2214,7 +2225,7 @@
         status_override: text(row.status_override),
         settings_comment: text(row.settings_comment),
         settings_updated_at: text(row.settings_updated_at)
-      }));
+      })).filter(row => !isBlockedAnalysisPseudoProduct(row));
     }
 
     function getActiveBaseRows() {

@@ -61,6 +61,32 @@ Rollback note:
 
 - Commit `83d6966` is the rollback point before this row-density layout change.
 
+## P6 Purchase Analysis Pseudo Product Block - 2026-06-04
+
+Request: hide the unclear `01.24` row from the purchase analysis list and make each row shorter.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Added a frontend guard that filters out analysis rows whose product/code/key looks like a short date fragment such as `01.24`.
+- Reduced analysis table padding and font size by 1px.
+- Reduced manual input/select height from 34px to 28px.
+- Hid secondary muted helper lines inside the analysis table to keep rows compact.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `acba995` is the rollback point before this pseudo-product filter and extra row compaction.
+
 ## Current Baseline - 2026-05-18
 
 - Repo: `thecaseruslan-glitch/sales-dashboard`.
