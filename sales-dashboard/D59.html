@@ -21128,6 +21128,17 @@ function renderClientNameForLtv(clientName, extraHtml) {
       });
     }
 
+    function getClients360ChartRows(item, scope) {
+      const rows = Array.isArray(item && item.allRows) ? item.allRows : [];
+      if (scope === 'all') return rows.filter(row => parseNumber(row.revenue) > 0);
+      const referenceDate = getClients360ReferenceDate();
+      const from = addDaysIso(referenceDate, -365);
+      return rows.filter(row => {
+        const dateIso = normalizeDate(row.date);
+        return dateIso && dateIso >= from && dateIso <= referenceDate && parseNumber(row.revenue) > 0;
+      });
+    }
+
     function buildClients360StockIndex(rows) {
       const stockRows = getPositionExplorerStockRowsBase().filter(row => parseNumber(row && (row.available_qty || row.stock)) > 0);
       const availableBySku = new Map(stockRows.map(row => [normalizeSkuValue(row && row.sku), parseNumber(row && (row.available_qty || row.stock))]).filter(([sku]) => sku));
@@ -21563,8 +21574,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
       return getClients360BasketCoverageForRows(rows, 'overall').pct;
     }
 
-    function buildClients360MonthlyChartStats(item) {
-      const rows = Array.isArray(item && item.rows) ? item.rows : [];
+    function buildClients360MonthlyChartStats(item, rowsOverride) {
+      const rows = Array.isArray(rowsOverride) ? rowsOverride : (Array.isArray(item && item.rows) ? item.rows : []);
       const monthMap = new Map();
       rows.forEach(row => {
         const monthKey = normalizeDate(row.date).slice(0, 7);
@@ -21586,7 +21597,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
           avgCheck: orderCount > 0 ? row.revenue / orderCount : 0,
           basketPct
         };
-      }).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+      }).sort((a, b) => a.month.localeCompare(b.month));
     }
 
     function buildClients360DimensionEntries(rows, field) {
@@ -21630,7 +21641,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
     }
 
     function renderClients360Charts(item) {
-      const monthly = buildClients360MonthlyChartStats(item);
+      const chartRows = getClients360ChartRows(item, clients360BasketScope);
+      const monthly = buildClients360MonthlyChartStats(item, chartRows);
       const labels = monthly.map(row => row.month);
       const periodText = monthly.length ? `${monthly[0].month} → ${monthly[monthly.length - 1].month}` : 'немає даних';
 
@@ -21670,7 +21682,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       document.querySelectorAll('[data-clients360-basket-scope]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.clients360BasketScope === clients360BasketScope);
       });
-      const basketRows = getClients360BasketRows(item, clients360BasketScope);
+      const basketRows = chartRows;
       const brandEntries = buildClients360DimensionEntries(basketRows, 'brand');
       const categoryEntries = buildClients360DimensionEntries(basketRows, 'category');
       clients360BrandChart = renderClients360Donut(clients360BrandChart, 'clients360BrandChart', brandEntries);
@@ -21680,9 +21692,9 @@ function renderClientNameForLtv(clientName, extraHtml) {
       renderClients360DonutList('clients360BrandList', brandEntries);
       renderClients360DonutList('clients360CategoryList', categoryEntries);
       renderClients360DonutList('clients360GroupList', basketEntries);
-      const brandCoverage = getClients360BasketCoverage(item, 'brands', clients360BasketScope);
-      const categoryCoverage = getClients360BasketCoverage(item, 'categories', clients360BasketScope);
-      const groupCoverage = getClients360BasketCoverage(item, 'groups', clients360BasketScope);
+      const brandCoverage = getClients360BasketCoverageForRows(chartRows, 'brands');
+      const categoryCoverage = getClients360BasketCoverageForRows(chartRows, 'categories');
+      const groupCoverage = getClients360BasketCoverageForRows(chartRows, 'groups');
       const brandCenter = document.getElementById('clients360BrandCenter');
       const categoryCenter = document.getElementById('clients360CategoryCenter');
       const groupCenter = document.getElementById('clients360BasketCenter');

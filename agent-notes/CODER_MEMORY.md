@@ -383,6 +383,31 @@ Rollback note:
 
 - Previous D59 layout-fix commit is d7694cb.
 
+## D59 Clients Charts Scope Toggle Fix - 2026-06-04
+
+Request: adjust D59 because Clients tab charts and diagrams should show the last 12 months by default, and when the diagram toggle switches to all-time, the charts should also switch to all-time.
+
+Changed files:
+
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Added a separate chart/donut row source for Clients 360.
+- Kept client list/KPI filtering tied to the main period where applicable.
+- Made the shared 12 months/all-time toggle control both the three charts and the three donut diagrams.
+- Default chart/donut scope remains last 12 months; all-time scope uses full client history.
+
+Verification:
+
+- Ran node --check sales-dashboard/D59.
+- Extracted and syntax-checked 5 inline JS script blocks from D59.html with new Function.
+- Ran git diff --check -- sales-dashboard/D59.html.
+
+Rollback note:
+
+- Previous D59 period-filter commit is 5af9cb7.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
