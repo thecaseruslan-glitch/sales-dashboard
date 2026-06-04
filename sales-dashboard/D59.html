@@ -21789,7 +21789,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
     function buildClients360TopProducts(item) {
       const productMap = new Map();
-      (Array.isArray(item && item.rows) ? item.rows : []).forEach(row => {
+      const periodRows = Array.isArray(item && item.rows) ? item.rows : [];
+      const allRows = Array.isArray(item && item.allRows) ? item.allRows : [];
+      const sourceRows = periodRows.length ? periodRows : allRows;
+      sourceRows.forEach(row => {
         const sku = normalizeSkuValue(row.sku);
         const name = normalizeText(row.product) || sku || 'Невідома позиція';
         const key = sku || name;
@@ -21815,7 +21818,9 @@ function renderClientNameForLtv(clientName, extraHtml) {
         if (orderKey) itemBucket.orders.add(orderKey);
         if (dateIso && (!itemBucket.lastDate || dateIso > itemBucket.lastDate)) itemBucket.lastDate = dateIso;
       });
-      return Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue || b.quantity - a.quantity || a.name.localeCompare(b.name, 'uk'));
+      const products = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue || b.quantity - a.quantity || a.name.localeCompare(b.name, 'uk'));
+      products.sourceLabel = periodRows.length ? 'у вибраному періоді' : 'за всю історію клієнта';
+      return products;
     }
 
     function renderClients360TopProducts(item) {
@@ -21830,7 +21835,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         if (!query) return true;
         return normalizeSearchText([product.name, product.sku, product.brand, product.category, product.group].join(' ')).includes(query);
       }).slice(0, 80);
-      if (meta) meta.textContent = `${fmt(visible.length)} із ${fmt(products.length)} позицій`;
+      if (meta) meta.textContent = `${fmt(visible.length)} із ${fmt(products.length)} позицій · ${products.sourceLabel || 'у вибірці'}`;
       target.innerHTML = '';
       if (!visible.length) {
         target.innerHTML = '<div class="clients-360-empty">Позицій не знайдено.</div>';

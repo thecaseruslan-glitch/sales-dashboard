@@ -433,6 +433,30 @@ Rollback note:
 
 - Previous D59 chart-scope commit is 28dd7d3.
 
+## D59 Clients Top Products Empty Fix - 2026-06-04
+
+Request: fix the Clients tab Top Products block because it was not displaying.
+
+Changed files:
+
+- sales-dashboard/D59.html
+
+Implementation:
+
+- Top Products now uses selected-period rows when the client has sales in the selected period.
+- If the selected client has no sales in the selected period, Top Products falls back to the client's full sales history so the block still displays.
+- The Top Products meta text now shows whether values are from the selected period or full client history.
+
+Verification:
+
+- Ran node --check sales-dashboard/D59.
+- Extracted and syntax-checked 5 inline JS script blocks from D59.html with new Function.
+- Ran git diff --check -- sales-dashboard/D59.html.
+
+Rollback note:
+
+- Previous D59 top-products/hover commit is 0d09f6e.
+
 ## D45 Dual-Cycle Snapshot Variant - 2026-05-31
 
 Request: base the new sales dashboard variant on the user-provided D45 reference, keep two independent loops, make sales/balances/stock run separately from the snapshot cycle, rebuild the dashboard snapshot every 20 minutes, and let the dashboard open from the prepared snapshot immediately in the background.
