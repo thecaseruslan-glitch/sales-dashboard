@@ -54,7 +54,7 @@
     }
     .shell{
       flex:0 0 auto;
-      padding:10px 14px 12px;
+      padding:8px 12px 10px;
       margin-bottom:8px;
     }
     .topbar{
@@ -576,9 +576,13 @@
       display:flex;
       align-items:center;
       gap:8px;
-      margin-top:6px;
-      padding-top:6px;
-      border-top:1px solid #edf3fb;
+      margin-bottom:8px;
+      flex-wrap:wrap;
+    }
+    .dashboard-nav .meta-strip{
+      margin-left:auto;
+      flex:1 1 auto;
+      justify-content:flex-end;
     }
     .nav-btn{
       width:28px;
@@ -1382,6 +1386,7 @@
       .page{width:min(100vw - 12px,1880px)}
       .toolbar-row,.kpis{grid-template-columns:1fr}
       .purchase-controls-head{align-items:flex-start;flex-direction:column}
+      .dashboard-nav .meta-strip{margin-left:0;justify-content:flex-start}
       .system-kpi-grid{grid-template-columns:1fr}
       .system-livebar{align-items:flex-start;flex-direction:column}
       .system-live-time{text-align:left}
@@ -1473,14 +1478,15 @@
 
   <div class="page">
     <section class="card shell">
-      <div class="topbar">
-        <div class="brand">
-          <div class="logo">ЗК</div>
-          <div>
-            <h1>Аналіз закупок</h1>
-            <div class="sub" id="metaLine">—</div>
-          </div>
-        </div>
+      <div class="view-tabs" id="viewTabs">
+        <button class="view-tab active" type="button" data-view="inTransit">Товар в дорозі</button>
+        <button class="view-tab" type="button" data-view="receipts">Прийомки</button>
+        <button class="view-tab" type="button" data-view="analysis">Аналіз</button>
+      </div>
+      <div class="dashboard-nav" aria-label="Навігація дашборду">
+        <button id="navBackBtn" class="nav-btn" type="button" title="Назад">‹</button>
+        <button id="navForwardBtn" class="nav-btn" type="button" title="Вперед">›</button>
+        <span id="navLabel" class="nav-label">Навігація</span>
         <div class="meta-strip">
           <div id="statusPill" class="pill">Завантаження</div>
           <div id="salesRefreshMeta" class="pill">Продажі: —</div>
@@ -1491,17 +1497,6 @@
           <button id="refreshReadyBtn" class="pill refresh-ready" type="button">Оновити дані</button>
           <button id="manualSaveBtn" class="manual-save-btn" type="button" hidden>Зберегти та перезавантажити</button>
         </div>
-      </div>
-
-      <div class="view-tabs" id="viewTabs">
-        <button class="view-tab active" type="button" data-view="inTransit">Товар в дорозі</button>
-        <button class="view-tab" type="button" data-view="receipts">Прийомки</button>
-        <button class="view-tab" type="button" data-view="analysis">Аналіз</button>
-      </div>
-      <div class="dashboard-nav" aria-label="Навігація дашборду">
-        <button id="navBackBtn" class="nav-btn" type="button" title="Назад">‹</button>
-        <button id="navForwardBtn" class="nav-btn" type="button" title="Вперед">›</button>
-        <span id="navLabel" class="nav-label">Навігація</span>
       </div>
 
       <div class="purchase-search-row">
@@ -2407,7 +2402,6 @@
       const meta = state.data.meta || {};
       const loop = getLoopState();
       const cycleText = meta.purchases_full_loop_last_refresh || loop.cycle_completed_at || '';
-      $('metaLine').textContent = 'Згенеровано: ' + text(state.data.generated_at || '—');
       $('salesRefreshMeta').textContent = 'Продажі: ' + formatDateTimeUa(meta.sales_history_current_month_last_refresh);
       $('ordersRefreshMeta').textContent = 'Закупки: ' + formatDateTimeUa(meta.purchase_orders_current_month_last_refresh || meta.purchase_orders_last_refresh);
       $('receiptsRefreshMeta').textContent = 'Прийомки: ' + formatDateTimeUa(meta.receipts_current_month_last_refresh || meta.receipts_last_refresh);

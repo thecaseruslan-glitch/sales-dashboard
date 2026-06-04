@@ -1248,6 +1248,33 @@ Rollback note:
 
 - The previous `D54` HTML state remains available in git history.
 
+## P6 Purchase Header Height Reduction - 2026-06-04
+
+Request: remove the `ЗК / Аналіз закупок / Згенеровано` header text and move refresh/status chips into the row with purchase/receipt navigation text to reduce empty top space.
+
+Changed files:
+
+- `purchase-dashboard/P6.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Removed the visible brand/title/generated-at header from P6.
+- Moved status, sales, purchase, receipt, stock, cycle, refresh-ready, and manual-save chips into the dashboard navigation row beside the back/forward controls and nav label.
+- Tightened shell padding and made the nav row wrap with chips aligned to the right on desktop and left on mobile.
+- Removed the `metaLine` update because that element is no longer rendered.
+
+Verification:
+
+- Syntax-checked `P6.gs` via a temporary `.js` copy.
+- Extracted and syntax-checked the inline script from `P6.html` after replacing Apps Script template tags.
+- Verified the removed header/meta tokens are absent.
+- Ran `git diff --check -- purchase-dashboard/P6.html`.
+
+Rollback note:
+
+- Commit `e1dafcd` is the rollback point before this P6 header-height reduction.
+
 ## P6 Purchase Dashboard Collapsible Header - 2026-06-04
 
 Request: create new purchase dashboard files `P6` from `P5` and redesign the top area so tabs remain visible, search is separate, and filters/KPI can collapse to give more height to the lists.
