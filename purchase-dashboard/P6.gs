@@ -2837,17 +2837,38 @@ function mergePurchaseOrderRowsIntoSheet_(freshRows) {
       });
     });
   const idx = getHeaderIndexMap_(PURCHASE_ORDERS_HEADERS);
+  const replacingOrderIds = {};
+  const replacingOrderNames = {};
   const replacingFallbackKeys = {};
+
   rows.forEach(function(row) {
+    const orderId = normalizeCell(row[idx.order_id]).toUpperCase();
+    const orderName = normalizeCell(row[idx.order_name]).toUpperCase();
     const positionId = idx.position_id === undefined ? '' : normalizeCell(row[idx.position_id]);
     const fallbackKey = buildPurchaseOrderProductFallbackKeyFromArray_(row);
+
+    if (orderId) replacingOrderIds[orderId] = true;
+    if (orderName) replacingOrderNames[orderName] = true;
     if (positionId && fallbackKey) replacingFallbackKeys[fallbackKey] = true;
   });
+
+  const keptExisting = existing.filter(function(row) {
+    const orderId = normalizeCell(row[idx.order_id]).toUpperCase();
+    const orderName = normalizeCell(row[idx.order_name]).toUpperCase();
+
+    // A fetched purchase order is authoritative: replace all saved positions
+    // for that order so removed/changed MoySklad rows do not stay in transit.
+    if (orderId && replacingOrderIds[orderId]) return false;
+    if (orderName && replacingOrderNames[orderName]) return false;
+
+    return true;
+  });
+
   const byKey = {};
   const order = [];
 
-  existing.concat(rows).forEach(function(row, index) {
-    const isExistingRow = index < existing.length;
+  keptExisting.concat(rows).forEach(function(row, index) {
+    const isExistingRow = index < keptExisting.length;
     if (isExistingRow) {
       const positionId = idx.position_id === undefined ? '' : normalizeCell(row[idx.position_id]);
       const fallbackKey = buildPurchaseOrderProductFallbackKeyFromArray_(row);
@@ -2865,6 +2886,8 @@ function mergePurchaseOrderRowsIntoSheet_(freshRows) {
 
   return {
     rows_merged: rows.length,
+    orders_replaced: Object.keys(replacingOrderIds).length || Object.keys(replacingOrderNames).length,
+    stale_rows_removed: existing.length - keptExisting.length,
     total_rows_written: written
   };
 }

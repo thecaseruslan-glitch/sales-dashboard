@@ -2,6 +2,32 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## P6 Purchase Orders Authoritative Merge - 2026-06-05
+
+Request: when MoySklad purchase order positions are corrected, the dashboard sync must remove stale saved rows and rewrite the order with the factual current positions from MoySklad. This fixes cases like SKS-200426-W where old YXK-207 rows stayed in transit after the order/receipt was corrected to YXK-206.
+
+Changed files:
+
+- purchase-dashboard/P6.gs
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Updated mergePurchaseOrderRowsIntoSheet_ so freshly fetched purchase orders are authoritative by order_id / order_name.
+- Before merging fresh rows, all existing purchase_orders rows for those fetched orders are removed.
+- Fresh MoySklad positions are then written back, so deleted/replaced order positions do not remain as stale in_transit rows.
+- Added merge summary fields orders_replaced and stale_rows_removed for easier diagnostics.
+
+Verification:
+
+- Syntax-checked P6.gs via a temporary .js copy with node --check.
+- Ran git diff --check -- purchase-dashboard/P6.gs.
+- Confirmed in the live read-only sheet that receipts already contains YXK-206 rows for receipt 00139, while purchase_orders still contained stale YXK-207 rows as in_transit; this change targets that stale-row behavior.
+
+Rollback note:
+
+- Revert the mergePurchaseOrderRowsIntoSheet_ change in P6.gs to return to the previous preserve-existing merge behavior.
+
 ## Rules
 
 - Keep previous working dashboard versions as rollback points.
