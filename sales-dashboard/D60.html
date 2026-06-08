@@ -13189,6 +13189,7 @@ html, body{
 
     function invalidateManagerRenderCache() {
       managerRenderCache = null;
+      if (typeof invalidateClients360ItemsCache === 'function') invalidateClients360ItemsCache();
       historicalClientAbcMapCache = null;
 	      clientAutoStatusMapCache = null;
 	      clientAutoStatusMapCacheKey = '';
@@ -21367,10 +21368,28 @@ function renderClientNameForLtv(clientName, extraHtml) {
       return base;
     }
 
+    function getClients360ItemsCacheKey() {
+      return buildCurrentFilterStateKey();
+    }
+
+    function getClients360Items(force = false) {
+      const key = getClients360ItemsCacheKey();
+      if (!force && clients360ItemsCacheKey === key && Array.isArray(clients360ItemsCache)) {
+        return clients360ItemsCache;
+      }
+      clients360ItemsCache = buildClients360Items();
+      clients360ItemsCacheKey = key;
+      return clients360ItemsCache;
+    }
+
+    function invalidateClients360ItemsCache() {
+      clients360ItemsCache = [];
+      clients360ItemsCacheKey = '';
+    }
+
     function renderClients360Dashboard() {
       if (!clientsView) return;
-      const items = buildClients360Items();
-      clients360ItemsCache = items;
+      const items = getClients360Items();
       const searchEl = document.getElementById('clients360Search');
       const statusEl = document.getElementById('clients360Status');
       const sortEl = document.getElementById('clients360Sort');
@@ -21413,8 +21432,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     }
 
     function renderClients360SelectedTopProductsOnly() {
-      const items = clients360ItemsCache && clients360ItemsCache.length ? clients360ItemsCache : buildClients360Items();
-      if (!clients360ItemsCache || !clients360ItemsCache.length) clients360ItemsCache = items;
+      const items = getClients360Items();
       const item = items.find(entry => entry.client === clients360SelectedClient) || null;
       renderClients360TopProducts(item);
     }
@@ -21455,7 +21473,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     }
 
     function getClients360SelectedItem() {
-      const items = buildClients360Items();
+      const items = getClients360Items();
       return items.find(item => item.client === clients360SelectedClient) || null;
     }
 
@@ -24989,6 +25007,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let paymentsDashboardDirty = false;
     let clients360SelectedClient = '';
     let clients360ItemsCache = [];
+    let clients360ItemsCacheKey = '';
     let clients360SearchTimer = null;
     let clients360TopProductsSearchTimer = null;
     let clients360BasketScope = '12m';

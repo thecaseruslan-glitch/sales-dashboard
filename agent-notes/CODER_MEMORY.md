@@ -2,6 +2,33 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D60 Clients 360 Performance Cache - 2026-06-08
+
+Request: the Clients tab in the Sales dashboard freezes for several seconds on almost every click, while other tabs work clearly.
+
+Changed files:
+
+- sales-dashboard/D60.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Added a Clients 360 item cache keyed by the current dashboard filter/data state.
+- Changed Clients 360 rendering, selected-client lookup, and top-products search to reuse the cached client model instead of rebuilding all client analytics on every click.
+- Invalidated the Clients 360 cache together with manager/render cache invalidation so real filter/data changes still rebuild correctly.
+- Kept the existing D60 business logic and chart behavior unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D60.
+- Extracted and syntax-checked 5 script blocks from sales-dashboard/D60.html with new Function.
+- Ran git diff --check -- sales-dashboard/D60.html.
+- Reviewed focused diff; only Clients 360 cache/reuse code changed.
+
+Rollback note:
+
+- Revert this D60.html cache change if client data appears stale after filter changes. D59 remains the broader rollback version.
+
 ## D60 Sales Client Basket Scope - 2026-06-08
 
 Request: create a new D60 Sales dashboard version from D59. In the Clients 360 basket structure charts, add a third scope switcher: 12 міс / увесь / період. Make 12 міс independent from the main date filter, make увесь independent from the main date filter, and make період follow the main date filter. Also make the Clients 360 charts respond to the global metric toggle: Від суми продаж / Від кількості.
