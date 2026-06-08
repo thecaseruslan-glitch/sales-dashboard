@@ -7257,6 +7257,8 @@ html, body{
   .clients-360-chart-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.85fr);gap:14px}
   .clients-360-chart-stack{display:grid;gap:14px}
   .clients-360-section{border:1px solid #e0e9f5;border-radius:20px;padding:16px;background:#fff;min-width:0}
+  .clients-360-main > .clients-360-section,
+  .clients-360-products-grid .clients-360-section{content-visibility:auto;contain-intrinsic-size:420px}
   .clients-360-section-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
   .clients-360-section h3{margin:0;color:#17243a;font-size:19px}
   .clients-360-section-note{color:#71839c;font-size:12px}
@@ -7292,7 +7294,7 @@ html, body{
   .clients-360-top-products-list .top-name{white-space:normal;line-height:1.25}
   .clients-360-top-product-meta{display:block;margin-top:4px;color:#7d8da3;font-size:11px;font-weight:700}
   .clients-360-top-products-section{padding:0;border:0;background:transparent}
-  .clients-360-top-products-panel{min-height:620px}
+  .clients-360-top-products-panel{min-height:620px;content-visibility:auto;contain-intrinsic-size:720px}
   .clients-360-top-products-panel .client-trend-products-head{padding:12px 14px}
   .clients-360-top-products-panel .client-trend-products-head > div:first-child{flex:0 0 190px;min-width:180px}
   .clients-360-top-products-controls{grid-template-columns:auto minmax(180px,1fr) minmax(130px,.72fr) minmax(130px,.72fr) minmax(150px,.82fr) auto}
@@ -21507,7 +21509,12 @@ function renderClientNameForLtv(clientName, extraHtml) {
       }
       const list = document.getElementById('clients360List');
       list.innerHTML = '';
-      visible.forEach(item => {
+      const listItems = visible.slice(0, CLIENTS360_LIST_RENDER_LIMIT);
+      if (clients360SelectedClient && visible.length > listItems.length && !listItems.some(item => item.client === clients360SelectedClient)) {
+        const selectedVisibleItem = visible.find(item => item.client === clients360SelectedClient);
+        if (selectedVisibleItem) listItems.push(selectedVisibleItem);
+      }
+      listItems.forEach(item => {
         const button = document.createElement('button');
         const overdue = Math.abs(parseNumber(item.balance && item.balance.dueAmount));
         button.type = 'button';
@@ -21521,7 +21528,14 @@ function renderClientNameForLtv(clientName, extraHtml) {
         });
         list.appendChild(button);
       });
-      if (!visible.length) list.innerHTML = '<div class="clients-360-empty">Клієнтів не знайдено.</div>';
+      if (!visible.length) {
+        list.innerHTML = '<div class="clients-360-empty">Клієнтів не знайдено.</div>';
+      } else if (visible.length > listItems.length) {
+        const more = document.createElement('div');
+        more.className = 'clients-360-empty';
+        more.textContent = `Показано ${fmt(listItems.length)} із ${fmt(visible.length)}. Використай пошук або фільтр для решти.`;
+        list.appendChild(more);
+      }
       renderClients360Card(items.find(item => item.client === clients360SelectedClient) || null, items);
     }
 
@@ -22135,11 +22149,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
         if (!query) return true;
         return normalizeSearchText([product.product, product.sku, product.brand, product.category, product.group].join(' ')).includes(query);
       });
-      const tableRows = sortClients360TopProducts(filtered);
-      const tableRevenue = tableRows.reduce((sum, product) => sum + Number(product.revenue || 0), 0);
-      const tableQty = tableRows.reduce((sum, product) => sum + Number(product.quantity || 0), 0);
+      const tableRowsAll = sortClients360TopProducts(filtered);
+      const tableRows = tableRowsAll.slice(0, CLIENTS360_TOP_PRODUCTS_RENDER_LIMIT);
+      const tableRevenue = tableRowsAll.reduce((sum, product) => sum + Number(product.revenue || 0), 0);
+      const tableQty = tableRowsAll.reduce((sum, product) => sum + Number(product.quantity || 0), 0);
       if (meta) {
-        meta.textContent = fmt(tableRows.length) + ' із ' + fmt(products.length) + ' позицій | ' + fmt(tableQty) + ' шт | ' + formatMetricValue(tableRevenue) + ' продажів · ' + (products.sourceLabel || 'у вибірці');
+        const renderNote = tableRowsAll.length > tableRows.length ? ' | показано топ ' + fmt(tableRows.length) : '';
+        meta.textContent = fmt(tableRowsAll.length) + ' із ' + fmt(products.length) + ' позицій' + renderNote + ' | ' + fmt(tableQty) + ' шт | ' + formatMetricValue(tableRevenue) + ' продажів · ' + (products.sourceLabel || 'у вибірці');
       }
       target.innerHTML = '';
       updateClients360TopProductsSortUi();
@@ -25128,6 +25144,8 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360BrandChart = null;
     let clients360CategoryChart = null;
     let clients360BasketChart = null;
+    const CLIENTS360_LIST_RENDER_LIMIT = 160;
+    const CLIENTS360_TOP_PRODUCTS_RENDER_LIMIT = 220;
     let okrDashboardDirty = false;
     let bonusesDashboardDirty = false;
     let efficiencyDashboardDirty = false;

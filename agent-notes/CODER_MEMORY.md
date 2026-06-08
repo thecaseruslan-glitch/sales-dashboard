@@ -2,6 +2,34 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D60 Clients 360 Scroll Performance - 2026-06-08
+
+Request: the Clients tab still freezes during page scroll for minutes and then unfreezes; compare with other tabs and make a real scroll/performance optimization.
+
+Changed files:
+
+- sales-dashboard/D60.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Reduced Clients 360 DOM weight during scroll.
+- Limited the rendered client list to the first 160 visible clients, with the selected client preserved and a search/filter prompt for the rest.
+- Limited the rendered Top Products table to the first 220 sorted rows while keeping totals calculated on the full filtered set.
+- Added browser offscreen rendering optimization only to non-chart lower Clients 360 sections and the Top Products panel to reduce layout/paint cost during scroll.
+- Avoided applying offscreen rendering optimization to chart sections so Chart.js canvas sizing remains reliable.
+
+Verification:
+
+- Ran node --check sales-dashboard/D60.
+- Extracted and syntax-checked 5 script blocks from sales-dashboard/D60.html with new Function.
+- Ran git diff --check -- sales-dashboard/D60.html.
+- Reviewed focused diff; changes are limited to Clients 360 scroll/DOM performance.
+
+Rollback note:
+
+- Revert this D60.html scroll-performance change if users need every client/product row rendered simultaneously. Earlier D60 commits and D59 remain rollback points.
+
 ## D60 Clients 360 Lazy Heavy Calculations - 2026-06-08
 
 Request: the Sales dashboard still lags on the Clients tab after render deferral; make the Clients tab materially lighter.
