@@ -2,6 +2,42 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D60 Sales Client Basket Scope - 2026-06-08
+
+Request: create a new D60 Sales dashboard version from D59. In the Clients 360 basket structure charts, add a third scope switcher: 12 міс / увесь / період. Make 12 міс independent from the main date filter, make увесь independent from the main date filter, and make період follow the main date filter. Also make the Clients 360 charts respond to the global metric toggle: Від суми продаж / Від кількості.
+
+Base version:
+
+- sales-dashboard/D59
+- sales-dashboard/D59.html
+
+Changed files:
+
+- sales-dashboard/D60
+- sales-dashboard/D60.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Copied D59 to D60 as a rollback-safe new variant.
+- Added the період button to the Clients 360 brand/category/group basket chart controls.
+- Added a data-reference date for the 12m scope based on the latest available sales date, independent of the main date filter.
+- Kept all on all client rows and made period use the main date filter.
+- Changed Clients 360 brand/category/group donut chart values from fixed revenue to the existing global metric via getMetricValue(row).
+- Re-render Clients 360 when the global metric toggle changes.
+- Added quantity aggregation to the Clients 360 trend chart so it can follow the global metric mode.
+
+Verification:
+
+- Ran node --check sales-dashboard/D60.
+- Extracted and syntax-checked 5 script blocks from sales-dashboard/D60.html with new Function.
+- Ran no-index whitespace checks comparing D59 to D60 for sales-dashboard/D60 and sales-dashboard/D60.html.
+- Reviewed direct diff from D59.html to D60.html; changes are limited to the requested Clients 360 scope/metric behavior.
+
+Rollback note:
+
+- D59 and D59.html remain unchanged. Use D59 as the rollback point if D60 behavior needs to be reverted.
+
 ## P6 Purchase Orders Authoritative Merge - 2026-06-05
 
 Request: when MoySklad purchase order positions are corrected, the dashboard sync must remove stale saved rows and rewrite the order with the factual current positions from MoySklad. This fixes cases like SKS-200426-W where old YXK-207 rows stayed in transit after the order/receipt was corrected to YXK-206.
