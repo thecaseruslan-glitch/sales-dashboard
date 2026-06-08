@@ -2,6 +2,34 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D60 Clients 360 Interaction Rendering - 2026-06-08
+
+Request: after the first D60 cache optimization, the Clients tab still feels slow; optimize it properly like the Products tab.
+
+Changed files:
+
+- sales-dashboard/D60.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Changed client-list item clicks so they no longer call the full Clients 360 dashboard render.
+- Added a selected-client render path that updates the active client button and the selected client card only.
+- Added deferred Clients 360 block rendering with a render token and requestAnimationFrame/setTimeout batching.
+- Heavy blocks now render in small chunks: charts, offers, product signals, top products, dynamics, and analysis.
+- Basket scope and global metric toggles now rerender only the current selected client instead of rebuilding the whole tab.
+
+Verification:
+
+- Ran node --check sales-dashboard/D60.
+- Extracted and syntax-checked 5 script blocks from sales-dashboard/D60.html with new Function.
+- Ran git diff --check -- sales-dashboard/D60.html.
+- Reviewed focused diff; changes are limited to Clients 360 interaction/render scheduling.
+
+Rollback note:
+
+- Revert this D60.html interaction-rendering change if deferred blocks create stale UI. The previous D60 cache commit and D59 remain rollback points.
+
 ## D60 Clients 360 Performance Cache - 2026-06-08
 
 Request: the Clients tab in the Sales dashboard freezes for several seconds on almost every click, while other tabs work clearly.

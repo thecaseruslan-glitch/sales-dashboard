@@ -21387,6 +21387,39 @@ function renderClientNameForLtv(clientName, extraHtml) {
       clients360ItemsCacheKey = '';
     }
 
+    function renderClients360SelectedClient(item, allItems) {
+      document.querySelectorAll('.clients-360-item').forEach(button => {
+        button.classList.toggle('active', normalizeText(button.dataset.client || '') === clients360SelectedClient);
+      });
+      renderClients360Card(item, allItems);
+    }
+
+    function renderClients360CurrentSelection() {
+      const items = getClients360Items();
+      const item = items.find(entry => entry.client === clients360SelectedClient) || items[0] || null;
+      if (!item) return;
+      clients360SelectedClient = item.client;
+      renderClients360SelectedClient(item, items);
+    }
+
+    function scheduleClients360DeferredBlocks(token, tasks) {
+      const queue = Array.isArray(tasks) ? tasks.slice() : [];
+      const runNext = () => {
+        if (token !== clients360RenderToken || activeDashboardView !== 'clients') return;
+        const task = queue.shift();
+        if (!task) return;
+        try {
+          task();
+        } catch (err) {
+          console.error('Clients 360 deferred block failed', err);
+        }
+        if (queue.length) {
+          setTimeout(() => requestAnimationFrame(runNext), 0);
+        }
+      };
+      requestAnimationFrame(runNext);
+    }
+
     function renderClients360Dashboard() {
       if (!clientsView) return;
       const items = getClients360Items();
@@ -21422,9 +21455,14 @@ function renderClientNameForLtv(clientName, extraHtml) {
         const button = document.createElement('button');
         const overdue = Math.abs(parseNumber(item.balance && item.balance.dueAmount));
         button.type = 'button';
+        button.dataset.client = item.client;
         button.className = `clients-360-item${item.client === clients360SelectedClient ? ' active' : ''}`;
         button.innerHTML = `<div class="clients-360-item-name" title="${item.client}">${item.client}</div><div class="clients-360-item-meta"><span>менеджер: ${item.manager}</span><span>LTV ${formatMoneyUsd(item.ltv)}</span></div><div class="clients-360-item-foot"><span>${overdue > 5 ? 'Є прострочка' : '% кошика'}</span><strong>${overdue > 5 ? formatMoneyUsd(item.balance.dueAmount) : `${Number(item.basket12Pct || 0).toFixed(1)}%`}</strong></div><span class="clients-360-item-status ${item.tone}">${item.status}</span>`;
-        button.addEventListener('click', () => { clients360SelectedClient = item.client; renderClients360Dashboard(); });
+        button.addEventListener('click', () => {
+          if (clients360SelectedClient === item.client) return;
+          clients360SelectedClient = item.client;
+          renderClients360SelectedClient(item, items);
+        });
         list.appendChild(button);
       });
       if (!visible.length) list.innerHTML = '<div class="clients-360-empty">Клієнтів не знайдено.</div>';
@@ -21439,6 +21477,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
 
     function renderClients360Card(item, allItems) {
       if (!item) return;
+      const renderToken = ++clients360RenderToken;
       const action = item.action || {};
       const balance = item.balance || {};
       const overdue = Math.abs(parseNumber(balance.dueAmount));
@@ -21464,12 +21503,14 @@ function renderClientNameForLtv(clientName, extraHtml) {
       document.getElementById('clients360ProgressFill').style.width = `${Math.max(0, Math.min(100, Number(action.progressPct || 0)))}%`;
       const comparison = getClients360Comparison(item);
       document.getElementById('clients360Recommendation').innerHTML = `<strong>Практична рекомендація менеджеру</strong>${buildClients360Recommendation(item, comparison, overdue, overdueMaxDays)}`;
-      renderClients360Charts(item);
-      renderClients360Offers(item, allItems);
-      renderClients360Products(item);
-      renderClients360TopProducts(item);
-      renderClients360Dynamics(comparison);
-      renderClients360Analysis(item, comparison);
+      scheduleClients360DeferredBlocks(renderToken, [
+        () => renderClients360Charts(item),
+        () => renderClients360Offers(item, allItems),
+        () => renderClients360Products(item),
+        () => renderClients360TopProducts(item),
+        () => renderClients360Dynamics(comparison),
+        () => renderClients360Analysis(item, comparison)
+      ]);
     }
 
     function getClients360SelectedItem() {
@@ -23935,7 +23976,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       btn.addEventListener('click', () => {
         const nextScope = btn.dataset.clients360BasketScope;
         clients360BasketScope = ['12m', 'all', 'period'].includes(nextScope) ? nextScope : '12m';
-        renderClients360Dashboard();
+        renderClients360CurrentSelection();
       });
     });
     if (navOkrBtn) {
@@ -25008,6 +25049,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360SelectedClient = '';
     let clients360ItemsCache = [];
     let clients360ItemsCacheKey = '';
+    let clients360RenderToken = 0;
     let clients360SearchTimer = null;
     let clients360TopProductsSearchTimer = null;
     let clients360BasketScope = '12m';
@@ -25055,7 +25097,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
       if (activeDashboardView === 'products') {
         applyFilters();
       } else if (activeDashboardView === 'clients') {
-        renderClients360Dashboard();
+        renderClients360CurrentSelection();
       }
     }
 
