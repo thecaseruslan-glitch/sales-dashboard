@@ -21317,35 +21317,19 @@ function renderClientNameForLtv(clientName, extraHtml) {
         });
       }
 
-      const allRows = getManagerRenderCache().allClientsRowsIgnoreDate;
-      const stockIndex = buildClients360StockIndex(allRows);
-      const groupProducts = new Map();
-      allRows.forEach(row => {
-        const sku = normalizeSkuValue(row.sku);
-        const group = normalizeText(row.product_group || row.group);
-        if (!sku || !group || normalizeDate(row.date) < recentProductFrom || !stockIndex.availableBySku.has(sku)) return;
-        if (!groupProducts.has(group)) groupProducts.set(group, new Map());
-        const map = groupProducts.get(group);
-        const current = map.get(sku) || { sku, product: normalizeText(row.product), revenue: 0, stock: stockIndex.availableBySku.get(sku) || 0 };
-        current.revenue += parseNumber(row.revenue);
-        map.set(sku, current);
-      });
+      clients360OpportunityContext = {
+        peerStats,
+        groupProducts: null,
+        allRows: getManagerRenderCache().allClientsRowsIgnoreDate,
+        recentProductFrom,
+        referenceDate
+      };
 
       base.forEach(item => {
-        const boughtRecent = new Set(item.allRows.filter(row => normalizeDate(row.date) >= recentProductFrom).map(row => normalizeSkuValue(row.sku)).filter(Boolean));
-        const opportunities = [];
-        peerStats.forEach((stat, key) => {
-          const [statBand, group] = key.split('||');
-          if (Number(statBand) !== item.peerBand || stat.adoption < 0.25 || stat.meanShare <= 0) return;
-          const actualShare = item.revenue > 0 ? (item.groupRevenue.get(group) || 0) / item.revenue : 0;
-          const potential = Math.max(0, item.revenue * (stat.meanShare - actualShare));
-          if (potential < 50) return;
-          const products = Array.from((groupProducts.get(group) || new Map()).values()).filter(product => !boughtRecent.has(product.sku)).sort((a, b) => b.revenue - a.revenue).slice(0, 3);
-          opportunities.push({ group, actualShare, potential, products });
-        });
-        item.opportunities = opportunities.sort((a, b) => b.potential - a.potential).slice(0, 5);
-        item.potential = item.opportunities.slice(0, 3).reduce((sum, entry) => sum + entry.potential, 0);
-        item.productInsights = buildClientProductInsights(item.allRows, referenceDate);
+        item.opportunities = [];
+        item.potential = 0;
+        item.productInsights = { due: [], dormant: [] };
+        item.clients360Hydrated = false;
         item.ltv = item.action.avgMonthlyRevenue || item.revenue / 12;
         item.basket12Pct = getClients360BasketCoverage(item, 'overall', '12m').pct;
         item.basketAllPct = getClients360BasketCoverage(item, 'overall', 'all').pct;
@@ -21368,6 +21352,53 @@ function renderClientNameForLtv(clientName, extraHtml) {
       return base;
     }
 
+    function hydrateClients360Item(item) {
+      if (!item || item.clients360Hydrated) return item;
+      const context = clients360OpportunityContext || {};
+      const peerStats = context.peerStats instanceof Map ? context.peerStats : new Map();
+      let groupProducts = context.groupProducts instanceof Map ? context.groupProducts : null;
+      const recentProductFrom = context.recentProductFrom || addDaysIso(getClients360DataReferenceDate(), -180);
+      const referenceDate = context.referenceDate || getClients360ReferenceDate();
+      if (!groupProducts) {
+        const allRows = Array.isArray(context.allRows) ? context.allRows : getManagerRenderCache().allClientsRowsIgnoreDate;
+        const stockIndex = buildClients360StockIndex(allRows);
+        groupProducts = new Map();
+        allRows.forEach(row => {
+          const sku = normalizeSkuValue(row.sku);
+          const group = normalizeText(row.product_group || row.group);
+          if (!sku || !group || normalizeDate(row.date) < recentProductFrom || !stockIndex.availableBySku.has(sku)) return;
+          if (!groupProducts.has(group)) groupProducts.set(group, new Map());
+          const map = groupProducts.get(group);
+          const current = map.get(sku) || { sku, product: normalizeText(row.product), revenue: 0, stock: stockIndex.availableBySku.get(sku) || 0 };
+          current.revenue += parseNumber(row.revenue);
+          map.set(sku, current);
+        });
+        context.groupProducts = groupProducts;
+      }
+      const boughtRecent = new Set((Array.isArray(item.allRows) ? item.allRows : [])
+        .filter(row => normalizeDate(row.date) >= recentProductFrom)
+        .map(row => normalizeSkuValue(row.sku))
+        .filter(Boolean));
+      const opportunities = [];
+      peerStats.forEach((stat, key) => {
+        const [statBand, group] = key.split('||');
+        if (Number(statBand) !== item.peerBand || stat.adoption < 0.25 || stat.meanShare <= 0) return;
+        const actualShare = item.revenue > 0 ? (item.groupRevenue.get(group) || 0) / item.revenue : 0;
+        const potential = Math.max(0, item.revenue * (stat.meanShare - actualShare));
+        if (potential < 50) return;
+        const products = Array.from((groupProducts.get(group) || new Map()).values())
+          .filter(product => !boughtRecent.has(product.sku))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 3);
+        opportunities.push({ group, actualShare, potential, products });
+      });
+      item.opportunities = opportunities.sort((a, b) => b.potential - a.potential).slice(0, 5);
+      item.potential = item.opportunities.slice(0, 3).reduce((sum, entry) => sum + entry.potential, 0);
+      item.productInsights = buildClientProductInsights(item.allRows, referenceDate);
+      item.clients360Hydrated = true;
+      return item;
+    }
+
     function getClients360ItemsCacheKey() {
       return buildCurrentFilterStateKey();
     }
@@ -21385,6 +21416,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     function invalidateClients360ItemsCache() {
       clients360ItemsCache = [];
       clients360ItemsCacheKey = '';
+      clients360OpportunityContext = null;
     }
 
     function showClients360LoadingState() {
@@ -21526,9 +21558,13 @@ function renderClientNameForLtv(clientName, extraHtml) {
       document.getElementById('clients360ProgressText').textContent = `${action.currentOrders || 0}/${action.targetOrdersRounded || 0} відгрузки · ${formatMoneyUsd(action.currentRevenue || 0)} / ${formatMoneyUsd(action.targetRevenue || action.targetMonthlyRevenue || 0)} · ${Number(action.progressPct || 0).toFixed(1)}%`;
       document.getElementById('clients360ProgressFill').style.width = `${Math.max(0, Math.min(100, Number(action.progressPct || 0)))}%`;
       const comparison = getClients360Comparison(item);
-      document.getElementById('clients360Recommendation').innerHTML = `<strong>Практична рекомендація менеджеру</strong>${buildClients360Recommendation(item, comparison, overdue, overdueMaxDays)}`;
+      document.getElementById('clients360Recommendation').innerHTML = '<strong>Практична рекомендація менеджеру</strong>Готую рекомендацію по клієнту...';
       scheduleClients360DeferredBlocks(renderToken, [
         () => renderClients360Charts(item),
+        () => {
+          hydrateClients360Item(item);
+          document.getElementById('clients360Recommendation').innerHTML = `<strong>Практична рекомендація менеджеру</strong>${buildClients360Recommendation(item, comparison, overdue, overdueMaxDays)}`;
+        },
         () => renderClients360Offers(item, allItems),
         () => renderClients360Products(item),
         () => renderClients360TopProducts(item),
@@ -25073,6 +25109,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360SelectedClient = '';
     let clients360ItemsCache = [];
     let clients360ItemsCacheKey = '';
+    let clients360OpportunityContext = null;
     let clients360RenderToken = 0;
     let clients360DashboardRenderTimer = null;
     let clients360SearchTimer = null;

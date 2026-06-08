@@ -2,6 +2,34 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D60 Clients 360 Lazy Heavy Calculations - 2026-06-08
+
+Request: the Sales dashboard still lags on the Clients tab after render deferral; make the Clients tab materially lighter.
+
+Changed files:
+
+- sales-dashboard/D60.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Removed per-client opportunity and product-insight calculations from the initial Clients 360 list build.
+- The first list build now creates the lighter client model only.
+- Added lazy hydration for the selected client: opportunities, product insights, and recommendation data are calculated only for the active client.
+- Deferred selected-client recommendation hydration so the basic client card and charts can start rendering before heavy product recommendation work.
+- Delayed building the stock-backed group product map until the first selected-client recommendation needs it.
+
+Verification:
+
+- Ran node --check sales-dashboard/D60.
+- Extracted and syntax-checked 5 script blocks from sales-dashboard/D60.html with new Function.
+- Ran git diff --check -- sales-dashboard/D60.html.
+- Reviewed focused diff; changes are limited to lazy Clients 360 heavy calculations.
+
+Rollback note:
+
+- Revert this D60.html lazy-hydration change if recommendations or opportunity blocks do not populate correctly. Earlier D60 commits and D59 remain rollback points.
+
 ## D60 Clients 360 Initial Open Deferral - 2026-06-08
 
 Request: after interaction optimization, the Clients tab works better inside the tab, but the first opening of the Clients tab is still too slow.
