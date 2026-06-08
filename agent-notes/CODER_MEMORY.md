@@ -2,6 +2,33 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D60 Clients 360 Initial Open Deferral - 2026-06-08
+
+Request: after interaction optimization, the Clients tab works better inside the tab, but the first opening of the Clients tab is still too slow.
+
+Changed files:
+
+- sales-dashboard/D60.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Moved the initial Clients 360 dashboard render out of the synchronous tab-switch path.
+- The Clients tab now opens immediately and schedules the heavy Clients 360 render on the next event-loop turn.
+- Added a lightweight loading state for the clients list/recommendation area while the deferred first render starts.
+- Kept the existing cached client model and deferred selected-client block rendering.
+
+Verification:
+
+- Ran node --check sales-dashboard/D60.
+- Extracted and syntax-checked 5 script blocks from sales-dashboard/D60.html with new Function.
+- Ran git diff --check -- sales-dashboard/D60.html.
+- Reviewed focused diff; changes are limited to first-open render scheduling.
+
+Rollback note:
+
+- Revert this D60.html deferral if the initial loading state causes issues. Earlier D60 commits and D59 remain rollback points.
+
 ## D60 Clients 360 Interaction Rendering - 2026-06-08
 
 Request: after the first D60 cache optimization, the Clients tab still feels slow; optimize it properly like the Products tab.

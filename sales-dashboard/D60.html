@@ -11283,7 +11283,7 @@ html, body{
         productsDashboardDirty = false;
       }
       if (activeDashboardView === 'clients' && (force || clientsDashboardDirty)) {
-        renderClients360Dashboard();
+        scheduleClients360DashboardRender(force);
         clientsDashboardDirty = false;
       }
       if (activeDashboardView === 'payments' && (force || paymentsDashboardDirty)) {
@@ -21387,6 +21387,30 @@ function renderClientNameForLtv(clientName, extraHtml) {
       clients360ItemsCacheKey = '';
     }
 
+    function showClients360LoadingState() {
+      const list = document.getElementById('clients360List');
+      const count = document.getElementById('clients360Count');
+      const recommendation = document.getElementById('clients360Recommendation');
+      if (count) count.textContent = '...';
+      if (list && !list.children.length) {
+        list.innerHTML = '<div class="clients-360-empty">Завантажую клієнтів...</div>';
+      }
+      if (recommendation) {
+        recommendation.innerHTML = '<strong>Практична рекомендація менеджеру</strong>Завантажую аналітику клієнта...';
+      }
+    }
+
+    function scheduleClients360DashboardRender(force = false) {
+      clearTimeout(clients360DashboardRenderTimer);
+      if (force || !clients360ItemsCacheKey || !Array.isArray(clients360ItemsCache) || !clients360ItemsCache.length) {
+        showClients360LoadingState();
+      }
+      clients360DashboardRenderTimer = setTimeout(() => {
+        if (activeDashboardView !== 'clients') return;
+        renderClients360Dashboard();
+      }, 0);
+    }
+
     function renderClients360SelectedClient(item, allItems) {
       document.querySelectorAll('.clients-360-item').forEach(button => {
         button.classList.toggle('active', normalizeText(button.dataset.client || '') === clients360SelectedClient);
@@ -25050,6 +25074,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
     let clients360ItemsCache = [];
     let clients360ItemsCacheKey = '';
     let clients360RenderToken = 0;
+    let clients360DashboardRenderTimer = null;
     let clients360SearchTimer = null;
     let clients360TopProductsSearchTimer = null;
     let clients360BasketScope = '12m';
