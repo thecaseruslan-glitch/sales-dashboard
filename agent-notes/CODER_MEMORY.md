@@ -2,6 +2,42 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D61 Clients 360 Startup Prewarm - 2026-06-09
+
+Request: create a new D61 Sales dashboard version, optimize the Clients tab because the dashboard becomes non-clickable/freezes after the Clients tab was added, and make the Clients tab preload during dashboard startup so the first opening does not wait for client analytics to load.
+
+Base version:
+
+- sales-dashboard/D60
+- sales-dashboard/D60.html
+
+Changed files:
+
+- sales-dashboard/D61
+- sales-dashboard/D61.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Copied D60 to D61 as a rollback-safe new variant.
+- Added Clients 360 data prewarm during local snapshot bootstrap, fresh server payload load, and auto-applied prepared payloads.
+- The startup loader now includes a “Готую вкладку Клієнти...” phase; this intentionally moves the first Clients 360 cache build into dashboard loading instead of the first tab click.
+- Pre-hydrates the selected client recommendation/product context so the first Clients tab open has the heavy selected-client data ready.
+- Changed the Clients 360 list render to append client buttons through a single DocumentFragment instead of repeated direct DOM appends.
+- Updated Clients 360 charts to reuse existing Chart.js instances with no animation instead of destroying and recreating them on every selected-client/scope refresh.
+- Prevented duplicate Clients 360 chart mouseleave listeners on repeated chart refreshes.
+
+Verification:
+
+- Ran node --check sales-dashboard/D61.
+- Extracted and syntax-checked 6 script blocks from sales-dashboard/D61.html with new Function.
+- Ran git diff --check -- sales-dashboard/D61 sales-dashboard/D61.html.
+- Reviewed no-index diff from D60.html to D61.html; changes are limited to Clients 360 startup prewarm/render performance.
+
+Rollback note:
+
+- D60 and D60.html remain unchanged. Use D60 as the rollback point if D61 startup loading feels too long or if Clients 360 chart reuse behaves incorrectly.
+
 ## D60 Clients 360 Scroll Performance - 2026-06-08
 
 Request: the Clients tab still freezes during page scroll for minutes and then unfreezes; compare with other tabs and make a real scroll/performance optimization.
