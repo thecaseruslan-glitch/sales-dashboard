@@ -2179,3 +2179,28 @@ Verification:
 Rollback note:
 
 - D68 remains unchanged as the rollback point for D69.
+
+## D70 Brand Growth/Fall Turnover Context - 2026-06-15
+
+Request: create a new version and add period turnover values to the `Бренди ростуть` and `Бренди падають` lists so the absolute delta and percent change are easier to understand.
+
+Changed files:
+
+- `sales-dashboard/D70`
+- `sales-dashboard/D70.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Created D70 from D69.
+- Added `було X → стало Y` turnover context to growing and falling brand rows.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D70`.
+- Extracted and syntax-checked all `D70.html` script blocks with `new Function`.
+- Ran `git diff --no-index --check sales-dashboard/D69.html sales-dashboard/D70.html`.
+
+Rollback note:
+
+- D69 remains unchanged as the rollback point for D70.
