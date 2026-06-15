@@ -2778,17 +2778,31 @@
       width:22px;
       height:22px;
       flex:0 0 22px;
-      border:1px solid #d7e2f0;
+      border:1px solid rgba(100,116,139,.26);
       border-radius:999px;
-      background:#fff;
-      color:#3b5878;
+      background:transparent;
+      color:rgba(71,85,105,.42);
       font-size:12px;
       line-height:1;
       cursor:pointer;
+      opacity:.72;
+      transition:opacity .14s ease, color .14s ease, border-color .14s ease;
+    }
+    .payments-column-toggle:hover{
+      opacity:1;
+      color:rgba(51,65,85,.72);
+      border-color:rgba(100,116,139,.42);
+    }
+    .payments-column-toggle svg{
+      width:14px;
+      height:14px;
+      display:block;
+      stroke:currentColor;
     }
     .payments-column-toggle.hidden{
-      background:#f1f5f9;
-      color:#94a3b8;
+      background:transparent;
+      color:rgba(71,85,105,.36);
+      border-color:rgba(100,116,139,.20);
     }
     .payments-column-toggle.hidden::after{
       content:'';
@@ -2796,7 +2810,7 @@
       width:18px;
       height:2px;
       border-radius:999px;
-      background:#ef4444;
+      background:rgba(71,85,105,.50);
       transform:rotate(-42deg);
     }
     #paymentsView.payments-hide-col-client td[data-payments-column="client"],
@@ -2807,29 +2821,17 @@
     #paymentsView.payments-hide-col-balance td[data-payments-column="balance"],
     #paymentsView.payments-hide-col-overdue td[data-payments-column="overdue"],
     #paymentsView.payments-hide-col-month-close td[data-payments-column="month-close"]{
-      display:none;
+      color:transparent !important;
     }
-    #paymentsView.payments-hide-col-client th[data-payments-column="client"],
-    #paymentsView.payments-hide-col-ltv th[data-payments-column="ltv"],
-    #paymentsView.payments-hide-col-tag th[data-payments-column="tag"],
-    #paymentsView.payments-hide-col-status th[data-payments-column="status"],
-    #paymentsView.payments-hide-col-defer th[data-payments-column="defer"],
-    #paymentsView.payments-hide-col-balance th[data-payments-column="balance"],
-    #paymentsView.payments-hide-col-overdue th[data-payments-column="overdue"],
-    #paymentsView.payments-hide-col-month-close th[data-payments-column="month-close"]{
-      width:34px !important;
-      min-width:34px !important;
-      text-align:center !important;
-    }
-    #paymentsView.payments-hide-col-client th[data-payments-column="client"] .payments-th-label,
-    #paymentsView.payments-hide-col-ltv th[data-payments-column="ltv"] .payments-th-label,
-    #paymentsView.payments-hide-col-tag th[data-payments-column="tag"] .payments-th-label,
-    #paymentsView.payments-hide-col-status th[data-payments-column="status"] .payments-th-label,
-    #paymentsView.payments-hide-col-defer th[data-payments-column="defer"] .payments-th-label,
-    #paymentsView.payments-hide-col-balance th[data-payments-column="balance"] .payments-th-label,
-    #paymentsView.payments-hide-col-overdue th[data-payments-column="overdue"] .payments-th-label,
-    #paymentsView.payments-hide-col-month-close th[data-payments-column="month-close"] .payments-th-label{
-      display:none;
+    #paymentsView.payments-hide-col-client td[data-payments-column="client"] *,
+    #paymentsView.payments-hide-col-ltv td[data-payments-column="ltv"] *,
+    #paymentsView.payments-hide-col-tag td[data-payments-column="tag"] *,
+    #paymentsView.payments-hide-col-status td[data-payments-column="status"] *,
+    #paymentsView.payments-hide-col-defer td[data-payments-column="defer"] *,
+    #paymentsView.payments-hide-col-balance td[data-payments-column="balance"] *,
+    #paymentsView.payments-hide-col-overdue td[data-payments-column="overdue"] *,
+    #paymentsView.payments-hide-col-month-close td[data-payments-column="month-close"] *{
+      visibility:hidden !important;
     }
     .payments-clickable-row{
       cursor:pointer;
@@ -22595,6 +22597,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         { key: 'overdue', label: 'Протермін.' },
         { key: 'month-close', label: 'До кінця міс.' }
       ];
+      const eyeIconHtml = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
 
       paymentsView.querySelectorAll('.payments-table-wrap table').forEach(table => {
         const headerCells = table.tHead && table.tHead.rows && table.tHead.rows[0]
@@ -22609,7 +22612,9 @@ function renderClientNameForLtv(clientName, extraHtml) {
             escapeManagerAnalysisText(column.label) +
             '</span><button class="payments-column-toggle" type="button" data-payments-column-toggle="' +
             column.key +
-            '" aria-pressed="false" title="Сховати колонку">👁</button></span>';
+            '" aria-pressed="false" title="Сховати колонку">' +
+            eyeIconHtml +
+            '</button></span>';
         });
       });
 

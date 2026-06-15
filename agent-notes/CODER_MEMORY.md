@@ -2,6 +2,31 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D63 Balance Column Hide Without Layout Shift - 2026-06-15
+
+Request: make the Balances column eye icons gray/semitransparent and prevent table layout shifts when a column is hidden; hidden columns should keep their space and show empty cells.
+
+Changed files:
+
+- sales-dashboard/D63.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Replaced the colored eye emoji with a small gray inline SVG eye.
+- Changed hidden-column behavior from removing cells with display:none to hiding only cell content, preserving original column widths.
+- Kept the crossed-eye state in the header using a gray diagonal slash.
+
+Verification:
+
+- Ran node --check sales-dashboard/D63.
+- Extracted and syntax-checked 6 script blocks from sales-dashboard/D63.html with new Function.
+- Ran git diff --check -- sales-dashboard/D63.html.
+
+Rollback note:
+
+- Revert this D63.html CSS/header icon adjustment if the previous column-collapse behavior is desired.
+
 ## D63 External Code Import + Balance Column Controls - 2026-06-15
 
 Request: import the ready D63 code supplied by another agent, push it to Git, and make minimal additions: show the ABCD client grade beside LTV and add an eye toggle beside each Balances column header so columns can be hidden/shown.
