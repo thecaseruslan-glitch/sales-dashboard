@@ -2065,3 +2065,33 @@ Verification:
 Rollback note:
 
 - D53 remains unchanged and is the rollback point.
+
+## D66 Brand Analysis Block - 2026-06-15
+
+Request: use Ruslan's supplied final D65 files as the base, create D66, and add a new `Аналіз бренду` block in the `Товари` tab under `Клієнтська структура`.
+
+Changed files:
+
+- `sales-dashboard/D65`
+- `sales-dashboard/D65.html`
+- `sales-dashboard/D66`
+- `sales-dashboard/D66.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Saved the supplied D65 backend and HTML files as the new base version.
+- Created D66 from D65.
+- Added a full-width brand analysis block below `Клієнтська структура` with brand/category/group filters.
+- Added a brand trend chart, category and group donut charts, clickable multi-select dimension lists, and three client rankings for brand/category/group slices.
+- Reused the existing dashboard detail modal for drill-style client breakdowns from the brand analysis charts.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D66`.
+- Extracted and syntax-checked all `D66.html` script blocks with `new Function`.
+- Ran `git diff --no-index --check sales-dashboard/D65.html sales-dashboard/D66.html`.
+
+Rollback note:
+
+- D65 remains unchanged as the rollback point for D66.
