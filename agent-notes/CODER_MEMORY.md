@@ -2151,3 +2151,31 @@ Verification:
 Rollback note:
 
 - D67 remains unchanged as the rollback point for D68.
+
+## D69 Brand Analysis Period Comparison Fix - 2026-06-15
+
+Request: create a new version so local `Рік` comparison does not compare against future/unreached days, and add a `12 міс` local period switch.
+
+Changed files:
+
+- `sales-dashboard/D69`
+- `sales-dashboard/D69.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Created D69 from D68.
+- Added the `12 міс` local period button to brand-analysis insights.
+- Changed local `Рік` to compare year-to-date/current available days with the same dates in the previous year instead of full future-year days.
+- Changed local `Квартал` and `Місяць` to cap comparison to the same elapsed days when the period is not complete.
+- Implemented `12 міс` as a rolling 12-month date-to-date comparison against the same shifted range one year earlier.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D69`.
+- Extracted and syntax-checked all `D69.html` script blocks with `new Function`.
+- Ran `git diff --no-index --check sales-dashboard/D68.html sales-dashboard/D69.html`.
+
+Rollback note:
+
+- D68 remains unchanged as the rollback point for D69.
