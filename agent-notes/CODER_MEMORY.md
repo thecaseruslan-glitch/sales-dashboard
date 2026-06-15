@@ -2123,3 +2123,31 @@ Verification:
 Rollback note:
 
 - D66 remains unchanged as the rollback point for D67.
+
+## D68 Brand Analysis Local Period Toggle - 2026-06-15
+
+Request: create a new version and add local `Рік / Квартал / Місяць` switches to the lower `Аналіз бренду` insights block, with the local switch taking priority over the main period filter and a second click disabling the local mode.
+
+Changed files:
+
+- `sales-dashboard/D68`
+- `sales-dashboard/D68.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Created D68 from D67.
+- Added local period buttons to the `Аналітична інформація` subblock.
+- Added toggle behavior: clicking the active local period again disables local period mode.
+- Updated insight comparisons so local year/quarter/month compare against the previous calendar year/quarter/month; when local mode is off, the block falls back to the main dashboard period.
+- Kept manager/client/service-tag dependencies from the main filters.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D68`.
+- Extracted and syntax-checked all `D68.html` script blocks with `new Function`.
+- Ran `git diff --no-index --check sales-dashboard/D67.html sales-dashboard/D68.html`.
+
+Rollback note:
+
+- D67 remains unchanged as the rollback point for D68.
