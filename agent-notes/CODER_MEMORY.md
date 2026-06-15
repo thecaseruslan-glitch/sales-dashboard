@@ -2,6 +2,40 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D62 Balances Month-End Close Amount - 2026-06-15
+
+Request: create Sales dashboard D62 and add one more Balances column for the amount a client needs to close by the end of the current calendar month, including current overdue plus future overdue from the previous debt cycle that will mature this month.
+
+Base version:
+
+- sales-dashboard/D61
+- sales-dashboard/D61.html
+
+Changed files:
+
+- sales-dashboard/D62
+- sales-dashboard/D62.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Copied D61 to D62 as a rollback-safe new variant.
+- Added a Balances table column `До кінця міс.` to all four balance buckets.
+- Calculated the value from the existing unpaid-shipment allocation: current overdue plus unpaid shipments with due dates through the end of the current month, limited to shipments dated up to the end of the previous month so the previous-cycle debt accumulates correctly.
+- Added the same amount to the client debt modal as `Закрити до кінця місяця` for explanation and review.
+- Did not change backend calculations or Google Sheets data.
+
+Verification:
+
+- Ran node --check sales-dashboard/D62.
+- Extracted and syntax-checked 6 script blocks from sales-dashboard/D62.html with new Function.
+- Ran git diff --check -- sales-dashboard/D62 sales-dashboard/D62.html.
+- Reviewed D61.html -> D62.html diff; changes are limited to the Balances month-end close amount UI/calculation.
+
+Rollback note:
+
+- D61 and D61.html remain unchanged. Use D61 as the rollback point if the month-end close amount needs different business scope.
+
 ## D61 Clients 360 Startup Prewarm - 2026-06-09
 
 Request: create a new D61 Sales dashboard version, optimize the Clients tab because the dashboard becomes non-clickable/freezes after the Clients tab was added, and make the Clients tab preload during dashboard startup so the first opening does not wait for client analytics to load.
