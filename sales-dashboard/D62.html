@@ -2621,8 +2621,10 @@
     }
     .payments-cols-grid{
       display:grid;
-      grid-template-columns:1fr;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
       gap:16px;
+      width:100%;
+      max-width:100%;
     }
     .payments-top-row{
       display:contents;
@@ -2667,7 +2669,7 @@
     }
     .payments-table-wrap .admin-table{
       table-layout:fixed;
-      min-width:1120px;
+      min-width:820px;
     }
     .payments-table-wrap .admin-table th,
     .payments-table-wrap .admin-table td{
@@ -2678,23 +2680,23 @@
     .payments-table-wrap .admin-table th:first-child,
     .payments-table-wrap .admin-table td:first-child{
       width:30%;
-      min-width:260px;
+      min-width:210px;
     }
     .payments-table-wrap .admin-table th:nth-child(2),
     .payments-table-wrap .admin-table td:nth-child(2){
-      width:12%;
+      width:11%;
     }
     .payments-table-wrap .admin-table th:nth-child(3),
     .payments-table-wrap .admin-table td:nth-child(3){
-      width:12%;
+      width:11%;
     }
     .payments-table-wrap .admin-table th:nth-child(4),
     .payments-table-wrap .admin-table td:nth-child(4){
-      width:14%;
+      width:13%;
     }
     .payments-table-wrap .admin-table th:nth-child(5),
     .payments-table-wrap .admin-table td:nth-child(5){
-      width:9%;
+      width:10%;
     }
     .payments-table-wrap .admin-table th:nth-child(6),
     .payments-table-wrap .admin-table td:nth-child(6),
@@ -2702,7 +2704,7 @@
     .payments-table-wrap .admin-table td:nth-child(7),
     .payments-table-wrap .admin-table th:nth-child(8),
     .payments-table-wrap .admin-table td:nth-child(8){
-      width:11%;
+      width:12%;
       text-align:right;
     }
     .payments-table-wrap .admin-table th:nth-child(4),
@@ -7378,6 +7380,51 @@ html, body{
     .clients-360-donut-layout{grid-template-columns:1fr}
     .clients-360-dynamics{grid-template-columns:repeat(3,minmax(0,1fr))}.clients-360-analysis-sections{grid-template-columns:1fr}
   }
+</style>
+
+<style id="payments-full-width-2x2-fix">
+#paymentsView.payments-view-card{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  justify-self:stretch !important;
+  align-self:stretch !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+}
+
+#paymentsView .payments-cols-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  gap:16px !important;
+  width:100% !important;
+  max-width:100% !important;
+  align-items:start !important;
+}
+
+#paymentsView .payments-top-row,
+#paymentsView .payments-bottom-block{
+  display:contents !important;
+}
+
+#paymentsView .payments-col{
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+}
+
+#paymentsView .payments-table-wrap{
+  width:100% !important;
+  max-width:100% !important;
+  overflow:auto !important;
+}
+
+@media (max-width:1100px){
+  #paymentsView .payments-cols-grid{
+    grid-template-columns:1fr !important;
+  }
+}
 </style>
 
 </head>

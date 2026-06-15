@@ -2,6 +2,32 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D62 Balances Full-Width 2x2 Grid - 2026-06-15
+
+Request: keep the Balances lists arranged as two blocks on top and two blocks below, but make the whole Balances page use the same full-width working rail as Efficiency instead of looking centered with empty side space.
+
+Changed files:
+
+- sales-dashboard/D62.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Restored the Balances list layout to a 2x2 grid on desktop.
+- Added a late #paymentsView CSS override so the Balances card stretches across the full dashboard rail like Efficiency.
+- Kept compact one-line rows and reduced the table minimum width for half-width blocks while preserving internal horizontal scroll where needed.
+- Did not change backend calculations or Google Sheets data.
+
+Verification:
+
+- Ran node --check sales-dashboard/D62.
+- Extracted and syntax-checked 6 script blocks from sales-dashboard/D62.html with new Function.
+- Ran git diff --check -- sales-dashboard/D62.html.
+
+Rollback note:
+
+- Revert this D62.html CSS change to return to the previous stacked full-width list layout.
+
 ## D62 Balances Full-Width List Layout - 2026-06-15
 
 Request: reorganize the D62 Balances client lists so client name, LTV, manager tag, status, and financial columns fit in one row; remove empty side space by making the page blocks use the full working width.
