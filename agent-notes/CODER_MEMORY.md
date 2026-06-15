@@ -2095,3 +2095,31 @@ Verification:
 Rollback note:
 
 - D65 remains unchanged as the rollback point for D66.
+
+## D67 Brand Analysis Insights - 2026-06-15
+
+Request: create D67 from D66 and extend the `Аналіз бренду` block with a lower analytical decision panel.
+
+Changed files:
+
+- `sales-dashboard/D67`
+- `sales-dashboard/D67.html`
+- `agent-notes/CODER_MEMORY.md`
+
+Implementation:
+
+- Created D67 from D66.
+- Added a lower `Аналітична інформація` subblock under the three client lists in `Аналіз бренду`.
+- Added retention and new-revenue KPI cards for the selected brand.
+- Added lists for top 5 brands, growing brands, falling brands, new clients for the selected brand, and clients lost for the selected brand.
+- Compared current period with the immediately previous same-length period while preserving existing manager/client/service filters.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D67`.
+- Extracted and syntax-checked all `D67.html` script blocks with `new Function`.
+- Ran `git diff --no-index --check sales-dashboard/D66.html sales-dashboard/D67.html`.
+
+Rollback note:
+
+- D66 remains unchanged as the rollback point for D67.
