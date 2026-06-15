@@ -2,6 +2,34 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D63 External Code Import + Balance Column Controls - 2026-06-15
+
+Request: import the ready D63 code supplied by another agent, push it to Git, and make minimal additions: show the ABCD client grade beside LTV and add an eye toggle beside each Balances column header so columns can be hidden/shown.
+
+Changed files:
+
+- sales-dashboard/D63
+- sales-dashboard/D63.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Copied the supplied D63 Apps Script and HTML files into the sales dashboard version set.
+- Added ABCD grade rendering beside the Balances LTV value using the existing getHistoricalClientAbcGrade/renderInlineAbcBadge logic.
+- Added per-column visibility controls for Balances headers: clicking the eye hides that column's row cells and keeps a crossed eye in the header for restoring it.
+- Kept backend logic and Google Sheets data unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D63.
+- Extracted and syntax-checked 6 script blocks from sales-dashboard/D63.html with new Function.
+- Ran git diff --check -- sales-dashboard/D63 sales-dashboard/D63.html.
+- Searched D63/D63.html for high-risk eval/fetch/storage patterns; observed only expected project APIs/usages.
+
+Rollback note:
+
+- D62 remains unchanged as the rollback point if imported D63 behavior needs to be backed out.
+
 ## D62 Balances Full-Width 2x2 Grid - 2026-06-15
 
 Request: keep the Balances lists arranged as two blocks on top and two blocks below, but make the whole Balances page use the same full-width working rail as Efficiency instead of looking centered with empty side space.
