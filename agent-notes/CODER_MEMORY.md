@@ -2,6 +2,34 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D62 Balances Full-Width List Layout - 2026-06-15
+
+Request: reorganize the D62 Balances client lists so client name, LTV, manager tag, status, and financial columns fit in one row; remove empty side space by making the page blocks use the full working width.
+
+Changed files:
+
+- sales-dashboard/D62.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Changed Balances from a 2-column grid to full-width stacked sections.
+- Added separate `LTV` and `Тег` columns to the Balances tables.
+- Kept rows compact and single-line with fixed table layout, ellipsis for long client names/tags, and internal scroll for long sections.
+- Reused the existing LTV calculation path and cached the client LTV map inside the payments derived cache.
+- Did not change backend calculations or Google Sheets data.
+
+Verification:
+
+- Ran node --check sales-dashboard/D62.
+- Extracted and syntax-checked 6 script blocks from sales-dashboard/D62.html with new Function.
+- Ran git diff --check -- sales-dashboard/D62.html.
+- Reviewed focused diff; changes are limited to Balances layout/table rendering.
+
+Rollback note:
+
+- Revert this D62.html layout change if the Balances page should return to the older 2-column layout.
+
 ## D62 Balances Month-End Close Amount - 2026-06-15
 
 Request: create Sales dashboard D62 and add one more Balances column for the amount a client needs to close by the end of the current calendar month, including current overdue plus future overdue from the previous debt cycle that will mature this month.

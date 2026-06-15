@@ -2620,27 +2620,19 @@
       box-sizing:border-box !important;
     }
     .payments-cols-grid{
-      display:flex;
-      flex-direction:column;
-      gap:14px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
     }
     .payments-top-row{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
-      align-items:start;
+      display:contents;
     }
     .payments-bottom-block{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
-      padding:14px;
-      background:#f8fbff;
-      border:1px solid #e3ebf5;
-      border-radius:16px;
+      display:contents;
     }
     .payments-col{
       min-width:0;
+      width:100%;
     }
     .payments-col-header{
       display:flex;
@@ -2668,14 +2660,85 @@
       background:rgba(0,0,0,.07);
     }
     .payments-table-wrap{
-      max-height:980px;
+      max-height:460px;
       min-height:160px;
       border-radius:0 0 12px 12px;
       overflow:auto;
     }
+    .payments-table-wrap .admin-table{
+      table-layout:fixed;
+      min-width:1120px;
+    }
+    .payments-table-wrap .admin-table th,
+    .payments-table-wrap .admin-table td{
+      padding:8px 10px;
+      vertical-align:middle;
+      white-space:nowrap;
+    }
     .payments-table-wrap .admin-table th:first-child,
     .payments-table-wrap .admin-table td:first-child{
-      min-width:120px;
+      width:30%;
+      min-width:260px;
+    }
+    .payments-table-wrap .admin-table th:nth-child(2),
+    .payments-table-wrap .admin-table td:nth-child(2){
+      width:12%;
+    }
+    .payments-table-wrap .admin-table th:nth-child(3),
+    .payments-table-wrap .admin-table td:nth-child(3){
+      width:12%;
+    }
+    .payments-table-wrap .admin-table th:nth-child(4),
+    .payments-table-wrap .admin-table td:nth-child(4){
+      width:14%;
+    }
+    .payments-table-wrap .admin-table th:nth-child(5),
+    .payments-table-wrap .admin-table td:nth-child(5){
+      width:9%;
+    }
+    .payments-table-wrap .admin-table th:nth-child(6),
+    .payments-table-wrap .admin-table td:nth-child(6),
+    .payments-table-wrap .admin-table th:nth-child(7),
+    .payments-table-wrap .admin-table td:nth-child(7),
+    .payments-table-wrap .admin-table th:nth-child(8),
+    .payments-table-wrap .admin-table td:nth-child(8){
+      width:11%;
+      text-align:right;
+    }
+    .payments-table-wrap .admin-table th:nth-child(4),
+    .payments-table-wrap .admin-table td:nth-child(4),
+    .payments-table-wrap .admin-table th:nth-child(5),
+    .payments-table-wrap .admin-table td:nth-child(5){
+      text-align:center;
+    }
+    .payments-client-name-line{
+      display:block;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-weight:800;
+      color:#1b2b44;
+    }
+    .payments-client-ltv,
+    .payments-client-tag{
+      font-weight:900;
+      color:#1b2b44;
+    }
+    .payments-client-tag{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      max-width:100%;
+      min-height:24px;
+      padding:0 8px;
+      border-radius:999px;
+      background:#eef6ff;
+      border:1px solid #cfe0fb;
+      color:#1d4ed8;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
     .payments-clickable-row{
       cursor:pointer;
@@ -8293,7 +8356,7 @@ html, body{
               <div class="payments-col-header col-bad">Протерміновані<span class="payments-col-count" id="paymentsColCount1">0</span></div>
               <div class="admin-table-wrap payments-table-wrap">
                 <table class="admin-table">
-                  <thead><tr><th>Клієнт</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
+                  <thead><tr><th>Клієнт</th><th>LTV</th><th>Тег</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
                   <tbody id="paymentsTableBody1"></tbody>
                 </table>
               </div>
@@ -8302,7 +8365,7 @@ html, body{
               <div class="payments-col-header col-warn">За 3 дні до протермінування<span class="payments-col-count" id="paymentsColCount2">0</span></div>
               <div class="admin-table-wrap payments-table-wrap">
                 <table class="admin-table">
-                  <thead><tr><th>Клієнт</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
+                  <thead><tr><th>Клієнт</th><th>LTV</th><th>Тег</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
                   <tbody id="paymentsTableBody2"></tbody>
                 </table>
               </div>
@@ -8313,7 +8376,7 @@ html, body{
               <div class="payments-col-header col-ok">В нормі<span class="payments-col-count" id="paymentsColCount3">0</span></div>
               <div class="admin-table-wrap payments-table-wrap">
                 <table class="admin-table">
-                  <thead><tr><th>Клієнт</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
+                  <thead><tr><th>Клієнт</th><th>LTV</th><th>Тег</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
                   <tbody id="paymentsTableBody3"></tbody>
                 </table>
               </div>
@@ -8322,7 +8385,7 @@ html, body{
               <div class="payments-col-header col-pos">Позитивний баланс<span class="payments-col-count" id="paymentsColCount4">0</span></div>
               <div class="admin-table-wrap payments-table-wrap">
                 <table class="admin-table">
-                  <thead><tr><th>Клієнт</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
+                  <thead><tr><th>Клієнт</th><th>LTV</th><th>Тег</th><th>Стан</th><th>Відтермін.</th><th>Баланс</th><th>Протермін.</th><th>До кінця міс.</th></tr></thead>
                   <tbody id="paymentsTableBody4"></tbody>
                 </table>
               </div>
@@ -20722,6 +20785,20 @@ function renderClientNameForLtv(clientName, extraHtml) {
       return cache.orderShipments;
     }
 
+    function getPaymentsLtvByClientMap() {
+      const cache = getPaymentsDerivedCache();
+      if (cache.ltvByClientMap) return cache.ltvByClientMap;
+      const ltvRows = typeof buildManagerLtvEntries === 'function'
+        ? buildManagerLtvEntries(getValidManagerSalesRows(Array.isArray(raw) ? raw : []))
+        : [];
+      cache.ltvByClientMap = new Map(
+        (Array.isArray(ltvRows) ? ltvRows : [])
+          .map(item => [normalizeText(item && item.client), Number(item && item.ltv || 0)])
+          .filter(entry => entry[0])
+      );
+      return cache.ltvByClientMap;
+    }
+
     function getPaymentsVisibleBalanceRows() {
       const cache = getPaymentsDerivedCache();
       if (cache.visibleBalanceRows) return cache.visibleBalanceRows;
@@ -20763,6 +20840,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         const client = normalizeText(row.client);
         const deferDays = Math.max(0, parseNumber(row.defer_days));
         const currentBalance = round2(parseNumber(row.balance));
+        const ltv = round2(parseNumber(getPaymentsLtvByClientMap().get(client)));
         const isPositiveBalance = currentBalance > 0;
         const currentDebtAbs = isPositiveBalance ? 0 : Math.abs(currentBalance);
         const shipments = shipmentsByClient.get(client) || [];
@@ -20824,6 +20902,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
           managerTag: normalizeText(row.manager_tag) || '—',
           serviceTags,
           deferDays,
+          ltv,
           currentBalance,
           dueAmount,
           soonDueAmount: hasSoonDeadline ? -soonRiskAbs : 0,
@@ -22340,8 +22419,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
             : monthCloseAbs > 0 ? 'payments-value-warn' : 'payments-value-ok';
         tr.innerHTML = `
           <td>
-            <div style="font-weight:800;color:#1b2b44;">${renderClientNameWithManagerTag(row.client)}</div>
+            <span class="payments-client-name-line" title="${escapeManagerAnalysisText(row.client)}">${escapeManagerAnalysisText(row.client)}</span>
           </td>
+          <td class="payments-client-ltv">${row.ltv > 0 ? formatMoneyUsd(row.ltv) : '—'}</td>
+          <td><span class="payments-client-tag" title="${escapeManagerAnalysisText(row.managerTag || '—')}">${escapeManagerAnalysisText(row.managerTag || '—')}</span></td>
           <td><span class="payments-state-badge ${row.statusTone}">${row.statusLabel}</span></td>
           <td>${row.isPositiveBalance ? '—' : (row.deferDays > 0 ? `${fmt(row.deferDays)} дн.` : '—')}</td>
           <td class="${balanceClass}">${formatMoneyUsd(row.currentBalance, row.isPositiveBalance)}</td>
@@ -22352,7 +22433,7 @@ function renderClientNameForLtv(clientName, extraHtml) {
         return tr;
       }
 
-      const emptyHtml = '<tr><td colspan="6" style="color:#94a3b8;text-align:center;padding:18px;">—</td></tr>';
+      const emptyHtml = '<tr><td colspan="8" style="color:#94a3b8;text-align:center;padding:18px;">—</td></tr>';
 
       const groups = [[], [], [], []];
       rows.forEach(row => {
