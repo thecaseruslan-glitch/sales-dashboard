@@ -11837,13 +11837,8 @@ html, body{
         renderGlobalRefreshInfo();
         hideAuth();
         setRefreshReadyState('idle');
-        const diagnosticsText = getPayloadDiagnosticsText(nextPayload);
         if (!options.auto) {
-          showStatus(
-            'Дані оновлено без перезавантаження сторінки.' +
-              (diagnosticsText ? ' ' + diagnosticsText : ''),
-            true
-          );
+          hideStatus();
         }
         startDashboardBackgroundRefresh();
         if (typeof scheduleChartRelayout === 'function') scheduleChartRelayout();
