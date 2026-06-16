@@ -10120,6 +10120,7 @@ html, body{
     const DASHBOARD_PREFETCH_STALE_MS = 2 * 60 * 1000;
     const DASHBOARD_AUTO_APPLY_DELAY_MS = 1200;
     const DASHBOARD_AUTO_APPLY_RETRY_MS = 5000;
+    const DASHBOARD_AUTO_APPLY_IDLE_MS = 8000;
     const DASHBOARD_LOADING_DURATION_MS = 60000;
     const DASHBOARD_LOADING_MIN_PERCENT = 6;
     const DASHBOARD_LOADING_MAX_PERCENT = 90;
@@ -10238,6 +10239,7 @@ html, body{
     let dashboardAutoApplyTimer = null;
     let dashboardAutoApplyInFlight = false;
     let dashboardLastAutoAppliedToken = '';
+    let dashboardLastUserInteractionAt = Date.now();
     let adminSystemLiveTimer = null;
     let adminSystemLiveInFlight = false;
     let adminSystemLiveStartedAt = 0;
@@ -11719,6 +11721,14 @@ html, body{
       setDashboardView(state.view || 'products');
     }
 
+    function recordDashboardUserInteraction() {
+      dashboardLastUserInteractionAt = Date.now();
+    }
+
+    function isDashboardUserRecentlyActive() {
+      return Date.now() - dashboardLastUserInteractionAt < DASHBOARD_AUTO_APPLY_IDLE_MS;
+    }
+
     function isDashboardAutoApplyBlocked() {
       const activeElement = document.activeElement;
       const tagName = activeElement && activeElement.tagName ? activeElement.tagName.toLowerCase() : '';
@@ -11739,6 +11749,7 @@ html, body{
         document.hidden ||
         uiTransitionInFlight ||
         dashboardAutoApplyInFlight ||
+        isDashboardUserRecentlyActive() ||
         isEditing ||
         hasBlockingModal
       );
@@ -11764,7 +11775,7 @@ html, body{
       if (!dashboardPendingRefreshPayload || dashboardAutoApplyInFlight) return false;
       if (options.auto && isDashboardAutoApplyBlocked()) {
         setRefreshReadyState('ready', 'Застосувати зараз');
-        scheduleAutoApplyDashboardPayload(DASHBOARD_AUTO_APPLY_RETRY_MS);
+        scheduleAutoApplyDashboardPayload(Math.max(DASHBOARD_AUTO_APPLY_RETRY_MS, DASHBOARD_AUTO_APPLY_IDLE_MS));
         return false;
       }
 
@@ -25395,6 +25406,10 @@ function renderClientNameForLtv(clientName, extraHtml) {
     serviceTagsReset.addEventListener('click', (e) => {
       e.stopPropagation();
       clearServiceTagsSelection();
+    });
+
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(eventName => {
+      document.addEventListener(eventName, recordDashboardUserInteraction, { passive: true, capture: true });
     });
 
 	    document.addEventListener('click', (e) => {
