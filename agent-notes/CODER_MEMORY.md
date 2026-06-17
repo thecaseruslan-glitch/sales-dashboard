@@ -2,6 +2,41 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D80 Long-Wake Fresh Data Refresh - 2026-06-17
+
+Request: after the MacBook/dashboard tab sleeps overnight or stays inactive for a long pause, refresh the open dashboard with today's prepared data immediately after returning to the dashboard instead of requiring a full close/reopen/login.
+
+Base version:
+
+- sales-dashboard/D79
+- sales-dashboard/D79.html
+
+Changed files:
+
+- sales-dashboard/D80
+- sales-dashboard/D80.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D80 from D79 as a rollback-safe version.
+- Added long-wake detection using hidden/visible timestamps plus a visible heartbeat, so browser sleep is distinguished from normal tab navigation.
+- On long wake, the frontend now forces `serverGetDashboardDataFresh`, compares the fresh payload fingerprint/tokens/manifest with the currently rendered data, and applies the payload immediately when it is safe.
+- Kept normal tab switching unchanged: already rendered Clients/Efficiency tabs should not reload just because the user navigates back to them.
+- Persisted auto-applied fresh payloads into the local IndexedDB snapshot so a later close/reopen does not fall back to the old cached payload.
+- Did not change backend calculations or Google Sheets data.
+
+Verification:
+
+- Ran `node --check sales-dashboard/D80`.
+- Extracted and syntax-checked all `D80.html` script blocks with `new Function`.
+- Ran no-index whitespace/conflict-marker check between `D79.html` and `D80.html`.
+- Reviewed D79 -> D80 diff for scope.
+
+Rollback note:
+
+- D79 remains unchanged as the rollback point.
+
 ## D63 Balance Column Hide Without Layout Shift - 2026-06-15
 
 Request: make the Balances column eye icons gray/semitransparent and prevent table layout shifts when a column is hidden; hidden columns should keep their space and show empty cells.
