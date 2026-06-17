@@ -194,7 +194,7 @@ function withSpreadsheetRetry_(label, fn) {
     } catch (e) {
       lastError = e;
       const message = String(e && e.message ? e.message : e);
-      const canRetry = /timed out|Service Spreadsheets|internal error|try again/i.test(message);
+      const canRetry = /timed out|Service Spreadsheets|internal error|try again|Sheet \d+ not found/i.test(message);
 
       if (!canRetry || attempt === attempts) {
         throw e;
@@ -210,7 +210,24 @@ function withSpreadsheetRetry_(label, fn) {
 function getOrCreateSheet(sheetName) {
   return withSpreadsheetRetry_('getOrCreateSheet: ' + sheetName, function() {
     const ss = getSpreadsheet();
-    return ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    const cleanName = normalizeCell(sheetName);
+    if (!cleanName) throw new Error('Sheet name is required');
+
+    const sheets = ss.getSheets();
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getName() === cleanName) return sheets[i];
+    }
+
+    try {
+      return ss.insertSheet(cleanName, sheets.length);
+    } catch (firstError) {
+      Logger.log('insertSheet(name, index) failed for ' + cleanName + ': ' + firstError);
+    }
+
+    const sheet = ss.insertSheet();
+    SpreadsheetApp.flush();
+    sheet.setName(cleanName);
+    return sheet;
   });
 }
 

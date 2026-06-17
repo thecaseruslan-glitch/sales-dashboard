@@ -106,3 +106,19 @@ Verification:
 Rollback note:
 
 - P6 remains unchanged as rollback point.
+
+### P7 Access Control Sheet Creation Hotfix - 2026-06-17
+
+Issue: RUN_26_setupAccessControl failed in Apps Script with Exception: Sheet 380304162 not found at getOrCreateSheet -> ss.insertSheet(sheetName).
+
+Fix:
+
+- Hardened getOrCreateSheet in P7.gs.
+- It now searches existing sheets by name, tries insertSheet(name, index), then falls back to creating a blank sheet and renaming it.
+- Added retry handling for transient Sheet <id> not found spreadsheet errors.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
+- Extracted and syntax-checked the P7.html script block with new Function.
+- Ran git diff --check -- purchase-dashboard/P7.gs purchase-dashboard/P7.html.
