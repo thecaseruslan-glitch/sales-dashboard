@@ -72,3 +72,37 @@ If manual_order_qty is filled, До замовлення should follow the manua
 - P5 remains the purchase-dashboard rollback baseline.
 - Before changing purchase business logic, inspect purchase_orders, receipts, stock_current, sales_history, purchase_analysis_settings, and PURCHASES_DASHBOARD_RULES in the spreadsheet when relevant.
 
+## P7 Access Roles - 2026-06-17
+
+Request: create next purchase dashboard version with login/password and role-based access like the sales dashboard, plus Git push.
+
+Base version:
+
+- purchase-dashboard/P6.gs
+- purchase-dashboard/P6.html
+
+Changed files:
+
+- purchase-dashboard/P7.gs
+- purchase-dashboard/P7.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Created P7 from the working P6 files, preserving the existing P6 auto-apply refresh changes.
+- Added access_control support with headers: email, display_name, role, active, password_hash, temp_password, updated_at.
+- Added serverLogin, serverLogout, session cache, SHA-256 password hashing, and runners RUN_26_setupAccessControl / RUN_27_hashTempPasswordsInAccessControl.
+- Roles: admin sees all tabs and can save manual purchase settings; manager sees only Товар в дорозі.
+- Backend enforces admin-only writes for analysis/manual stock changes; manager payload excludes analysis, receipts, archive, and product-analysis rows.
+- Frontend now opens with login screen, stores session token in sessionStorage, shows the current user/role, and hides restricted tabs/actions for managers.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
+- Extracted and syntax-checked the P7.html script block with new Function.
+- Verified all callServer(...) frontend functions exist in P7.gs.
+- Ran no-index diff checks between P6 and P7 files.
+
+Rollback note:
+
+- P6 remains unchanged as rollback point.
