@@ -581,7 +581,8 @@
     .copy-value{
       user-select:text;
     }
-    .copy-btn{
+    .copy-btn,
+    .download-btn{
       display:inline-flex;
       align-items:center;
       justify-content:center;
@@ -598,7 +599,8 @@
       vertical-align:middle;
       transition:opacity .14s ease, transform .14s ease;
     }
-    .copy-btn:hover{
+    .copy-btn:hover,
+    .download-btn:hover{
       opacity:.86;
       transform:translateY(-1px);
     }
@@ -625,6 +627,37 @@
     .copy-btn.copied{
       color:#1f7c48;
       opacity:.9;
+    }
+    .download-btn::before{
+      content:'';
+      position:absolute;
+      left:7px;
+      top:3px;
+      width:2px;
+      height:9px;
+      border-radius:999px;
+      background:currentColor;
+    }
+    .download-btn::after{
+      content:'';
+      position:absolute;
+      left:4px;
+      top:8px;
+      width:8px;
+      height:8px;
+      border-left:2px solid currentColor;
+      border-bottom:2px solid currentColor;
+      transform:rotate(-45deg);
+      box-sizing:border-box;
+    }
+    .download-btn .download-line{
+      position:absolute;
+      left:3px;
+      right:3px;
+      bottom:2px;
+      height:2px;
+      border-radius:999px;
+      background:currentColor;
     }
     .dashboard-nav{
       display:flex;
@@ -3359,10 +3392,22 @@
       return '<span class="copy-btn" role="button" tabindex="0" aria-label="Копіювати номер" title="Копіювати номер" data-copy-value="' + esc(clean) + '"></span>';
     }
 
+    function renderDownloadButton(orderName) {
+      const clean = text(orderName);
+      if (!clean) return '';
+      return '<span class="download-btn" role="button" tabindex="0" aria-label="Завантажити Excel" title="Завантажити Excel" data-download-order="' + esc(clean) + '"><span class="download-line"></span></span>';
+    }
+
     function renderCopyValue(value) {
       const clean = text(value);
       if (!clean) return '<span class="dash">—</span>';
       return '<span class="copy-wrap"><span class="copy-value">' + esc(clean) + '</span>' + renderCopyButton(clean) + '</span>';
+    }
+
+    function renderOrderValueWithDownload(order) {
+      const clean = text(order && order.order_name);
+      if (!clean) return '<span class="dash">—</span>';
+      return '<span class="copy-wrap"><span class="copy-value">' + esc(clean) + '</span>' + renderCopyButton(clean) + renderDownloadButton(clean) + '</span>';
     }
 
     function renderReceiptLinks(receiptNames) {
@@ -3377,6 +3422,85 @@
       const clean = text(orderName);
       if (!clean) return '—';
       return '<span class="copy-wrap"><span class="link-button" data-jump-order="' + esc(clean) + '">' + esc(clean) + '</span>' + renderCopyButton(clean) + '</span>';
+    }
+
+    function excelEsc(value) {
+      return text(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function sanitizeFilename(value) {
+      return text(value)
+        .replace(/[\\/:*?"<>|]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 140) || 'purchase-order';
+    }
+
+    function findOrderForExport(orderName) {
+      const clean = text(orderName);
+      if (!clean) return null;
+      const rows = (Array.isArray(state.rows) ? state.rows : []).filter(row => row.order_name === clean);
+      if (!rows.length) return null;
+      const orders = groupOrders(rows);
+      return orders.find(order => order.order_name === clean) || null;
+    }
+
+    function getOrderExportBrandLabel(order) {
+      const brands = order && order.brands && typeof order.brands.forEach === 'function'
+        ? Array.from(order.brands).map(brand => text(brand)).filter(Boolean)
+        : [];
+      return brands.length ? brands.join(', ') : (text(order && order.brand_label) || 'Без бренду');
+    }
+
+    function buildOrderExcelHtml(order) {
+      const title = text(order.order_name) + ' - ' + getOrderExportBrandLabel(order);
+      const headers = ['товар', 'код', 'бренд', 'група', 'Замовлено', 'Прийнято', 'В дорозі', 'Залишок', 'Відправка', 'Днів', 'Прихід', 'Статус'];
+      const rows = (Array.isArray(order.items) ? order.items : []).map(item => [
+        item.product || '',
+        item.code || '',
+        item.brand || '',
+        item.group || '',
+        item.quantity_ordered,
+        item.quantity_received,
+        item.in_transit_qty,
+        item.stock_qty,
+        formatDateUa(item.ship_date),
+        item.days_in_transit === '' ? '' : fmtInt(item.days_in_transit),
+        formatDateUa(item.calculated_receipt_date),
+        statusLabel(item.delivery_status, item.days_to_arrival)
+      ]);
+      const head = headers.map(header => '<th>' + excelEsc(header) + '</th>').join('');
+      const body = rows.map(row => '<tr>' + row.map(cell => '<td>' + excelEsc(cell) + '</td>').join('') + '</tr>').join('');
+      return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+        'table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px}' +
+        'th,td{border:1px solid #cfd8e3;padding:6px 8px;vertical-align:top}' +
+        'th{background:#edf3fb;font-weight:700}' +
+        'h1{font-family:Arial,sans-serif;font-size:18px;margin:0 0 12px}' +
+        '.num{text-align:right}' +
+        '</style></head><body><h1>' + excelEsc(title) + '</h1><table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></body></html>';
+    }
+
+    function downloadOrderExcel(orderName) {
+      const order = findOrderForExport(orderName);
+      if (!order) {
+        window.alert('Не знайшов замовлення для експорту.');
+        return;
+      }
+      const title = text(order.order_name) + ' - ' + getOrderExportBrandLabel(order);
+      const html = buildOrderExcelHtml(order);
+      const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = sanitizeFilename(title) + '.xls';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function orderElementId(value) {
@@ -3477,7 +3601,7 @@
           '<button class="order-summary" type="button" data-toggle-order="' + esc(order.order_name) + '">' +
             '<div class="order-grid">' +
               '<div class="order-cell toggle-cell"><span class="toggle">›</span></div>' +
-              '<div class="order-cell"><div class="cell-label">' + esc(primaryLabel) + '</div><div class="cell-value order-name">' + renderCopyValue(primaryValue) + '</div></div>' +
+              '<div class="order-cell"><div class="cell-label">' + esc(primaryLabel) + '</div><div class="cell-value order-name">' + (receiptView ? renderCopyValue(primaryValue) : renderOrderValueWithDownload(order)) + '</div></div>' +
               '<div class="order-cell"><div class="cell-label">Позицій</div><div class="cell-value num">' + fmtInt(order.items.length) + '</div></div>' +
               '<div class="order-cell"><div class="cell-label">' + esc(qtyLabel) + '</div><div class="cell-value num">' + qtyValue + '</div></div>' +
               '<div class="order-cell hide-mobile"><div class="cell-label">Днів у дорозі</div><div class="cell-value">' + esc((order.days_in_transit === '' ? '—' : fmtInt(order.days_in_transit)) + ' / ' + (order.transit_days === '' ? '—' : fmtInt(order.transit_days))) + '</div></div>' +
@@ -4263,6 +4387,13 @@
         copyTextToClipboard(copyBtn.dataset.copyValue, copyBtn);
         return;
       }
+      const downloadBtn = event.target.closest('[data-download-order]');
+      if (downloadBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        downloadOrderExcel(downloadBtn.dataset.downloadOrder);
+        return;
+      }
       const archiveToggle = event.target.closest('#archiveToggleBtn');
       if (archiveToggle) {
         state.showArchive = !state.showArchive;
@@ -4304,6 +4435,13 @@
       closeChoiceMenus();
     });
     $('ordersList').addEventListener('keydown', event => {
+      const downloadBtn = event.target.closest('[data-download-order]');
+      if (downloadBtn && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        event.stopPropagation();
+        downloadOrderExcel(downloadBtn.dataset.downloadOrder);
+        return;
+      }
       const copyBtn = event.target.closest('[data-copy-value]');
       if (!copyBtn || (event.key !== 'Enter' && event.key !== ' ')) return;
       event.preventDefault();

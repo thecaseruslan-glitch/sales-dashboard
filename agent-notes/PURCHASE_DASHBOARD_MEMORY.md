@@ -143,3 +143,21 @@ Verification:
 - Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
 - Extracted and syntax-checked the P7.html script block with new Function.
 - Ran git diff --check -- purchase-dashboard/P7.gs purchase-dashboard/P7.html.
+
+### P7 In-Transit Order Excel Export - 2026-06-17
+
+Request: add a grey translucent download icon opposite each in-transit order that downloads an Excel file for that order.
+
+Implementation:
+
+- Added a download icon next to the order copy icon in P7.html.
+- Clicking the icon builds a browser-side Excel-compatible xls file and triggers standard browser download.
+- File name format: order number + all order brands, for example NKA-200426-KC - 1:1 Original, Apple Original.xls.
+- Export columns: товар, код, бренд, група, Замовлено, Прийнято, В дорозі, Залишок, Відправка, Днів, Прихід, Статус.
+- No backend write or sheet data change.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
+- Extracted and syntax-checked the P7.html script block with new Function.
+- Ran git diff --check -- purchase-dashboard/P7.html purchase-dashboard/P7.gs.
