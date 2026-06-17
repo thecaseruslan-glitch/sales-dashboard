@@ -122,3 +122,24 @@ Verification:
 - Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
 - Extracted and syntax-checked the P7.html script block with new Function.
 - Ran git diff --check -- purchase-dashboard/P7.gs purchase-dashboard/P7.html.
+
+### P7 Manager Empty In-Transit Fix - 2026-06-17
+
+Issue: manager role opened only the Товар в дорозі tab but saw no rows, while admin saw data.
+
+Cause:
+
+- The frontend currently builds the in-transit state.rows from analysis_rows.
+- P7 initially removed analysis_rows from manager payload, so the allowed first tab had no source rows.
+
+Fix:
+
+- Manager payload now keeps analysis_rows because it is required by the current frontend for Товар в дорозі.
+- Restricted datasets remain admin-only: receipts_rows, archive_order_rows, and product_analysis_rows.
+- Save endpoints remain admin-only on the backend.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
+- Extracted and syntax-checked the P7.html script block with new Function.
+- Ran git diff --check -- purchase-dashboard/P7.gs purchase-dashboard/P7.html.

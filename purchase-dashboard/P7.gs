@@ -4110,7 +4110,7 @@ function buildPurchasesFrontendPayload_(data, user) {
     summary: source.summary || {},
     options: source.options || {},
     dashboard_rows: Array.isArray(source.dashboard_rows) ? source.dashboard_rows : [],
-    analysis_rows: isAdmin && Array.isArray(source.analysis_rows) ? source.analysis_rows : [],
+    analysis_rows: Array.isArray(source.analysis_rows) ? source.analysis_rows : [],
     receipts_rows: isAdmin && Array.isArray(source.receipts_rows) ? source.receipts_rows : [],
     archive_order_rows: isAdmin && Array.isArray(source.archive_order_rows) ? source.archive_order_rows : [],
     product_analysis_rows: isAdmin && Array.isArray(source.product_analysis_rows) ? source.product_analysis_rows : []
