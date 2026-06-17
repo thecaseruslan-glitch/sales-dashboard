@@ -631,30 +631,30 @@
     .download-btn::before{
       content:'';
       position:absolute;
-      left:7px;
-      top:3px;
+      left:8px;
+      top:2px;
       width:2px;
-      height:9px;
+      height:10px;
       border-radius:999px;
       background:currentColor;
     }
     .download-btn::after{
       content:'';
       position:absolute;
-      left:4px;
-      top:8px;
+      left:5px;
+      top:7px;
       width:8px;
       height:8px;
-      border-left:2px solid currentColor;
+      border-right:2px solid currentColor;
       border-bottom:2px solid currentColor;
-      transform:rotate(-45deg);
+      transform:rotate(45deg);
       box-sizing:border-box;
     }
     .download-btn .download-line{
       position:absolute;
-      left:3px;
-      right:3px;
-      bottom:2px;
+      left:4px;
+      right:4px;
+      bottom:1px;
       height:2px;
       border-radius:999px;
       background:currentColor;
@@ -3456,6 +3456,12 @@
       return brands.length ? brands.join(', ') : (text(order && order.brand_label) || 'Без бренду');
     }
 
+    function formatTransitDaysForExport(item) {
+      const current = item && item.days_in_transit !== '' ? fmtInt(item.days_in_transit) : '—';
+      const planned = item && item.transit_days !== '' ? fmtInt(item.transit_days) : '—';
+      return current + ' / ' + planned;
+    }
+
     function buildOrderExcelHtml(order) {
       const title = text(order.order_name) + ' - ' + getOrderExportBrandLabel(order);
       const headers = ['товар', 'код', 'бренд', 'група', 'Замовлено', 'Прийнято', 'В дорозі', 'Залишок', 'Відправка', 'Днів', 'Прихід', 'Статус'];
@@ -3469,7 +3475,7 @@
         item.in_transit_qty,
         item.stock_qty,
         formatDateUa(item.ship_date),
-        item.days_in_transit === '' ? '' : fmtInt(item.days_in_transit),
+        formatTransitDaysForExport(item),
         formatDateUa(item.calculated_receipt_date),
         statusLabel(item.delivery_status, item.days_to_arrival)
       ]);

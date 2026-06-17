@@ -161,3 +161,18 @@ Verification:
 - Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
 - Extracted and syntax-checked the P7.html script block with new Function.
 - Ran git diff --check -- purchase-dashboard/P7.html purchase-dashboard/P7.gs.
+
+### P7 Excel Export Icon + Days Format Polish - 2026-06-17
+
+Request: make the download icon cleaner and closer to the copy icon style; in the Excel export, show days as current / planned, e.g. 2 / 40.
+
+Implementation:
+
+- Refined the CSS-only download icon alignment and proportions inside the same 18px translucent grey style as the copy icon.
+- Changed the Excel export Days column to output days_in_transit / transit_days.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
+- Extracted and syntax-checked the P7.html script block with new Function.
+- Ran git diff --check -- purchase-dashboard/P7.html purchase-dashboard/P7.gs.
