@@ -2506,6 +2506,7 @@
       display:inline-flex;
       align-items:center;
       justify-content:center;
+      max-width:100%;
       min-height:28px;
       padding:0 10px;
       border-radius:999px;
@@ -2513,6 +2514,8 @@
       font-size:12px;
       font-weight:900;
       white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .payments-state-badge.bad{
       background:#fff1f2;
@@ -2669,42 +2672,47 @@
     }
     .payments-table-wrap .admin-table{
       table-layout:fixed;
-      min-width:820px;
+      min-width:760px;
     }
     .payments-table-wrap .admin-table th,
     .payments-table-wrap .admin-table td{
       padding:8px 10px;
       vertical-align:middle;
       white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .payments-table-wrap .admin-table th:first-child,
     .payments-table-wrap .admin-table td:first-child{
-      width:30%;
-      min-width:210px;
+      width:28%;
+      min-width:190px;
     }
     .payments-table-wrap .admin-table th:nth-child(2),
     .payments-table-wrap .admin-table td:nth-child(2){
-      width:11%;
+      width:12%;
     }
     .payments-table-wrap .admin-table th:nth-child(3),
     .payments-table-wrap .admin-table td:nth-child(3){
-      width:11%;
+      width:10%;
     }
     .payments-table-wrap .admin-table th:nth-child(4),
     .payments-table-wrap .admin-table td:nth-child(4){
-      width:13%;
+      width:12%;
     }
     .payments-table-wrap .admin-table th:nth-child(5),
     .payments-table-wrap .admin-table td:nth-child(5){
       width:10%;
     }
     .payments-table-wrap .admin-table th:nth-child(6),
-    .payments-table-wrap .admin-table td:nth-child(6),
+    .payments-table-wrap .admin-table td:nth-child(6){
+      width:10%;
+      text-align:right;
+    }
     .payments-table-wrap .admin-table th:nth-child(7),
     .payments-table-wrap .admin-table td:nth-child(7),
     .payments-table-wrap .admin-table th:nth-child(8),
     .payments-table-wrap .admin-table td:nth-child(8){
-      width:12%;
+      width:9%;
       text-align:right;
     }
     .payments-table-wrap .admin-table th:nth-child(4),
@@ -7807,6 +7815,12 @@ html, body{
     margin-left:0 !important;
   }
 
+  #paymentsView .payments-cols-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media (max-width:1450px){
   #paymentsView .payments-cols-grid{
     grid-template-columns:1fr !important;
   }
