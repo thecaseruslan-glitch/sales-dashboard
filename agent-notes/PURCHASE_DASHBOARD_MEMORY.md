@@ -247,3 +247,43 @@ Verification:
 Rollback note:
 
 - P8 remains unchanged as the rollback point.
+
+### P10 Product Trend Modal - 2026-06-20
+
+Request: add a small subtle chart icon after the Код column in the Аналіз table. On click, open a modal with all-time sales dynamics for the selected product, related colors, and related models. Detect product variants by color and model similarly to the sales dashboard.
+
+Base version:
+
+- purchase-dashboard/P9.gs
+- purchase-dashboard/P9.html
+
+Implementation:
+
+- Created P10 as the next purchase-dashboard version from P9.
+- Added a small semi-transparent chart button after the Код column in the Аналіз table.
+- Added a trend modal with three vertically stacked SVG charts:
+  - selected position dynamics;
+  - color dynamics within the same detected product family and model;
+  - model dynamics within the same detected product family.
+- Added frontend-only product variant parsing:
+  - extracts iPhone model names such as iPhone 17 Pro / iPhone 17 Pro Max;
+  - extracts colors from trailing parentheses, e.g. (Green), or common trailing color words;
+  - builds a family key from brand, group, and product name after removing model/color/service fragments.
+- Uses already loaded product_analysis_rows and sales_daily; no new backend calls, API calls, or sheet writes.
+
+Changed files:
+
+- purchase-dashboard/P10.gs
+- purchase-dashboard/P10.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P10.gs.
+- Extracted and syntax-checked the P10.html script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P10.gs purchase-dashboard/P10.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+- Compared P9 and P10: backend is identical; HTML diff is the trend icon, modal, SVG chart rendering, and product variant grouping logic.
+
+Rollback note:
+
+- P9 remains unchanged as the rollback point.
