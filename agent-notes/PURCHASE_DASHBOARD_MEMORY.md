@@ -323,3 +323,39 @@ Verification:
 Rollback note:
 
 - P10 remains unchanged as the rollback point.
+
+### P12 Product Trend Chart Tooltip + Values - 2026-06-20
+
+Request: fix low-quality trend charts: points were not effectively interactive, hover did not show data, and charts should be more minimalist, stylish, and informative with values.
+
+Base version:
+
+- purchase-dashboard/P11.gs
+- purchase-dashboard/P11.html
+
+Implementation:
+
+- Created P12 as the next purchase-dashboard version from P11.
+- Replaced passive SVG title-only hover with a custom tooltip inside the trend modal.
+- Added transparent hit circles around every monthly point so hover is easier and reliable.
+- Added visible numeric labels for all nonzero points on compact single-series charts, and max/latest points on multi-series charts.
+- Added Y-axis value labels to the grid for better readability.
+- Kept the smooth SVG curve rendering from P11.
+- Backend and data contract unchanged.
+
+Changed files:
+
+- purchase-dashboard/P12.gs
+- purchase-dashboard/P12.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P12.gs.
+- Extracted and syntax-checked the P12.html script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P12.gs purchase-dashboard/P12.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+- Compared P11 and P12: backend is identical; HTML diff is chart tooltip, hit zones, visible values, and Y-axis labels.
+
+Rollback note:
+
+- P11 remains unchanged as the rollback point.
