@@ -359,3 +359,47 @@ Verification:
 Rollback note:
 
 - P11 remains unchanged as the rollback point.
+
+### P13 Product Trend Charts Rebuild With Chart.js - 2026-06-20
+
+Request: the SVG trend charts still looked low quality. Rework them after analyzing the D80 sales dashboard chart implementation, make the modal full-screen, and only show color/model charts when those variants actually exist.
+
+Sales dashboard reference:
+
+- D80 uses Chart.js canvas charts with responsive shells, index-mode interaction, native Chart.js tooltips, point hover radius, tension, and clean grid styling.
+
+Base version:
+
+- purchase-dashboard/P12.gs
+- purchase-dashboard/P12.html
+
+Implementation:
+
+- Created P13 as the next purchase-dashboard version from P12.
+- Added Chart.js via the same CDN pattern as the sales dashboard.
+- Changed the trend modal to near full-screen size.
+- Rebuilt product trend charts as Chart.js canvas charts instead of custom SVG.
+- Kept minimal sales-dashboard-like styling: rounded chart shell, soft gradient background, clean grid, visible point markers, responsive canvas, and native tooltips.
+- Added a small value-label plugin to show key values directly on the chart.
+- Conditional chart sections:
+  - selected product chart always appears;
+  - color chart appears only when more than one color group is found;
+  - model chart appears only when more than one model group is found.
+- Backend and data contract unchanged.
+
+Changed files:
+
+- purchase-dashboard/P13.gs
+- purchase-dashboard/P13.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P13.gs.
+- Extracted and syntax-checked the P13.html inline script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P13.gs purchase-dashboard/P13.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+- Compared P12 and P13: backend is identical; HTML diff is Chart.js loading, full-screen trend modal styling, Chart.js chart rendering, and conditional chart sections.
+
+Rollback note:
+
+- P12 remains unchanged as the rollback point.
