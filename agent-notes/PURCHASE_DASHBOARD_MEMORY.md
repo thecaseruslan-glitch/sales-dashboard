@@ -176,3 +176,41 @@ Verification:
 - Ran node --check --input-type=commonjs < purchase-dashboard/P7.gs.
 - Extracted and syntax-checked the P7.html script block with new Function.
 - Ran git diff --check -- purchase-dashboard/P7.html purchase-dashboard/P7.gs.
+
+### P8 Analysis Period Sales Filter Fix - 2026-06-20
+
+Issue: in the Аналіз tab, changing the main period preset did not reliably change the Продано column. Selecting увесь should make Продано match the all-time sales value.
+
+Base version:
+
+- purchase-dashboard/P7.gs
+- purchase-dashboard/P7.html
+
+Cause:
+
+- getCustomAnalysisRange always preferred the date input values when they were filled.
+- Period preset buttons updated state.analysisPreset, but the stale date inputs could still drive the calculation range.
+
+Fix:
+
+- Created P8 as the next purchase-dashboard version from P7.
+- getCustomAnalysisRange now uses the date inputs only when state.analysisPreset is custom.
+- Preset ranges now come directly from getAnalysisPeriodRange.
+- The all-time preset clears the visible date inputs.
+- Renamed the all-time sales column header from Продано весь час to За весь час to avoid overlap.
+
+Changed files:
+
+- purchase-dashboard/P8.gs
+- purchase-dashboard/P8.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P8.gs.
+- Extracted and syntax-checked the P8.html script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P8.gs purchase-dashboard/P8.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+
+Rollback note:
+
+- P7 remains unchanged as the rollback point.
