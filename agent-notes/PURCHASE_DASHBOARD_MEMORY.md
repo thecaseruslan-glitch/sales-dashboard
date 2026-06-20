@@ -403,3 +403,54 @@ Verification:
 Rollback note:
 
 - P12 remains unchanged as the rollback point.
+
+### P14 Product Variant Parser For iPad And Generic Devices - 2026-06-20
+
+Request: model recognition works poorly. Example: 12600 / Чохол WIWU для iPad 10.9" [2022]/11" [2025] Classic III Case (Blue). The algorithm must understand that Classic III Case is a product series across many iPad models, and build model/color charts correctly for all positions.
+
+Site check:
+
+- The THE CASE site/search shows WIWU Classic III iPad cases across different groupmodel filters and product cards, including iPad 10.9" [2022]/11" [2025] and iPad 10.2" [2019-2021]/Air3/Pro 10.5".
+
+Base version:
+
+- purchase-dashboard/P13.gs
+- purchase-dashboard/P13.html
+
+Implementation:
+
+- Created P14 as the next purchase-dashboard version from P13.
+- Expanded variant parser from iPhone-only to generic device model detection:
+  - iPhone;
+  - iPad;
+  - Apple Watch;
+  - AirPods;
+  - MacBook;
+  - Samsung / Galaxy.
+- Model extraction now captures compatibility text from the device name until the product series begins, e.g. iPad 10.9" [2022]/11" [2025].
+- Family/series cleanup now removes device model before removing year brackets, so iPad compatibility does not leak into the family key.
+- Family key now keeps the actual series, e.g. Classic III Case or TechWoven.
+- Improved removal of Ukrainian prepositions like для / під and product type prefixes like Чохол.
+
+Parser spot checks:
+
+- WIWU iPad 10.9" [2022]/11" [2025] Classic III Case (Blue) -> family Classic III Case, model iPad 10.9" [2022]/11" [2025], color Blue.
+- WIWU iPad 10.2" [2019-2021]/Air3/Pro 10.5" Classic III Case (Black) -> same family Classic III Case, different model, color Black.
+- Apple TechWoven iPhone 17 Pro (Green) -> family TechWoven, model iPhone 17 Pro, color Green.
+
+Changed files:
+
+- purchase-dashboard/P14.gs
+- purchase-dashboard/P14.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P14.gs.
+- Extracted and syntax-checked the P14.html inline script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P14.gs purchase-dashboard/P14.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+- Compared P13 and P14: backend is identical; HTML diff is the variant parser only.
+
+Rollback note:
+
+- P13 remains unchanged as the rollback point.
