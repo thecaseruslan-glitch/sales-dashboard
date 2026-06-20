@@ -454,3 +454,45 @@ Verification:
 Rollback note:
 
 - P13 remains unchanged as the rollback point.
+
+### P15 Stable Model Grouping For Purchase Trend Modal - 2026-06-20
+
+Request: model recognition still does not work for WIWU Classic III iPad cases. The trend modal must detect different iPad models inside the same product series.
+
+Base version:
+
+- purchase-dashboard/P14.gs
+- purchase-dashboard/P14.html
+
+Implementation:
+
+- Created P15 as the next purchase-dashboard version from P14.
+- Changed the variant family key from brand + sheet group + series to brand + detected device type + normalized series.
+- This avoids splitting one series when group/category values differ between real rows.
+- Added device type detection for iPad/iPhone/Apple Watch/AirPods/MacBook/Samsung/Galaxy.
+- Normalized series keys so Classic III Case and close naming variants group as the same series key.
+- Prevented year-only parentheses like (2024) from being treated as a color.
+- Kept Chart.js modal rendering and backend data contract unchanged.
+
+Parser spot checks:
+
+- WIWU iPad 10.9 inch [2022]/11 inch [2025] Classic III Case (Blue) -> familyKey wiwu::ipad::classic iii, model iPad 10.9 inch [2022]/11 inch [2025], color Blue.
+- WIWU iPad 10.2 inch [2019-2021]/Air3/Pro 10.5 inch Classic III Case (Black) -> same familyKey wiwu::ipad::classic iii, different model, color Black.
+- Apple TechWoven iPhone 17 Pro / 17 Pro Max -> same iPhone TechWoven family, different model keys.
+
+Changed files:
+
+- purchase-dashboard/P15.gs
+- purchase-dashboard/P15.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P15.gs.
+- Extracted and syntax-checked the P15.html inline script blocks after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P15.gs purchase-dashboard/P15.html.
+- Compared P14 and P15: backend is identical; HTML diff is limited to variant parser grouping.
+
+Rollback note:
+
+- P14 remains unchanged as the rollback point.
