@@ -214,3 +214,36 @@ Verification:
 Rollback note:
 
 - P7 remains unchanged as the rollback point.
+
+### P9 Analysis Table Column Separators - 2026-06-20
+
+Request: add very light, semi-transparent visual stripes to separate all columns in the Аналіз table.
+
+Base version:
+
+- purchase-dashboard/P8.gs
+- purchase-dashboard/P8.html
+
+Fix:
+
+- Created P9 as the next purchase-dashboard version from P8.
+- Added a subtle 1px rgba vertical border between analysis table columns.
+- Kept existing stronger metric group borders unchanged.
+- No business logic or data contract changes.
+
+Changed files:
+
+- purchase-dashboard/P9.gs
+- purchase-dashboard/P9.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P9.gs.
+- Extracted and syntax-checked the P9.html script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P9.gs purchase-dashboard/P9.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+- Compared P8 and P9: backend is identical; HTML diff is only the subtle analysis-table separator CSS.
+
+Rollback note:
+
+- P8 remains unchanged as the rollback point.
