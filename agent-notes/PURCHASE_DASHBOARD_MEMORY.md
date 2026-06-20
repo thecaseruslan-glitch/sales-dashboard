@@ -287,3 +287,39 @@ Verification:
 Rollback note:
 
 - P9 remains unchanged as the rollback point.
+
+### P11 Product Trend Modal Polish - 2026-06-20
+
+Request: make the product trend modal wider and taller, make charts visually smoother/nicer like the sales dashboard, add points on monthly values, and show quantities on hover.
+
+Base version:
+
+- purchase-dashboard/P10.gs
+- purchase-dashboard/P10.html
+
+Implementation:
+
+- Created P11 as the next purchase-dashboard version from P10.
+- Increased the trend modal width and height limits.
+- Increased chart height from 190px to 240px and softened the chart card background.
+- Replaced polyline chart rendering with smooth cubic SVG paths.
+- Added point markers for every month on every chart line.
+- Added SVG title tooltips to points with line label, month, and quantity.
+- Backend and data contract unchanged.
+
+Changed files:
+
+- purchase-dashboard/P11.gs
+- purchase-dashboard/P11.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P11.gs.
+- Extracted and syntax-checked the P11.html script block after replacing the Apps Script template placeholder with {}.
+- Ran git diff --check -- purchase-dashboard/P11.gs purchase-dashboard/P11.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+- Compared P10 and P11: backend is identical; HTML diff is modal/chart presentation and SVG smoothing/points only.
+
+Rollback note:
+
+- P10 remains unchanged as the rollback point.
