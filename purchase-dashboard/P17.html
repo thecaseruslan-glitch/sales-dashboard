@@ -802,7 +802,7 @@
     }
     .analysis-table{
       width:100%;
-      min-width:2305px;
+      min-width:2335px;
       border-collapse:separate;
       border-spacing:0;
       table-layout:fixed;
@@ -935,22 +935,36 @@
       white-space:nowrap;
     }
     .avg-demand-stack{
-      display:inline-flex;
+      display:grid;
+      grid-template-columns:repeat(2, 62px);
       align-items:center;
       justify-content:flex-end;
-      gap:4px;
-      min-width:72px;
+      gap:5px;
     }
-    .avg-demand-part{
+    .avg-demand-pill{
       display:inline-flex;
       align-items:center;
-      gap:2px;
+      justify-content:center;
+      gap:3px;
+      width:62px;
+      height:22px;
+      padding:0 5px;
+      border-radius:8px;
+      border:1px solid #dce8f8;
+      background:#f3f8ff;
+      color:#27415f;
+      font-size:10px;
+      font-weight:950;
+      line-height:1;
+    }
+    .avg-demand-pill b{
+      color:#6f85a0;
+      font-size:9px;
       font-weight:950;
     }
-    .avg-demand-sep{
-      color:#94a3b8;
-      font-weight:950;
-    }
+    .avg-demand-pill.hot{background:#e9f8f0;border-color:#cfead9;color:#167247}
+    .avg-demand-pill.warn{background:#fff7ed;border-color:#fed7aa;color:#b45309}
+    .avg-demand-pill.low{background:#f1f5f9;border-color:#dbe4ef;color:#64748b}
     .ia-header{
       display:flex;
       align-items:center;
@@ -2333,7 +2347,7 @@
       { key: 'sales_total_all', label: 'За весь час' },
       { key: 'period_shipments', label: 'Відгрузок' },
       { key: 'actuality_index', label: 'IA' },
-      { key: 'avg_monthly_qty', label: 'Сер. Р/К' },
+      { key: 'avg_monthly_qty', label: 'Сер./міс' },
       { key: 'status', label: 'Статус' },
       { key: 'reorder_enabled', label: 'Закуп.' },
       { key: 'days_cover', label: 'Днів запасу' },
@@ -3476,6 +3490,13 @@
           ? 'падає на ' + fmt(Math.abs(trend.delta))
           : 'без змін';
       return '<span class="ia-trend-arrow ' + esc(direction) + '" title="' + esc(label) + '">' + esc(symbol) + '</span>';
+    }
+
+    function avgDemandClass(value) {
+      const clean = num(value);
+      if (clean >= 10) return 'hot';
+      if (clean >= 3) return 'warn';
+      return 'low';
     }
 
     function getAverageDemandSummary(row) {
@@ -5435,7 +5456,7 @@
           renderAnalysisColumnHeader('sales_total_all', renderAnalysisSortHeader('За весь час', 'sales_total_all', 'num metric-group metric-end', 'width:96px')) +
           renderAnalysisColumnHeader('period_shipments', renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px')) +
           renderAnalysisColumnHeader('actuality_index', renderIaSortHeader()) +
-          renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер. Р/К', 'avg_monthly_qty', 'num', 'width:108px')) +
+          renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер./міс', 'avg_monthly_qty', 'num', 'width:138px')) +
           renderAnalysisColumnHeader('status', renderAnalysisSortHeader('Статус', 'status', 'center', 'width:100px')) +
           renderAnalysisColumnHeader('reorder_enabled', renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px')) +
           renderAnalysisColumnHeader('days_cover', renderAnalysisSortHeader('Днів запасу', 'days_cover', 'num', 'width:94px')) +
@@ -5456,9 +5477,8 @@
           const shipmentsRatio = fmtInt(row.period_shipments) + '/' + fmtInt(row.shipments_total_all);
           const avgDemand = row.avg_demand || { year: 0, quarter: 0, yearTrend: { direction: 'flat', delta: 0 }, quarterTrend: { direction: 'flat', delta: 0 } };
           const avgDemandCell = '<div class="avg-demand-stack" title="Середньомісячно: 12 місяців / актуальні 3 місяці">' +
-            '<span class="avg-demand-part">' + fmt(avgDemand.year) + avgDemandArrowHtml(avgDemand.yearTrend) + '</span>' +
-            '<span class="avg-demand-sep">/</span>' +
-            '<span class="avg-demand-part">' + fmt(avgDemand.quarter) + avgDemandArrowHtml(avgDemand.quarterTrend) + '</span>' +
+            '<span class="avg-demand-pill ' + avgDemandClass(avgDemand.year) + '"><b>Р</b>' + fmt(avgDemand.year) + avgDemandArrowHtml(avgDemand.yearTrend) + '</span>' +
+            '<span class="avg-demand-pill ' + avgDemandClass(avgDemand.quarter) + '"><b>К</b>' + fmt(avgDemand.quarter) + avgDemandArrowHtml(avgDemand.quarterTrend) + '</span>' +
           '</div>';
           const ia = row.actuality_index || { month: 0, quarter: 0, year: 0 };
           const iaCell = '<div class="ia-stack" title="IA: місяць / квартал / рік">' +
