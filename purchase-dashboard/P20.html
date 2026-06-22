@@ -2502,9 +2502,6 @@
       { key: 'reorder_enabled', label: 'Закуп.' },
       { key: 'days_cover', label: 'Днів запасу' },
       { key: 'target_stock_days_effective', label: 'Термін + запас' },
-      { key: 'forecast_order_qty', label: 'Добрати' },
-      { key: 'manual_order_qty', label: 'Корекція' },
-      { key: 'final_order_qty', label: 'До замовл.' },
       { key: 'comment', label: 'Коментар' }
     ];
 
@@ -5846,9 +5843,7 @@
         'avg_monthly_qty',
         'days_cover',
         'target_stock_days_effective',
-        'forecast_order_qty',
-        'manual_order_qty',
-        'final_order_qty'
+        'comment'
       ]);
       if (field === 'actuality_index') return num(row.actuality_index_score);
       if (numeric.has(field)) return num(row[field]);
@@ -5937,9 +5932,6 @@
           renderAnalysisColumnHeader('reorder_enabled', renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px')) +
           renderAnalysisColumnHeader('days_cover', renderAnalysisSortHeader('Днів запасу', 'days_cover', 'num', 'width:94px')) +
           renderAnalysisColumnHeader('target_stock_days_effective', renderAnalysisSortHeader('Термін + запас', 'target_stock_days_effective', 'num', 'width:108px')) +
-          renderAnalysisColumnHeader('forecast_order_qty', renderAnalysisSortHeader('Добрати', 'forecast_order_qty', 'num', 'width:88px')) +
-          renderAnalysisColumnHeader('manual_order_qty', renderAnalysisSortHeader('Корекція', 'manual_order_qty', 'num', 'width:104px')) +
-          renderAnalysisColumnHeader('final_order_qty', renderAnalysisSortHeader('До замовл.', 'final_order_qty', 'num', 'width:108px')) +
           renderAnalysisColumnHeader('comment', renderAnalysisSortHeader('Коментар', 'comment', '', 'width:145px')) +
           '<th class="analysis-columns-cell"><button class="analysis-columns-btn" type="button" data-open-column-settings title="Налаштувати колонки">⚙</button></th>' +
         '</tr></thead><tbody>' +
@@ -5959,7 +5951,6 @@
           const daysCover = row.days_cover >= 999 ? '∞' : fmtInt(Math.floor(row.days_cover));
           const riskClass = row.days_cover < row.lead_time_days_effective ? 'danger' : row.days_cover < (row.lead_time_days_effective + row.target_stock_days_effective) ? 'warn' : 'good';
           const targetValue = row.target_stock_days === '' ? '' : String(Math.round(num(row.target_stock_days)));
-          const manualValue = row.manual_order_qty === '' ? '' : String(Math.round(num(row.manual_order_qty)));
           const statusValue = text(row.actuality_status || row.product_status || 'new');
           const reorderValue = text(row.reorder_enabled).toLowerCase() === 'no' ? 'no' : 'yes';
           const shipmentsRatio = fmtInt(row.period_shipments) + '/' + fmtInt(row.shipments_total_all);
@@ -5990,9 +5981,6 @@
             renderAnalysisColumnCell('reorder_enabled', '<td class="center">' + renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>') +
             renderAnalysisColumnCell('days_cover', '<td class="num risk-cell ' + riskClass + attentionClass('days_cover') + '">' + esc(daysCover) + '</td>') +
             renderAnalysisColumnCell('target_stock_days_effective', '<td class="num"><input class="analysis-input" data-analysis-edit="target_stock_days" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(targetValue) + '" placeholder="' + esc(fmtInt(row.target_stock_days_effective)) + '"><div class="analysis-muted">' + fmtInt(row.lead_time_days_effective) + ' дн. доставка</div></td>') +
-            renderAnalysisColumnCell('forecast_order_qty', '<td class="num">' + fmt(row.forecast_order_qty) + '</td>') +
-            renderAnalysisColumnCell('manual_order_qty', '<td class="num"><input class="analysis-input" data-analysis-edit="manual_order_qty" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(manualValue) + '" placeholder="' + esc(fmt(row.forecast_order_qty)) + '"></td>') +
-            renderAnalysisColumnCell('final_order_qty', '<td class="num">' + fmt(row.final_order_qty) + (row.manual_order_active ? '<div class="analysis-muted">ручна</div>' : '') + '</td>') +
             renderAnalysisColumnCell('comment', '<td><input class="analysis-input analysis-comment" data-analysis-edit="comment" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(row.settings_comment) + '" placeholder="Коментар"></td>') +
             '<td class="analysis-columns-cell">' + (attentionInfo ? '<button class="attention-dismiss-btn" type="button" data-attention-dismiss="' + esc(attentionInfo.dismissKey) + '" title="Прибрати із Зони уваги">&#128465;</button>' : '') + '</td>' +
           '</tr>';
