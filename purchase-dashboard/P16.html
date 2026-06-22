@@ -4606,6 +4606,7 @@
           const manualValue = row.manual_order_qty === '' ? '' : String(Math.round(num(row.manual_order_qty)));
           const statusValue = text(row.actuality_status || row.product_status || 'new');
           const reorderValue = text(row.reorder_enabled).toLowerCase() === 'no' ? 'no' : 'yes';
+          const shipmentsRatio = fmtInt(row.period_shipments) + '/' + fmtInt(row.shipments_total_all);
           return '<tr data-analysis-key="' + esc(row.key) + '">' +
             renderAnalysisColumnCell('product', '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div></div></td>') +
             renderAnalysisColumnCell('code', '<td class="code">' + (row.code ? esc(row.code) : '<span class="dash">—</span>') + '</td>') +
@@ -4615,7 +4616,7 @@
             renderAnalysisColumnCell('period_sold_qty', '<td class="num metric-group">' + fmt(row.period_sold_qty) + '</td>') +
             renderAnalysisColumnCell('available_with_transit_qty', '<td class="num metric-group">' + fmt(row.available_with_transit_qty) + '</td>') +
             renderAnalysisColumnCell('sales_total_all', '<td class="num metric-group metric-end">' + fmt(row.sales_total_all) + '</td>') +
-            renderAnalysisColumnCell('period_shipments', '<td class="num">' + fmtInt(row.period_shipments) + '</td>') +
+            renderAnalysisColumnCell('period_shipments', '<td class="num" title="За вибраний період / за весь час">' + shipmentsRatio + '</td>') +
             renderAnalysisColumnCell('avg_monthly_qty', '<td class="num">' + fmt(row.avg_monthly_qty) + '</td>') +
             renderAnalysisColumnCell('status', '<td class="center">' + renderChoiceMenu(row, 'status', statusValue, ['new','active','basic','low','in archive']) + '</td>') +
             renderAnalysisColumnCell('reorder_enabled', '<td class="center">' + renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>') +
