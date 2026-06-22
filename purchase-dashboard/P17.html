@@ -3291,6 +3291,13 @@
       return 'low';
     }
 
+    function actualityIndexColor(value) {
+      const score = Number(value || 0);
+      if (score >= 70) return '#16a34a';
+      if (score >= 35) return '#f97316';
+      return '#64748b';
+    }
+
     function getActualityIndexSummary(rowKey, range) {
       const model = state.actualityIndexModel || buildActualityIndexModel(state.productAnalysisRows);
       const period = getActualityIndexPeriod(range);
@@ -4447,48 +4454,90 @@
       return 'Q' + match[2] + '.' + match[1].slice(2);
     }
 
+    function monthKeysBetween(startMonth, endMonth) {
+      const startParts = text(startMonth).split('-');
+      const endParts = text(endMonth).split('-');
+      if (startParts.length !== 2 || endParts.length !== 2) return [];
+      const out = [];
+      const cursor = new Date(Number(startParts[0]), Number(startParts[1]) - 1, 1);
+      const end = new Date(Number(endParts[0]), Number(endParts[1]) - 1, 1);
+      while (!Number.isNaN(cursor.getTime()) && cursor.getTime() <= end.getTime()) {
+        out.push(monthKeyFromDateObject(cursor));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      return out;
+    }
+
+    function quarterKeysBetween(startMonth, endMonth) {
+      const months = monthKeysBetween(startMonth, endMonth);
+      const seen = new Set();
+      const out = [];
+      months.forEach(month => {
+        const quarter = quarterKeyFromMonthKey(month);
+        if (!quarter || seen.has(quarter)) return;
+        seen.add(quarter);
+        out.push(quarter);
+      });
+      return out;
+    }
+
+    function yearKeysBetween(startMonth, endMonth) {
+      const months = monthKeysBetween(startMonth, endMonth);
+      const seen = new Set();
+      const out = [];
+      months.forEach(month => {
+        const year = month.slice(0, 4);
+        if (!year || seen.has(year)) return;
+        seen.add(year);
+        out.push(year);
+      });
+      return out;
+    }
+
+    function currentActualityMonthKey() {
+      return monthKeyFromDateObject(new Date());
+    }
+
     function buildActualityIndexChartSeries(rowKey, mode) {
       const model = state.actualityIndexModel || buildActualityIndexModel(state.productAnalysisRows);
       const rowMonths = model.rowMonths.get(rowKey) || {};
       const months = Object.keys(rowMonths).sort();
+      const currentMonth = currentActualityMonthKey();
+      const startMonth = months[0] || currentMonth;
+      const endMonth = currentMonth;
       if (mode === 'quarter') {
-        const quarterMap = {};
-        months.forEach(month => {
-          const qKey = quarterKeyFromMonthKey(month);
-          if (!qKey) return;
-          quarterMap[qKey] = !quarterMap[qKey] || month > quarterMap[qKey] ? month : quarterMap[qKey];
-        });
-        const quarters = Object.keys(quarterMap).sort();
+        const quarters = quarterKeysBetween(startMonth, endMonth);
         return {
           labels: quarters.map(quarterShortLabel),
-          values: quarters.map(quarter => model.quarterScore(rowKey, quarter, quarterMap[quarter]))
+          values: quarters.map(quarter => {
+            const match = text(quarter).match(/^(\d{4})-Q([1-4])$/);
+            if (!match) return 0;
+            const quarterEnd = quarterMonths(Number(match[1]), Number(match[2]) - 1)[2];
+            const capMonth = quarterEnd > currentMonth ? currentMonth : '';
+            return model.quarterScore(rowKey, quarter, capMonth);
+          })
         };
       }
       if (mode === 'year') {
-        const yearMap = {};
-        months.forEach(month => {
-          const year = month.slice(0, 4);
-          if (!year) return;
-          yearMap[year] = !yearMap[year] || month > yearMap[year] ? month : yearMap[year];
-        });
-        const years = Object.keys(yearMap).sort();
+        const years = yearKeysBetween(startMonth, endMonth);
         return {
           labels: years,
           values: years.map(year => {
-            const capMonth = yearMap[year];
+            const capMonth = String(year) === currentMonth.slice(0, 4) ? currentMonth : year + '-12';
             const quarterIndex = quarterIndexFromMonth(Number(capMonth.slice(5, 7)));
             return model.yearScore(rowKey, Number(year), quarterIndex, capMonth);
           })
         };
       }
+      const fullMonths = monthKeysBetween(startMonth, endMonth);
       return {
-        labels: months.map(monthShortLabel),
-        values: months.map(month => model.monthScore(rowKey, month))
+        labels: fullMonths.map(monthShortLabel),
+        values: fullMonths.map(month => model.monthScore(rowKey, month))
       };
     }
 
     function renderActualityIndexChartCard(row, chartId) {
-      const ia = getActualityIndexSummary(row.key, getCustomAnalysisRange());
+      const ia = getActualityIndexSummary(row.key, { from: '', to: toInputDate(new Date()) });
       const mode = state.trendIaMode || 'month';
       const button = (value, label) => '<button type="button" data-ia-chart-mode="' + esc(value) + '"' + (mode === value ? ' class="active"' : '') + '>' + esc(label) + '</button>';
       const summary =
@@ -4508,6 +4557,9 @@
       if (!canvas || typeof Chart === 'undefined') return;
       const activeMode = mode || 'month';
       const series = buildActualityIndexChartSeries(rowKey, activeMode);
+      const lastIndex = Math.max(0, series.values.length - 1);
+      const lastValue = series.values[lastIndex] || 0;
+      const lastColor = actualityIndexColor(lastValue);
       const chart = new Chart(canvas, {
         type: 'line',
         data: {
@@ -4517,11 +4569,11 @@
             data: series.values,
             borderColor: '#2563eb',
             backgroundColor: '#2563eb22',
-            pointBackgroundColor: '#2563eb',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 7,
+            pointBackgroundColor: series.values.map((value, index) => index === lastIndex ? lastColor : '#2563eb'),
+            pointBorderColor: series.values.map((value, index) => index === lastIndex ? lastColor : '#ffffff'),
+            pointBorderWidth: series.values.map((value, index) => index === lastIndex ? 3 : 2),
+            pointRadius: series.values.map((value, index) => index === lastIndex ? 6 : 4),
+            pointHoverRadius: series.values.map((value, index) => index === lastIndex ? 9 : 7),
             pointHitRadius: 14,
             fill: true,
             tension: 0.32,
