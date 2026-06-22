@@ -957,6 +957,14 @@
       font-weight:950;
       line-height:1;
     }
+    button.avg-demand-pill{
+      cursor:pointer;
+      font-family:inherit;
+    }
+    button.avg-demand-pill:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 10px rgba(30,58,95,.12);
+    }
     .avg-demand-pill b{
       color:#6f85a0;
       font-size:9px;
@@ -2194,6 +2202,18 @@
       <div id="iaDetailModalBody"></div>
     </div>
   </div>
+  <div id="avgDemandModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="avgDemandModalTitle">
+    <div class="modal-card ia-detail-modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="avgDemandModalTitle" class="modal-title">Середньомісячний попит</h2>
+          <div id="avgDemandModalNote" class="modal-note">—</div>
+        </div>
+        <button id="avgDemandModalClose" class="modal-close" type="button">Закрити</button>
+      </div>
+      <div id="avgDemandModalBody"></div>
+    </div>
+  </div>
 
   <div class="page">
     <section class="card shell">
@@ -2396,6 +2416,7 @@
       trendIaMode: 'month',
       activeTrendRowKey: '',
       iaDetailRowKey: '',
+      avgDemandDetailRowKey: '',
       actualityIndexModel: null,
       analysisColumnVisibility: loadAnalysisColumnVisibility(),
       filtersCollapsed: false,
@@ -4944,6 +4965,139 @@
       destroyTrendCharts();
     }
 
+    function buildAverageDemandSeries(row, mode) {
+      const monthlyMap = monthlyQtyMapFromDaily(row.sales_daily);
+      const months = Object.keys(monthlyMap).sort();
+      const currentMonth = currentActualityMonthKey();
+      const startMonth = months[0] || currentMonth;
+      const fullMonths = monthKeysBetween(startMonth, currentMonth);
+      const windowSize = mode === 'year' ? 12 : 3;
+      return {
+        labels: fullMonths.map(monthShortLabel),
+        values: fullMonths.map(month => averageDemandForWindow(monthlyMap, month, windowSize))
+      };
+    }
+
+    function renderAverageDemandChart(chartId, row, mode) {
+      const canvas = $(chartId);
+      if (!canvas || typeof Chart === 'undefined') return;
+      const series = buildAverageDemandSeries(row, mode);
+      const lastIndex = Math.max(0, series.values.length - 1);
+      const lastValue = series.values[lastIndex] || 0;
+      const lastColor = avgDemandClass(lastValue) === 'hot' ? '#16a34a' : avgDemandClass(lastValue) === 'warn' ? '#f97316' : '#64748b';
+      const chart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: series.labels,
+          datasets: [{
+            label: mode === 'year' ? 'Річне сер./міс' : 'Квартальне сер./міс',
+            data: series.values,
+            borderColor: mode === 'year' ? '#2563eb' : '#0f766e',
+            backgroundColor: mode === 'year' ? '#2563eb22' : '#0f766e22',
+            pointBackgroundColor: series.values.map((value, index) => index === lastIndex ? lastColor : (mode === 'year' ? '#2563eb' : '#0f766e')),
+            pointBorderColor: series.values.map((value, index) => index === lastIndex ? lastColor : '#ffffff'),
+            pointBorderWidth: series.values.map((value, index) => index === lastIndex ? 3 : 2),
+            pointRadius: series.values.map((value, index) => index === lastIndex ? 6 : 4),
+            pointHoverRadius: series.values.map((value, index) => index === lastIndex ? 9 : 7),
+            pointHitRadius: 14,
+            fill: true,
+            tension: 0.32,
+            borderWidth: 2.6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(15,23,42,.94)',
+              titleColor: '#ffffff',
+              bodyColor: '#e2e8f0',
+              borderColor: 'rgba(255,255,255,.12)',
+              borderWidth: 1,
+              padding: 11,
+              callbacks: {
+                label: context => (mode === 'year' ? 'Річне сер./міс: ' : 'Квартальне сер./міс: ') + fmt(context.raw) + ' шт'
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#8ba0ba', font: { size: 11, weight: '800' }, callback: value => fmt(value) },
+              grid: { color: 'rgba(148,163,184,.18)' },
+              border: { display: false }
+            },
+            x: {
+              ticks: { color: '#8ba0ba', font: { size: 11, weight: '800' }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+              grid: { display: false },
+              border: { display: false }
+            }
+          }
+        },
+        plugins: [trendValueLabelsPlugin]
+      });
+      state.trendCharts.push(chart);
+    }
+
+    function avgDemandTrendText(label, current, trend) {
+      const previous = roundClient(num(current) - num(trend.delta));
+      const deltaText = trend.delta === 0 ? '0' : (trend.delta > 0 ? '+' : '') + fmt(trend.delta);
+      const word = trend.direction === 'up' ? 'росте' : trend.direction === 'down' ? 'падає' : 'без змін';
+      return label + ' ' + word + ': ' + fmt(previous) + ' → ' + fmt(current) + ' (' + deltaText + ').';
+    }
+
+    function renderAverageDemandDetailText(row) {
+      const summary = getAverageDemandSummary(row);
+      const stateText = 'Поточний стан: Р ' + fmt(summary.year) + ', К ' + fmt(summary.quarter) + ' шт/міс.';
+      const yearText = avgDemandTrendText('Річний середньомісячний попит', summary.year, summary.yearTrend) + ' Це показує довгу норму продажів без різких коротких перекосів.';
+      const quarterText = avgDemandTrendText('Квартальний середньомісячний попит', summary.quarter, summary.quarterTrend) + ' Це актуальний темп, який краще використовувати для закупки зараз.';
+      const comparison = summary.quarter > summary.year
+        ? 'Квартальний темп вищий за річний, отже попит прискорюється.'
+        : summary.quarter < summary.year
+          ? 'Квартальний темп нижчий за річний, отже попит просідає відносно історичної норми.'
+          : 'Квартальний і річний темпи майже однакові, попит стабільний.';
+      const recommendation = summary.quarter >= summary.year
+        ? 'Рекомендація: орієнтувати закупку на квартальний темп і стежити, щоб залишку вистачало під актуальну швидкість.'
+        : 'Рекомендація: не збільшувати закупку автоматично, спочатку перевірити причину просідання, залишок, ціну та наявність альтернатив.';
+      return '<div class="ia-detail-text">' +
+        '<p>' + esc(stateText) + '</p>' +
+        '<p>' + esc(yearText) + '</p>' +
+        '<p>' + esc(quarterText) + '</p>' +
+        '<p>' + esc(comparison) + '</p>' +
+        '<p>' + esc(recommendation) + '</p>' +
+      '</div>';
+    }
+
+    function openAverageDemandModal(rowKey) {
+      const row = state.productAnalysisRows.find(item => item.key === rowKey);
+      if (!row) return;
+      destroyTrendCharts();
+      state.avgDemandDetailRowKey = rowKey;
+      $('avgDemandModalTitle').textContent = 'Середньомісячний попит';
+      $('avgDemandModalNote').textContent = (row.code ? row.code + ' · ' : '') + row.product;
+      $('avgDemandModalBody').innerHTML =
+        '<div class="ia-detail-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">' +
+          renderIaDetailChartCard('Сер./міс Р', 'Річна rolling-динаміка 12 місяців', 'avgDemandYearChart') +
+          renderIaDetailChartCard('Сер./міс К', 'Квартальна rolling-динаміка 3 місяці', 'avgDemandQuarterChart') +
+        '</div>' +
+        renderAverageDemandDetailText(row);
+      $('avgDemandModal').classList.remove('hidden');
+      window.setTimeout(() => {
+        renderAverageDemandChart('avgDemandYearChart', row, 'year');
+        renderAverageDemandChart('avgDemandQuarterChart', row, 'quarter');
+      }, 0);
+    }
+
+    function closeAverageDemandModal() {
+      state.avgDemandDetailRowKey = '';
+      $('avgDemandModal').classList.add('hidden');
+      destroyTrendCharts();
+    }
+
     function renderTrendChartCanvases(chartConfigs) {
       window.setTimeout(() => {
         destroyTrendCharts();
@@ -5477,8 +5631,8 @@
           const shipmentsRatio = fmtInt(row.period_shipments) + '/' + fmtInt(row.shipments_total_all);
           const avgDemand = row.avg_demand || { year: 0, quarter: 0, yearTrend: { direction: 'flat', delta: 0 }, quarterTrend: { direction: 'flat', delta: 0 } };
           const avgDemandCell = '<div class="avg-demand-stack" title="Середньомісячно: 12 місяців / актуальні 3 місяці">' +
-            '<span class="avg-demand-pill ' + avgDemandClass(avgDemand.year) + '"><b>Р</b>' + fmt(avgDemand.year) + avgDemandArrowHtml(avgDemand.yearTrend) + '</span>' +
-            '<span class="avg-demand-pill ' + avgDemandClass(avgDemand.quarter) + '"><b>К</b>' + fmt(avgDemand.quarter) + avgDemandArrowHtml(avgDemand.quarterTrend) + '</span>' +
+            '<button class="avg-demand-pill ' + avgDemandClass(avgDemand.year) + '" type="button" data-avg-demand-detail="' + esc(row.key) + '" data-avg-demand-mode="year"><b>Р</b>' + fmt(avgDemand.year) + avgDemandArrowHtml(avgDemand.yearTrend) + '</button>' +
+            '<button class="avg-demand-pill ' + avgDemandClass(avgDemand.quarter) + '" type="button" data-avg-demand-detail="' + esc(row.key) + '" data-avg-demand-mode="quarter"><b>К</b>' + fmt(avgDemand.quarter) + avgDemandArrowHtml(avgDemand.quarterTrend) + '</button>' +
           '</div>';
           const ia = row.actuality_index || { month: 0, quarter: 0, year: 0 };
           const iaCell = '<div class="ia-stack" title="IA: місяць / квартал / рік">' +
@@ -6112,6 +6266,13 @@
         openIaDetailModal(iaDetailBtn.dataset.iaDetail || '');
         return;
       }
+      const avgDemandBtn = event.target.closest('[data-avg-demand-detail]');
+      if (avgDemandBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        openAverageDemandModal(avgDemandBtn.dataset.avgDemandDetail || '');
+        return;
+      }
       const trendBtn = event.target.closest('[data-analysis-trend]');
       if (trendBtn) {
         event.preventDefault();
@@ -6311,6 +6472,10 @@
     $('iaDetailModalClose').addEventListener('click', closeIaDetailModal);
     $('iaDetailModal').addEventListener('click', event => {
       if (event.target.id === 'iaDetailModal') closeIaDetailModal();
+    });
+    $('avgDemandModalClose').addEventListener('click', closeAverageDemandModal);
+    $('avgDemandModal').addEventListener('click', event => {
+      if (event.target.id === 'avgDemandModal') closeAverageDemandModal();
     });
     $('columnSettingsList').addEventListener('change', event => {
       const input = event.target.closest('[data-analysis-column-toggle]');
