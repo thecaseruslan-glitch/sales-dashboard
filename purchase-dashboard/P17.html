@@ -802,7 +802,7 @@
     }
     .analysis-table{
       width:100%;
-      min-width:2285px;
+      min-width:2305px;
       border-collapse:separate;
       border-spacing:0;
       table-layout:fixed;
@@ -930,6 +930,27 @@
     .ia-pill.hot{background:#e9f8f0;border-color:#cfead9;color:#167247}
     .ia-pill.warn{background:#fff7ed;border-color:#fed7aa;color:#b45309}
     .ia-pill.low{background:#f1f5f9;border-color:#dbe4ef;color:#64748b}
+    .avg-demand-cell{
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
+    .avg-demand-stack{
+      display:inline-flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:4px;
+      min-width:72px;
+    }
+    .avg-demand-part{
+      display:inline-flex;
+      align-items:center;
+      gap:2px;
+      font-weight:950;
+    }
+    .avg-demand-sep{
+      color:#94a3b8;
+      font-weight:950;
+    }
     .ia-header{
       display:flex;
       align-items:center;
@@ -2312,7 +2333,7 @@
       { key: 'sales_total_all', label: 'За весь час' },
       { key: 'period_shipments', label: 'Відгрузок' },
       { key: 'actuality_index', label: 'IA' },
-      { key: 'avg_monthly_qty', label: 'Сер./міс' },
+      { key: 'avg_monthly_qty', label: 'Сер. Р/К' },
       { key: 'status', label: 'Статус' },
       { key: 'reorder_enabled', label: 'Закуп.' },
       { key: 'days_cover', label: 'Днів запасу' },
@@ -3394,6 +3415,84 @@
       return { month, quarter, year, period };
     }
 
+    function daysInMonthKey(monthKey) {
+      const parts = text(monthKey).split('-');
+      if (parts.length !== 2) return 30.44;
+      return new Date(Number(parts[0]), Number(parts[1]), 0).getDate();
+    }
+
+    function currentMonthElapsedDays() {
+      const today = new Date();
+      return Math.max(1, today.getDate());
+    }
+
+    function addMonthsToMonthKey(monthKey, offset) {
+      const parts = text(monthKey).split('-');
+      if (parts.length !== 2) return '';
+      return monthKeyFromDateObject(new Date(Number(parts[0]), Number(parts[1]) - 1 + offset, 1));
+    }
+
+    function monthlyQtyMapFromDaily(daily) {
+      const map = {};
+      (Array.isArray(daily) ? daily : []).forEach(item => {
+        const month = monthKeyFromDate(item.date);
+        if (!month) return;
+        map[month] = roundClient((map[month] || 0) + num(item.qty));
+      });
+      return map;
+    }
+
+    function projectedMonthQty(monthlyMap, monthKey) {
+      const qty = num(monthlyMap[monthKey]);
+      if (monthKey !== currentActualityMonthKey()) return qty;
+      const daysElapsed = currentMonthElapsedDays();
+      const daysTotal = daysInMonthKey(monthKey);
+      return roundClient(daysElapsed > 0 ? qty / daysElapsed * daysTotal : qty);
+    }
+
+    function averageDemandForWindow(monthlyMap, endMonth, monthCount) {
+      const months = [];
+      for (let offset = monthCount - 1; offset >= 0; offset -= 1) {
+        months.push(addMonthsToMonthKey(endMonth, -offset));
+      }
+      const total = months.reduce((sum, month) => sum + projectedMonthQty(monthlyMap, month), 0);
+      return roundClient(total / Math.max(1, monthCount));
+    }
+
+    function avgDemandTrend(currentValue, previousValue) {
+      const delta = roundClient(num(currentValue) - num(previousValue));
+      return {
+        delta,
+        direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
+      };
+    }
+
+    function avgDemandArrowHtml(trend) {
+      const direction = trend && trend.direction ? trend.direction : 'flat';
+      const symbol = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '–';
+      const label = direction === 'up'
+        ? 'росте на ' + fmt(Math.abs(trend.delta))
+        : direction === 'down'
+          ? 'падає на ' + fmt(Math.abs(trend.delta))
+          : 'без змін';
+      return '<span class="ia-trend-arrow ' + esc(direction) + '" title="' + esc(label) + '">' + esc(symbol) + '</span>';
+    }
+
+    function getAverageDemandSummary(row) {
+      const monthlyMap = monthlyQtyMapFromDaily(row.sales_daily);
+      const currentMonth = currentActualityMonthKey();
+      const yearAvg = averageDemandForWindow(monthlyMap, currentMonth, 12);
+      const quarterAvg = averageDemandForWindow(monthlyMap, currentMonth, 3);
+      const previousYearAvg = averageDemandForWindow(monthlyMap, addMonthsToMonthKey(currentMonth, -12), 12);
+      const previousQuarterAvg = averageDemandForWindow(monthlyMap, addMonthsToMonthKey(currentMonth, -3), 3);
+      return {
+        year: yearAvg,
+        quarter: quarterAvg,
+        yearTrend: avgDemandTrend(yearAvg, previousYearAvg),
+        quarterTrend: avgDemandTrend(quarterAvg, previousQuarterAvg)
+      };
+    }
+
     function getAnalysisRowsWithMetrics() {
       const range = getCustomAnalysisRange();
       const globalTargetDays = Number($('analysisCoverDays') && $('analysisCoverDays').value || 45);
@@ -3406,7 +3505,8 @@
         const soldQty = roundClient(daily.reduce((sum, item) => sum + item.qty, 0));
         const shipments = daily.reduce((sum, item) => sum + item.shipments, 0);
         const activeMonths = new Set(daily.filter(item => item.qty > 0).map(item => item.date.slice(0, 7))).size;
-        const avgMonthlyQty = activeMonths ? soldQty / activeMonths : 0;
+        const averageDemand = getAverageDemandSummary(row);
+        const avgMonthlyQty = averageDemand.quarter;
         const avgDailyQty = avgMonthlyQty > 0 ? avgMonthlyQty / 30.44 : 0;
         const targetStockDays = row.target_stock_days > 0 ? row.target_stock_days : globalTargetDays;
         const leadTimeDays = row.lead_time_days > 0 ? row.lead_time_days : 35;
@@ -3429,6 +3529,7 @@
           period_shipments: shipments,
           active_months: activeMonths,
           avg_monthly_qty: avgMonthlyQty,
+          avg_demand: averageDemand,
           avg_daily_qty: avgDailyQty,
           target_stock_days_effective: targetStockDays,
           lead_time_days_effective: leadTimeDays,
@@ -5334,7 +5435,7 @@
           renderAnalysisColumnHeader('sales_total_all', renderAnalysisSortHeader('За весь час', 'sales_total_all', 'num metric-group metric-end', 'width:96px')) +
           renderAnalysisColumnHeader('period_shipments', renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px')) +
           renderAnalysisColumnHeader('actuality_index', renderIaSortHeader()) +
-          renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер./міс', 'avg_monthly_qty', 'num', 'width:90px')) +
+          renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер. Р/К', 'avg_monthly_qty', 'num', 'width:108px')) +
           renderAnalysisColumnHeader('status', renderAnalysisSortHeader('Статус', 'status', 'center', 'width:100px')) +
           renderAnalysisColumnHeader('reorder_enabled', renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px')) +
           renderAnalysisColumnHeader('days_cover', renderAnalysisSortHeader('Днів запасу', 'days_cover', 'num', 'width:94px')) +
@@ -5353,6 +5454,12 @@
           const statusValue = text(row.actuality_status || row.product_status || 'new');
           const reorderValue = text(row.reorder_enabled).toLowerCase() === 'no' ? 'no' : 'yes';
           const shipmentsRatio = fmtInt(row.period_shipments) + '/' + fmtInt(row.shipments_total_all);
+          const avgDemand = row.avg_demand || { year: 0, quarter: 0, yearTrend: { direction: 'flat', delta: 0 }, quarterTrend: { direction: 'flat', delta: 0 } };
+          const avgDemandCell = '<div class="avg-demand-stack" title="Середньомісячно: 12 місяців / актуальні 3 місяці">' +
+            '<span class="avg-demand-part">' + fmt(avgDemand.year) + avgDemandArrowHtml(avgDemand.yearTrend) + '</span>' +
+            '<span class="avg-demand-sep">/</span>' +
+            '<span class="avg-demand-part">' + fmt(avgDemand.quarter) + avgDemandArrowHtml(avgDemand.quarterTrend) + '</span>' +
+          '</div>';
           const ia = row.actuality_index || { month: 0, quarter: 0, year: 0 };
           const iaCell = '<div class="ia-stack" title="IA: місяць / квартал / рік">' +
             '<button class="ia-pill ' + actualityIndexClass(ia.month) + '" type="button" data-ia-detail="' + esc(row.key) + '" data-ia-mode="month"><b>М</b>' + fmtInt(ia.month) + actualityTrendArrowHtml(row.key, 'month') + '</button>' +
@@ -5370,7 +5477,7 @@
             renderAnalysisColumnCell('sales_total_all', '<td class="num metric-group metric-end">' + fmt(row.sales_total_all) + '</td>') +
             renderAnalysisColumnCell('period_shipments', '<td class="num" title="За вибраний період / за весь час">' + shipmentsRatio + '</td>') +
             renderAnalysisColumnCell('actuality_index', '<td class="ia-cell">' + iaCell + '</td>') +
-            renderAnalysisColumnCell('avg_monthly_qty', '<td class="num">' + fmt(row.avg_monthly_qty) + '</td>') +
+            renderAnalysisColumnCell('avg_monthly_qty', '<td class="num avg-demand-cell">' + avgDemandCell + '</td>') +
             renderAnalysisColumnCell('status', '<td class="center">' + renderChoiceMenu(row, 'status', statusValue, ['new','active','basic','low','in archive']) + '</td>') +
             renderAnalysisColumnCell('reorder_enabled', '<td class="center">' + renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>') +
             renderAnalysisColumnCell('days_cover', '<td class="num risk-cell ' + riskClass + '">' + esc(daysCover) + '</td>') +
