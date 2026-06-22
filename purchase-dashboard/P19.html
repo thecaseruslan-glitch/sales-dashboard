@@ -3737,20 +3737,32 @@
       const avgDailyBase = Math.max(0.1, quarterAvg / 30.44);
       const monthTrend = actualityTrendInfo(row.key, 'month');
       const quarterTrendDelta = avgDemand.quarterTrend ? num(avgDemand.quarterTrend.delta) : 0;
+      const monthlyMap = monthlyQtyMapFromDaily(row.sales_daily);
+      const currentMonth = currentActualityMonthKey();
+      const previousMonth = addMonthsToMonthKey(currentMonth, -1);
+      const currentMonthQty = num(monthlyMap[currentMonth]);
+      const previousMonthQty = num(monthlyMap[previousMonth]);
+      const monthHasClearGrowth = previousMonthQty > 0
+        ? currentMonthQty >= previousMonthQty * 1.2 && currentMonthQty - previousMonthQty >= 3
+        : currentMonthQty >= 8;
+      const currentDemandIsClearlyUp = monthHasClearGrowth && (
+        (avgDemand.quarterTrend && avgDemand.quarterTrend.direction === 'up') ||
+        quarterAvg >= Math.max(yearAvg * 1.25, yearAvg + 3)
+      );
       const period = getActualityIndexPeriod(getCustomAnalysisRange());
       const signalDate = period.month ? period.month + '-01' : currentAttentionDate();
 
-      if (maxDayQty >= 8 && maxDayQty >= Math.max(avgDailyBase * 8, quarterAvg * 0.65)) {
+      if (currentDemandIsClearlyUp && maxDayQty >= 8 && maxDayQty >= Math.max(avgDailyBase * 8, quarterAvg * 0.65)) {
         signals.push(attentionSignal(
           'day_spike',
           'сплеск дня: ' + fmt(maxDayQty) + ' шт.',
           'period_sold_qty',
           'danger',
           maxDay.date || signalDate,
-          'За один день продалось ' + fmt(maxDayQty) + ' шт., що сильно вище звичайного денного темпу.'
+          'За один день продалось ' + fmt(maxDayQty) + ' шт., і поточний місяць вже сильніший за попередній: ' + fmt(currentMonthQty) + ' проти ' + fmt(previousMonthQty) + '.'
         ));
       }
-      if (quarterAvg >= 5 && quarterAvg >= Math.max(yearAvg * 2, yearAvg + 6)) {
+      if (monthHasClearGrowth && quarterAvg >= 5 && quarterAvg >= Math.max(yearAvg * 2, yearAvg + 6)) {
         signals.push(attentionSignal(
           'quarter_vs_year',
           'К темп вище Р: +' + fmt(quarterAvg - yearAvg),
@@ -3760,7 +3772,7 @@
           'Квартальний сер./міс помітно вищий за річний: ' + fmt(quarterAvg) + ' проти ' + fmt(yearAvg) + '.'
         ));
       }
-      if (avgDemand.quarterTrend && avgDemand.quarterTrend.direction === 'up' && quarterTrendDelta >= Math.max(6, yearAvg * 0.6)) {
+      if (monthHasClearGrowth && avgDemand.quarterTrend && avgDemand.quarterTrend.direction === 'up' && quarterTrendDelta >= Math.max(6, yearAvg * 0.6)) {
         signals.push(attentionSignal(
           'quarter_growth',
           'Сер./міс К росте: +' + fmt(quarterTrendDelta),
@@ -3770,7 +3782,7 @@
           'Актуальний квартальний темп виріс на ' + fmt(quarterTrendDelta) + ' шт./міс відносно попереднього квартального вікна.'
         ));
       }
-      if (monthTrend.direction === 'up' && monthTrend.delta >= 30 && num(row.period_sold_qty) >= 3) {
+      if (monthHasClearGrowth && monthTrend.direction === 'up' && monthTrend.delta >= 30 && num(row.period_sold_qty) >= 3) {
         signals.push(attentionSignal(
           'ia_month_growth',
           'IA М різко росте: +' + fmtInt(monthTrend.delta),
@@ -3780,7 +3792,7 @@
           'Місячний індекс актуальності виріс на ' + fmtInt(monthTrend.delta) + ' пунктів і має фактичні продажі в періоді.'
         ));
       }
-      if (quarterAvg >= Math.max(5, yearAvg * 1.5) && row.days_cover < row.lead_time_days_effective) {
+      if (currentDemandIsClearlyUp && quarterAvg >= Math.max(5, yearAvg * 1.5) && row.days_cover < row.lead_time_days_effective) {
         signals.push(attentionSignal(
           'growth_shortage',
           'попит росте + мало запасу',
