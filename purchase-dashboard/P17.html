@@ -2345,8 +2345,8 @@
       { key: 'period_sold_qty', label: 'Продано' },
       { key: 'available_with_transit_qty', label: 'Доступно' },
       { key: 'sales_total_all', label: 'За весь час' },
-      { key: 'period_shipments', label: 'Відгрузок' },
       { key: 'actuality_index', label: 'IA' },
+      { key: 'period_shipments', label: 'Відгрузок' },
       { key: 'avg_monthly_qty', label: 'Сер./міс' },
       { key: 'status', label: 'Статус' },
       { key: 'reorder_enabled', label: 'Закуп.' },
@@ -5373,8 +5373,8 @@
         'period_sold_qty',
         'available_with_transit_qty',
         'sales_total_all',
-        'period_shipments',
         'actuality_index',
+        'period_shipments',
         'avg_monthly_qty',
         'days_cover',
         'target_stock_days_effective',
@@ -5454,8 +5454,8 @@
           renderAnalysisColumnHeader('period_sold_qty', renderAnalysisSortHeader('Продано', 'period_sold_qty', 'num metric-group', 'width:78px')) +
           renderAnalysisColumnHeader('available_with_transit_qty', renderAnalysisSortHeader('Доступно', 'available_with_transit_qty', 'num metric-group', 'width:78px')) +
           renderAnalysisColumnHeader('sales_total_all', renderAnalysisSortHeader('За весь час', 'sales_total_all', 'num metric-group metric-end', 'width:96px')) +
-          renderAnalysisColumnHeader('period_shipments', renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px')) +
           renderAnalysisColumnHeader('actuality_index', renderIaSortHeader()) +
+          renderAnalysisColumnHeader('period_shipments', renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px')) +
           renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер./міс', 'avg_monthly_qty', 'num', 'width:138px')) +
           renderAnalysisColumnHeader('status', renderAnalysisSortHeader('Статус', 'status', 'center', 'width:100px')) +
           renderAnalysisColumnHeader('reorder_enabled', renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px')) +
@@ -5495,8 +5495,8 @@
             renderAnalysisColumnCell('period_sold_qty', '<td class="num metric-group">' + fmt(row.period_sold_qty) + '</td>') +
             renderAnalysisColumnCell('available_with_transit_qty', '<td class="num metric-group">' + fmt(row.available_with_transit_qty) + '</td>') +
             renderAnalysisColumnCell('sales_total_all', '<td class="num metric-group metric-end">' + fmt(row.sales_total_all) + '</td>') +
-            renderAnalysisColumnCell('period_shipments', '<td class="num" title="За вибраний період / за весь час">' + shipmentsRatio + '</td>') +
             renderAnalysisColumnCell('actuality_index', '<td class="ia-cell">' + iaCell + '</td>') +
+            renderAnalysisColumnCell('period_shipments', '<td class="num" title="За вибраний період / за весь час">' + shipmentsRatio + '</td>') +
             renderAnalysisColumnCell('avg_monthly_qty', '<td class="num avg-demand-cell">' + avgDemandCell + '</td>') +
             renderAnalysisColumnCell('status', '<td class="center">' + renderChoiceMenu(row, 'status', statusValue, ['new','active','basic','low','in archive']) + '</td>') +
             renderAnalysisColumnCell('reorder_enabled', '<td class="center">' + renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>') +
