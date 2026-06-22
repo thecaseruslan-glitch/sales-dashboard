@@ -519,10 +519,7 @@
       color:#fff;
     }
     .analysis-local-count.empty{
-      border-color:#e2e8f0;
-      background:#f8fafc;
-      color:#94a3b8;
-      box-shadow:none;
+      display:none;
     }
     .orders-list{
       flex:1 1 auto;
@@ -6036,6 +6033,7 @@
       if ($('attentionSignalCount')) {
         $('attentionSignalCount').textContent = fmtInt(newSignalCount);
         $('attentionSignalCount').classList.toggle('empty', newSignalCount === 0);
+        $('attentionSignalCount').hidden = newSignalCount === 0;
       }
 
       document.querySelector('#kpiOrders').previousElementSibling.textContent = 'Позицій';
