@@ -510,6 +510,16 @@
       font-weight:950;
       font-variant-numeric:tabular-nums;
     }
+    .analysis-local-tab:not(.active) .analysis-local-count{
+      background:#e94235;
+      color:#fff;
+      box-shadow:0 4px 10px rgba(233,66,53,.22);
+    }
+    .analysis-local-count.empty{
+      background:rgba(148,163,184,.18);
+      color:#8091a6;
+      box-shadow:none;
+    }
     .orders-list{
       flex:1 1 auto;
       min-height:0;
@@ -1019,6 +1029,56 @@
     .avg-demand-pill.hot{background:#e9f8f0;border-color:#cfead9;color:#167247}
     .avg-demand-pill.warn{background:#fff7ed;border-color:#fed7aa;color:#b45309}
     .avg-demand-pill.low{background:#f1f5f9;border-color:#dbe4ef;color:#64748b}
+    .attention-highlight{
+      position:relative;
+      outline:2px solid rgba(249,115,22,.78);
+      outline-offset:-3px;
+      background:linear-gradient(180deg, rgba(255,247,237,.92), rgba(255,255,255,.9));
+      box-shadow:inset 0 0 0 1px rgba(254,215,170,.72);
+    }
+    .attention-highlight.danger{
+      outline-color:rgba(220,38,38,.76);
+      background:linear-gradient(180deg, rgba(254,242,242,.94), rgba(255,255,255,.9));
+      box-shadow:inset 0 0 0 1px rgba(254,202,202,.78);
+    }
+    .attention-highlight.good{
+      outline-color:rgba(22,163,74,.76);
+      background:linear-gradient(180deg, rgba(240,253,244,.94), rgba(255,255,255,.9));
+      box-shadow:inset 0 0 0 1px rgba(187,247,208,.78);
+    }
+    .attention-reason-chip{
+      margin-top:6px;
+      border:1px solid #fed7aa;
+      border-radius:999px;
+      background:#fff7ed;
+      color:#9a3412;
+      padding:4px 8px;
+      max-width:420px;
+      font-size:10px;
+      font-weight:950;
+      line-height:1.2;
+      white-space:normal;
+      text-align:left;
+      cursor:pointer;
+      font-family:inherit;
+      box-shadow:0 3px 8px rgba(249,115,22,.12);
+    }
+    .attention-reason-chip.danger{
+      border-color:#fecaca;
+      background:#fef2f2;
+      color:#b91c1c;
+      box-shadow:0 3px 8px rgba(220,38,38,.10);
+    }
+    .attention-reason-chip.good{
+      border-color:#bbf7d0;
+      background:#f0fdf4;
+      color:#15803d;
+      box-shadow:0 3px 8px rgba(22,163,74,.10);
+    }
+    .attention-reason-chip:hover{
+      transform:translateY(-1px);
+      box-shadow:0 5px 13px rgba(30,58,95,.12);
+    }
     .ia-header{
       display:flex;
       align-items:center;
@@ -1188,6 +1248,25 @@
       color:#2f68ef;
       border-color:#bcd2ff;
       background:#f7fbff;
+    }
+    .attention-dismiss-btn{
+      width:28px;
+      height:28px;
+      border-radius:10px;
+      border:1px solid #e2e8f0;
+      background:#fff;
+      color:#94a3b8;
+      font-size:14px;
+      font-weight:950;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .attention-dismiss-btn:hover{
+      color:#dc2626;
+      border-color:#fecaca;
+      background:#fef2f2;
     }
     .analysis-trend-cell{
       width:34px;
@@ -2406,6 +2485,8 @@
     window.__INITIAL_DATA__ = <?!= initialDataJson ?>;
 
     const ANALYSIS_COLUMN_STORAGE_KEY = 'purchaseDashboardP6.analysisColumns.v1';
+    const ATTENTION_SEEN_STORAGE_KEY = 'purchaseDashboardP18.attentionSeen.v1';
+    const ATTENTION_DISMISSED_STORAGE_KEY = 'purchaseDashboardP18.attentionDismissed.v1';
     const ANALYSIS_COLUMNS = [
       { key: 'product', label: 'Позиція', required: true },
       { key: 'code', label: 'Код' },
@@ -2473,6 +2554,8 @@
       filtersCollapsed: false,
       analysisSortField: 'product',
       analysisSortDir: 'asc',
+      attentionSeen: loadStoredStringSet(ATTENTION_SEEN_STORAGE_KEY),
+      attentionDismissed: loadStoredStringSet(ATTENTION_DISMISSED_STORAGE_KEY),
       currentUser: null
     };
 
@@ -2517,6 +2600,25 @@
       try {
         if (!window.localStorage) return;
         window.localStorage.setItem(ANALYSIS_COLUMN_STORAGE_KEY, JSON.stringify(state.analysisColumnVisibility));
+      } catch (error) {
+        // Local browser storage can be unavailable in restricted contexts.
+      }
+    }
+
+    function loadStoredStringSet(key) {
+      try {
+        const raw = window.localStorage && window.localStorage.getItem(key);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(parsed) ? parsed.map(value => String(value == null ? '' : value).trim()).filter(Boolean) : []);
+      } catch (error) {
+        return new Set();
+      }
+    }
+
+    function saveStoredStringSet(key, values) {
+      try {
+        if (!window.localStorage) return;
+        window.localStorage.setItem(key, JSON.stringify(Array.from(values || [])));
       } catch (error) {
         // Local browser storage can be unavailable in restricted contexts.
       }
@@ -3586,8 +3688,34 @@
       };
     }
 
-    function maxDailySalesQty(row) {
-      return (Array.isArray(row.sales_daily) ? row.sales_daily : []).reduce((best, item) => Math.max(best, num(item.qty)), 0);
+    function maxDailySalesPoint(row) {
+      return (Array.isArray(row.sales_daily) ? row.sales_daily : []).reduce((best, item) => {
+        const qty = num(item.qty);
+        if (!best || qty > best.qty) {
+          return {
+            date: text(item.date),
+            qty,
+            shipments: num(item.shipments)
+          };
+        }
+        return best;
+      }, null) || { date: '', qty: 0, shipments: 0 };
+    }
+
+    function currentAttentionDate() {
+      const today = new Date();
+      return today.toISOString().slice(0, 10);
+    }
+
+    function attentionSignal(key, label, field, severity, date, detail) {
+      return {
+        key,
+        label,
+        field,
+        severity: severity || 'warn',
+        date: date || currentAttentionDate(),
+        detail: detail || label
+      };
     }
 
     function attentionSignals(row) {
@@ -3595,30 +3723,87 @@
       const avgDemand = row.avg_demand || getAverageDemandSummary(row);
       const yearAvg = num(avgDemand.year);
       const quarterAvg = num(avgDemand.quarter);
-      const maxDayQty = maxDailySalesQty(row);
+      const maxDay = maxDailySalesPoint(row);
+      const maxDayQty = num(maxDay.qty);
       const avgDailyBase = Math.max(0.1, quarterAvg / 30.44);
       const monthTrend = actualityTrendInfo(row.key, 'month');
+      const quarterTrendDelta = avgDemand.quarterTrend ? num(avgDemand.quarterTrend.delta) : 0;
+      const period = getActualityIndexPeriod(getCustomAnalysisRange());
+      const signalDate = period.month ? period.month + '-01' : currentAttentionDate();
 
-      if (maxDayQty >= Math.max(5, avgDailyBase * 5)) {
-        signals.push('сплеск за день');
+      if (maxDayQty >= 8 && maxDayQty >= Math.max(avgDailyBase * 8, quarterAvg * 0.65)) {
+        signals.push(attentionSignal(
+          'day_spike',
+          'сплеск дня: ' + fmt(maxDayQty) + ' шт.',
+          'period_sold_qty',
+          'danger',
+          maxDay.date || signalDate,
+          'За один день продалось ' + fmt(maxDayQty) + ' шт., що сильно вище звичайного денного темпу.'
+        ));
       }
-      if (quarterAvg >= Math.max(3, yearAvg * 1.6) && quarterAvg - yearAvg >= 3) {
-        signals.push('К темп вище Р');
+      if (quarterAvg >= 5 && quarterAvg >= Math.max(yearAvg * 2, yearAvg + 6)) {
+        signals.push(attentionSignal(
+          'quarter_vs_year',
+          'К темп вище Р: +' + fmt(quarterAvg - yearAvg),
+          'avg_monthly_qty',
+          'good',
+          signalDate,
+          'Квартальний сер./міс помітно вищий за річний: ' + fmt(quarterAvg) + ' проти ' + fmt(yearAvg) + '.'
+        ));
       }
-      if (avgDemand.quarterTrend && avgDemand.quarterTrend.direction === 'up' && Math.abs(num(avgDemand.quarterTrend.delta)) >= Math.max(3, yearAvg * 0.25)) {
-        signals.push('Сер./міс К росте');
+      if (avgDemand.quarterTrend && avgDemand.quarterTrend.direction === 'up' && quarterTrendDelta >= Math.max(6, yearAvg * 0.6)) {
+        signals.push(attentionSignal(
+          'quarter_growth',
+          'Сер./міс К росте: +' + fmt(quarterTrendDelta),
+          'avg_monthly_qty',
+          'good',
+          signalDate,
+          'Актуальний квартальний темп виріс на ' + fmt(quarterTrendDelta) + ' шт./міс відносно попереднього квартального вікна.'
+        ));
       }
-      if (monthTrend.direction === 'up' && monthTrend.delta >= 20) {
-        signals.push('IA М різко росте');
+      if (monthTrend.direction === 'up' && monthTrend.delta >= 30 && num(row.period_sold_qty) >= 3) {
+        signals.push(attentionSignal(
+          'ia_month_growth',
+          'IA М різко росте: +' + fmtInt(monthTrend.delta),
+          'actuality_index',
+          'good',
+          signalDate,
+          'Місячний індекс актуальності виріс на ' + fmtInt(monthTrend.delta) + ' пунктів і має фактичні продажі в періоді.'
+        ));
       }
-      if (quarterAvg > yearAvg && row.days_cover < row.lead_time_days_effective + row.target_stock_days_effective) {
-        signals.push('попит росте + ризик нестачі');
+      if (quarterAvg >= Math.max(5, yearAvg * 1.5) && row.days_cover < row.lead_time_days_effective) {
+        signals.push(attentionSignal(
+          'growth_shortage',
+          'попит росте + мало запасу',
+          'days_cover',
+          'danger',
+          signalDate,
+          'Квартальний темп вищий за річний, а запас нижчий за строк доставки.'
+        ));
       }
       return signals;
     }
 
+    function attentionRowInfo(row) {
+      const signals = attentionSignals(row);
+      if (!signals.length) return null;
+      const priority = { danger: 3, good: 2, warn: 1 };
+      const primary = signals.slice().sort((a, b) => (priority[b.severity] || 0) - (priority[a.severity] || 0))[0];
+      const rowKey = text(row.key || row.code || row.product);
+      const dismissKey = rowKey + '::' + primary.key + '::' + primary.date;
+      const latestDate = signals.reduce((best, signal) => signal.date > best ? signal.date : best, primary.date || '');
+      return {
+        primary,
+        signals,
+        dismissKey,
+        latestDate,
+        title: signals.map(signal => signal.detail).join(' | ')
+      };
+    }
+
     function isAttentionSignalRow(row) {
-      return attentionSignals(row).length > 0;
+      const info = attentionRowInfo(row);
+      return !!(info && !state.attentionDismissed.has(info.dismissKey));
     }
 
     function getAnalysisRowsWithMetrics() {
@@ -5678,7 +5863,15 @@
         state.analysisSortField = 'period_sold_qty';
         state.analysisSortDir = 'desc';
       }
-      const sorted = rows.slice().sort((a, b) => compareAnalysisRows(a, b, state.analysisSortField, state.analysisSortDir));
+      const attentionMode = state.analysisSubview === 'attention';
+      const sorted = rows.slice().sort((a, b) => {
+        if (!attentionMode) return compareAnalysisRows(a, b, state.analysisSortField, state.analysisSortDir);
+        const aInfo = attentionRowInfo(a);
+        const bInfo = attentionRowInfo(b);
+        const byDate = text(bInfo && bInfo.latestDate).localeCompare(text(aInfo && aInfo.latestDate));
+        if (byDate) return byDate;
+        return compareAnalysisRows(a, b, 'product', 'asc');
+      });
 
       if (!sorted.length) {
         return '<div class="empty">Немає позицій за вибраними фільтрами.</div>';
@@ -5708,6 +5901,18 @@
           '<th class="analysis-columns-cell"><button class="analysis-columns-btn" type="button" data-open-column-settings title="Налаштувати колонки">⚙</button></th>' +
         '</tr></thead><tbody>' +
         sorted.map(row => {
+          const attentionInfo = attentionMode ? attentionRowInfo(row) : null;
+          const attentionPrimary = attentionInfo && attentionInfo.primary ? attentionInfo.primary : null;
+          const attentionSeverity = attentionPrimary ? attentionPrimary.severity : '';
+          const attentionClass = field => attentionPrimary && attentionPrimary.field === field ? ' attention-highlight ' + esc(attentionSeverity) : '';
+          const attentionDetailType = attentionPrimary && attentionPrimary.field === 'actuality_index'
+            ? 'ia'
+            : attentionPrimary && attentionPrimary.field === 'avg_monthly_qty'
+              ? 'avg'
+              : 'trend';
+          const attentionChip = attentionInfo
+            ? '<button class="attention-reason-chip ' + esc(attentionSeverity) + '" type="button" data-attention-detail="' + esc(row.key) + '" data-attention-detail-type="' + esc(attentionDetailType) + '" title="' + esc(attentionInfo.title) + '">' + esc(attentionPrimary.label) + '</button>'
+            : '';
           const daysCover = row.days_cover >= 999 ? '∞' : fmtInt(Math.floor(row.days_cover));
           const riskClass = row.days_cover < row.lead_time_days_effective ? 'danger' : row.days_cover < (row.lead_time_days_effective + row.target_stock_days_effective) ? 'warn' : 'good';
           const targetValue = row.target_stock_days === '' ? '' : String(Math.round(num(row.target_stock_days)));
@@ -5727,26 +5932,26 @@
             '<button class="ia-pill ' + actualityIndexClass(ia.year) + '" type="button" data-ia-detail="' + esc(row.key) + '" data-ia-mode="year"><b>Р</b>' + fmtInt(ia.year) + actualityTrendArrowHtml(row.key, 'year') + '</button>' +
           '</div>';
           return '<tr data-analysis-key="' + esc(row.key) + '">' +
-            renderAnalysisColumnCell('product', '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div></div></td>') +
+            renderAnalysisColumnCell('product', '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div>' + attentionChip + '</div></td>') +
             renderAnalysisColumnCell('code', '<td class="code">' + (row.code ? esc(row.code) : '<span class="dash">—</span>') + '</td>') +
             renderAnalysisColumnCell('trend_chart', '<td class="analysis-trend-cell"><button class="analysis-trend-btn" type="button" data-analysis-trend="' + esc(row.key) + '" title="Графік продажів"><span></span><span></span><span></span></button></td>') +
             renderAnalysisColumnCell('stock_qty', '<td class="num metric-group metric-start">' + fmt(row.stock_qty) + '</td>') +
             renderAnalysisColumnCell('in_transit_qty', '<td class="num metric-group">' + fmt(row.in_transit_qty) + '</td>') +
-            renderAnalysisColumnCell('period_sold_qty', '<td class="num metric-group">' + fmt(row.period_sold_qty) + '</td>') +
+            renderAnalysisColumnCell('period_sold_qty', '<td class="num metric-group' + attentionClass('period_sold_qty') + '">' + fmt(row.period_sold_qty) + '</td>') +
             renderAnalysisColumnCell('available_with_transit_qty', '<td class="num metric-group">' + fmt(row.available_with_transit_qty) + '</td>') +
             renderAnalysisColumnCell('sales_total_all', '<td class="num metric-group metric-end">' + fmt(row.sales_total_all) + '</td>') +
-            renderAnalysisColumnCell('actuality_index', '<td class="ia-cell">' + iaCell + '</td>') +
+            renderAnalysisColumnCell('actuality_index', '<td class="ia-cell' + attentionClass('actuality_index') + '">' + iaCell + '</td>') +
             renderAnalysisColumnCell('period_shipments', '<td class="num" title="За вибраний період / за весь час">' + shipmentsRatio + '</td>') +
-            renderAnalysisColumnCell('avg_monthly_qty', '<td class="num avg-demand-cell">' + avgDemandCell + '</td>') +
+            renderAnalysisColumnCell('avg_monthly_qty', '<td class="num avg-demand-cell' + attentionClass('avg_monthly_qty') + '">' + avgDemandCell + '</td>') +
             renderAnalysisColumnCell('status', '<td class="center">' + renderChoiceMenu(row, 'status', statusValue, ['new','active','basic','low','in archive']) + '</td>') +
             renderAnalysisColumnCell('reorder_enabled', '<td class="center">' + renderChoiceMenu(row, 'reorder_enabled', reorderValue, ['yes','no']) + (!row.reorder_allowed ? '<div class="analysis-muted">не пропонувати</div>' : '') + '</td>') +
-            renderAnalysisColumnCell('days_cover', '<td class="num risk-cell ' + riskClass + '">' + esc(daysCover) + '</td>') +
+            renderAnalysisColumnCell('days_cover', '<td class="num risk-cell ' + riskClass + attentionClass('days_cover') + '">' + esc(daysCover) + '</td>') +
             renderAnalysisColumnCell('target_stock_days_effective', '<td class="num"><input class="analysis-input" data-analysis-edit="target_stock_days" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(targetValue) + '" placeholder="' + esc(fmtInt(row.target_stock_days_effective)) + '"><div class="analysis-muted">' + fmtInt(row.lead_time_days_effective) + ' дн. доставка</div></td>') +
             renderAnalysisColumnCell('forecast_order_qty', '<td class="num">' + fmt(row.forecast_order_qty) + '</td>') +
             renderAnalysisColumnCell('manual_order_qty', '<td class="num"><input class="analysis-input" data-analysis-edit="manual_order_qty" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(manualValue) + '" placeholder="' + esc(fmt(row.forecast_order_qty)) + '"></td>') +
             renderAnalysisColumnCell('final_order_qty', '<td class="num">' + fmt(row.final_order_qty) + (row.manual_order_active ? '<div class="analysis-muted">ручна</div>' : '') + '</td>') +
             renderAnalysisColumnCell('comment', '<td><input class="analysis-input analysis-comment" data-analysis-edit="comment" data-product-id="' + esc(row.product_id) + '" data-code="' + esc(row.code) + '" data-product="' + esc(row.product) + '" data-brand="' + esc(row.brand) + '" value="' + esc(row.settings_comment) + '" placeholder="Коментар"></td>') +
-            '<td class="analysis-columns-cell"></td>' +
+            '<td class="analysis-columns-cell">' + (attentionInfo ? '<button class="attention-dismiss-btn" type="button" data-attention-dismiss="' + esc(attentionInfo.dismissKey) + '" title="Прибрати із Зони уваги">&#128465;</button>' : '') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
@@ -5754,7 +5959,15 @@
 
     function renderAnalysis() {
       const allRows = getFilteredRows();
-      const signalRows = allRows.filter(isAttentionSignalRow);
+      const attentionItems = allRows
+        .map(row => ({ row, info: attentionRowInfo(row) }))
+        .filter(item => item.info && !state.attentionDismissed.has(item.info.dismissKey));
+      if (state.analysisSubview === 'attention') {
+        attentionItems.forEach(item => state.attentionSeen.add(item.info.dismissKey));
+        saveStoredStringSet(ATTENTION_SEEN_STORAGE_KEY, state.attentionSeen);
+      }
+      const signalRows = attentionItems.map(item => item.row);
+      const newSignalCount = attentionItems.filter(item => !state.attentionSeen.has(item.info.dismissKey)).length;
       const rows = state.analysisSubview === 'attention' ? signalRows : allRows;
       const needRows = rows.filter(row => row.final_order_qty > 0);
       const stockRiskRows = rows.filter(row => row.avg_daily_qty > 0 && row.days_cover < row.lead_time_days_effective + row.target_stock_days_effective);
@@ -5767,7 +5980,10 @@
           btn.classList.toggle('active', (btn.dataset.analysisSubview || 'main') === state.analysisSubview);
         });
       }
-      if ($('attentionSignalCount')) $('attentionSignalCount').textContent = fmtInt(signalRows.length);
+      if ($('attentionSignalCount')) {
+        $('attentionSignalCount').textContent = fmtInt(newSignalCount);
+        $('attentionSignalCount').classList.toggle('empty', newSignalCount === 0);
+      }
 
       document.querySelector('#kpiOrders').previousElementSibling.textContent = 'Позицій';
       $('kpiOrders').textContent = fmtInt(rows.length);
@@ -5783,7 +5999,7 @@
       $('tableMeta').textContent = (state.analysisSubview === 'attention' ? 'Зона уваги: ' : '') +
         'Показано ' + fmtInt(rows.length) + ' позицій | Період: ' +
         (period.from && period.to ? formatDateUa(period.from) + ' - ' + formatDateUa(period.to) : 'увесь час') +
-        (state.analysisSubview === 'attention' ? ' | Сигнали: сплеск дня, ріст темпу, IA або ризик нестачі' : '');
+        (state.analysisSubview === 'attention' ? ' | Сортування: нові сигнали зверху' : '');
       $('ordersList').classList.add('analysis-mode');
       $('ordersList').innerHTML = rows.length
         ? renderAnalysisTable(rows)
@@ -6358,6 +6574,31 @@
     $('navBackBtn').addEventListener('click', goDashboardBack);
     $('navForwardBtn').addEventListener('click', goDashboardForward);
     $('ordersList').addEventListener('click', event => {
+      const attentionDismissBtn = event.target.closest('[data-attention-dismiss]');
+      if (attentionDismissBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        const key = attentionDismissBtn.dataset.attentionDismiss || '';
+        if (key) {
+          state.attentionDismissed.add(key);
+          state.attentionSeen.add(key);
+          saveStoredStringSet(ATTENTION_DISMISSED_STORAGE_KEY, state.attentionDismissed);
+          saveStoredStringSet(ATTENTION_SEEN_STORAGE_KEY, state.attentionSeen);
+          renderAnalysis();
+        }
+        return;
+      }
+      const attentionDetailBtn = event.target.closest('[data-attention-detail]');
+      if (attentionDetailBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        const rowKey = attentionDetailBtn.dataset.attentionDetail || '';
+        const type = attentionDetailBtn.dataset.attentionDetailType || 'trend';
+        if (type === 'ia') openIaDetailModal(rowKey);
+        else if (type === 'avg') openAverageDemandModal(rowKey);
+        else openTrendModal(rowKey);
+        return;
+      }
       const iaInfoBtn = event.target.closest('[data-ia-info]');
       if (iaInfoBtn) {
         event.preventDefault();
