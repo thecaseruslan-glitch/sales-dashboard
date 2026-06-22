@@ -802,7 +802,7 @@
     }
     .analysis-table{
       width:100%;
-      min-width:2250px;
+      min-width:2285px;
       border-collapse:separate;
       border-spacing:0;
       table-layout:fixed;
@@ -885,7 +885,7 @@
     }
     .ia-stack{
       display:grid;
-      grid-template-columns:repeat(3, 38px);
+      grid-template-columns:repeat(3, 44px);
       align-items:center;
       justify-content:flex-end;
       gap:5px;
@@ -895,7 +895,7 @@
       align-items:center;
       justify-content:center;
       gap:2px;
-      width:38px;
+      width:44px;
       height:22px;
       padding:0 4px;
       border-radius:8px;
@@ -906,11 +906,27 @@
       font-weight:950;
       line-height:1;
     }
+    button.ia-pill{
+      cursor:pointer;
+      font-family:inherit;
+    }
+    button.ia-pill:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 10px rgba(30,58,95,.12);
+    }
     .ia-pill b{
       color:#6f85a0;
       font-size:9px;
       font-weight:950;
     }
+    .ia-trend-arrow{
+      font-size:10px;
+      font-weight:950;
+      line-height:1;
+    }
+    .ia-trend-arrow.up{color:#16a34a}
+    .ia-trend-arrow.down{color:#dc2626}
+    .ia-trend-arrow.flat{color:#94a3b8}
     .ia-pill.hot{background:#e9f8f0;border-color:#cfead9;color:#167247}
     .ia-pill.warn{background:#fff7ed;border-color:#fed7aa;color:#b45309}
     .ia-pill.low{background:#f1f5f9;border-color:#dbe4ef;color:#64748b}
@@ -975,6 +991,37 @@
     .ia-info-popover li{
       margin:4px 0;
       font-weight:800;
+    }
+    .ia-detail-modal{
+      width:min(1180px, calc(100vw - 36px));
+      max-height:calc(100vh - 34px);
+      overflow:auto;
+    }
+    .ia-detail-grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:14px;
+    }
+    .ia-detail-grid .trend-chart-shell{
+      height:260px;
+    }
+    .ia-detail-text{
+      margin-top:14px;
+      padding:14px;
+      border:1px solid #dfe9f5;
+      border-radius:16px;
+      background:#f8fbff;
+      color:#2d4664;
+      font-size:13px;
+      line-height:1.5;
+      font-weight:820;
+    }
+    .ia-detail-text p{
+      margin:0 0 8px;
+    }
+    .ia-detail-text p:last-child{margin-bottom:0}
+    @media (max-width:980px){
+      .ia-detail-grid{grid-template-columns:1fr}
     }
     .analysis-product-cell{
       min-width:0;
@@ -2073,6 +2120,18 @@
       <li>Продажі й відгрузки порівнюються всередині групи товарів, щоб різні категорії не перекошували оцінку.</li>
     </ul>
   </div>
+  <div id="iaDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="iaDetailModalTitle">
+    <div class="modal-card ia-detail-modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="iaDetailModalTitle" class="modal-title">Індекс актуальності</h2>
+          <div id="iaDetailModalNote" class="modal-note">—</div>
+        </div>
+        <button id="iaDetailModalClose" class="modal-close" type="button">Закрити</button>
+      </div>
+      <div id="iaDetailModalBody"></div>
+    </div>
+  </div>
 
   <div class="page">
     <section class="card shell">
@@ -2274,6 +2333,7 @@
       trendChartConfigs: [],
       trendIaMode: 'month',
       activeTrendRowKey: '',
+      iaDetailRowKey: '',
       actualityIndexModel: null,
       analysisColumnVisibility: loadAnalysisColumnVisibility(),
       filtersCollapsed: false,
@@ -4620,6 +4680,121 @@
       state.trendCharts.push(chart);
     }
 
+    function actualityTrendInfo(rowKey, mode) {
+      const series = buildActualityIndexChartSeries(rowKey, mode);
+      const lastIndex = series.values.length - 1;
+      const current = lastIndex >= 0 ? Number(series.values[lastIndex] || 0) : 0;
+      const previous = lastIndex > 0 ? Number(series.values[lastIndex - 1] || 0) : 0;
+      const delta = current - previous;
+      const direction = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+      return {
+        current,
+        previous,
+        delta,
+        direction,
+        label: lastIndex >= 0 ? series.labels[lastIndex] : '',
+        previousLabel: lastIndex > 0 ? series.labels[lastIndex - 1] : ''
+      };
+    }
+
+    function actualityTrendArrowHtml(rowKey, mode) {
+      const info = actualityTrendInfo(rowKey, mode);
+      const symbol = info.direction === 'up' ? '↑' : info.direction === 'down' ? '↓' : '–';
+      const label = info.direction === 'up'
+        ? 'росте на ' + fmtInt(Math.abs(info.delta))
+        : info.direction === 'down'
+          ? 'падає на ' + fmtInt(Math.abs(info.delta))
+          : 'без змін';
+      return '<span class="ia-trend-arrow ' + esc(info.direction) + '" title="' + esc(label) + '">' + esc(symbol) + '</span>';
+    }
+
+    function trendWord(info) {
+      if (info.direction === 'up') return 'росте';
+      if (info.direction === 'down') return 'падає';
+      return 'стоїть без змін';
+    }
+
+    function trendReasonText(label, info) {
+      const deltaText = info.delta === 0 ? '0' : (info.delta > 0 ? '+' : '') + fmtInt(info.delta);
+      return label + ' ' + trendWord(info) + ': ' + fmtInt(info.previous) + ' → ' + fmtInt(info.current) + ' (' + deltaText + ').';
+    }
+
+    function currentMonthSalesReason(rowKey) {
+      const model = state.actualityIndexModel || buildActualityIndexModel(state.productAnalysisRows);
+      const months = model.rowMonths.get(rowKey) || {};
+      const currentMonth = currentActualityMonthKey();
+      const previousMonth = previousMonthKey(currentMonth);
+      const current = months[currentMonth] || { qty: 0, shipments: 0 };
+      const previous = months[previousMonth] || { qty: 0, shipments: 0 };
+      return 'Поточний місяць: ' + fmt(current.qty) + ' шт і ' + fmtInt(current.shipments) + ' відгр.; попередній: ' + fmt(previous.qty) + ' шт і ' + fmtInt(previous.shipments) + ' відгр.';
+    }
+
+    function iaRecommendationText(monthInfo, quarterInfo, yearInfo) {
+      if (monthInfo.direction === 'up' && monthInfo.current >= 70) {
+        return 'Рекомендація: товар варто тримати в пріоритеті закупки й не допускати просідання залишку.';
+      }
+      if (monthInfo.direction === 'down' && yearInfo.current >= 35) {
+        return 'Рекомендація: не списувати товар одразу, але перевірити ціну, залишок, наявність моделей/кольорів і причину просідання поточного попиту.';
+      }
+      if (monthInfo.current < 35 && quarterInfo.current < 35) {
+        return 'Рекомендація: закупку робити обережно, тільки після перевірки залишку, маржі й реального попиту за останні відгрузки.';
+      }
+      return 'Рекомендація: залишити товар у контролі, а рішення по закупці приймати разом із залишком, товаром у дорозі та маржею.';
+    }
+
+    function renderIaDetailText(row) {
+      const monthInfo = actualityTrendInfo(row.key, 'month');
+      const quarterInfo = actualityTrendInfo(row.key, 'quarter');
+      const yearInfo = actualityTrendInfo(row.key, 'year');
+      const stateText = 'Поточний стан IA: М ' + fmtInt(monthInfo.current) + ', К ' + fmtInt(quarterInfo.current) + ', Р ' + fmtInt(yearInfo.current) + '.';
+      const monthText = trendReasonText('Місячний індекс', monthInfo) + ' ' + currentMonthSalesReason(row.key);
+      const quarterText = trendReasonText('Квартальний індекс', quarterInfo) + ' Він показує, чи поточний рух підтверджується не одним місяцем, а ширшим періодом.';
+      const yearText = trendReasonText('Річний індекс', yearInfo) + ' Це показує довгострокову силу товару і чи не є поточний попит випадковим.';
+      const recommendation = iaRecommendationText(monthInfo, quarterInfo, yearInfo);
+      return '<div class="ia-detail-text">' +
+        '<p>' + esc(stateText) + '</p>' +
+        '<p>' + esc(monthText) + '</p>' +
+        '<p>' + esc(quarterText) + '</p>' +
+        '<p>' + esc(yearText) + '</p>' +
+        '<p>' + esc(recommendation) + '</p>' +
+      '</div>';
+    }
+
+    function renderIaDetailChartCard(title, subtitle, chartId) {
+      return '<section class="trend-chart-card">' +
+        '<div class="trend-chart-head"><div><div class="trend-chart-title">' + esc(title) + '</div><div class="trend-chart-sub">' + esc(subtitle) + '</div></div></div>' +
+        '<div class="trend-chart-shell"><canvas id="' + esc(chartId) + '"></canvas></div>' +
+      '</section>';
+    }
+
+    function openIaDetailModal(rowKey) {
+      const row = state.productAnalysisRows.find(item => item.key === rowKey);
+      if (!row) return;
+      destroyTrendCharts();
+      state.iaDetailRowKey = rowKey;
+      $('iaDetailModalTitle').textContent = 'Індекс актуальності';
+      $('iaDetailModalNote').textContent = (row.code ? row.code + ' · ' : '') + row.product;
+      $('iaDetailModalBody').innerHTML =
+        '<div class="ia-detail-grid">' +
+          renderIaDetailChartCard('IA М', 'Місячна історія до поточного місяця', 'iaDetailMonthChart') +
+          renderIaDetailChartCard('IA К', 'Квартальна історія до поточного кварталу', 'iaDetailQuarterChart') +
+          renderIaDetailChartCard('IA Р', 'Річна історія до поточного року', 'iaDetailYearChart') +
+        '</div>' +
+        renderIaDetailText(row);
+      $('iaDetailModal').classList.remove('hidden');
+      window.setTimeout(() => {
+        renderActualityIndexChart('iaDetailMonthChart', rowKey, 'month');
+        renderActualityIndexChart('iaDetailQuarterChart', rowKey, 'quarter');
+        renderActualityIndexChart('iaDetailYearChart', rowKey, 'year');
+      }, 0);
+    }
+
+    function closeIaDetailModal() {
+      state.iaDetailRowKey = '';
+      $('iaDetailModal').classList.add('hidden');
+      destroyTrendCharts();
+    }
+
     function renderTrendChartCanvases(chartConfigs) {
       window.setTimeout(() => {
         destroyTrendCharts();
@@ -5098,7 +5273,7 @@
     function renderIaSortHeader() {
       const active = state.analysisSortField === 'actuality_index';
       const indicator = active ? (state.analysisSortDir === 'desc' ? '↓' : '↑') : '';
-      return '<th class="num" style="width:150px">' +
+      return '<th class="num" style="width:166px">' +
         '<div class="ia-header">' +
           '<button class="analysis-sort-btn" type="button" data-analysis-sort="actuality_index">' +
             '<span>IA</span><span class="analysis-sort-indicator">' + esc(indicator) + '</span>' +
@@ -5153,9 +5328,9 @@
           const shipmentsRatio = fmtInt(row.period_shipments) + '/' + fmtInt(row.shipments_total_all);
           const ia = row.actuality_index || { month: 0, quarter: 0, year: 0 };
           const iaCell = '<div class="ia-stack" title="IA: місяць / квартал / рік">' +
-            '<span class="ia-pill ' + actualityIndexClass(ia.month) + '"><b>М</b>' + fmtInt(ia.month) + '</span>' +
-            '<span class="ia-pill ' + actualityIndexClass(ia.quarter) + '"><b>К</b>' + fmtInt(ia.quarter) + '</span>' +
-            '<span class="ia-pill ' + actualityIndexClass(ia.year) + '"><b>Р</b>' + fmtInt(ia.year) + '</span>' +
+            '<button class="ia-pill ' + actualityIndexClass(ia.month) + '" type="button" data-ia-detail="' + esc(row.key) + '" data-ia-mode="month"><b>М</b>' + fmtInt(ia.month) + actualityTrendArrowHtml(row.key, 'month') + '</button>' +
+            '<button class="ia-pill ' + actualityIndexClass(ia.quarter) + '" type="button" data-ia-detail="' + esc(row.key) + '" data-ia-mode="quarter"><b>К</b>' + fmtInt(ia.quarter) + actualityTrendArrowHtml(row.key, 'quarter') + '</button>' +
+            '<button class="ia-pill ' + actualityIndexClass(ia.year) + '" type="button" data-ia-detail="' + esc(row.key) + '" data-ia-mode="year"><b>Р</b>' + fmtInt(ia.year) + actualityTrendArrowHtml(row.key, 'year') + '</button>' +
           '</div>';
           return '<tr data-analysis-key="' + esc(row.key) + '">' +
             renderAnalysisColumnCell('product', '<td class="analysis-product-cell"><div class="analysis-product-line"><div class="analysis-product" title="' + esc(row.product || 'Без назви') + '">' + esc(row.product || 'Без назви') + '</div></div></td>') +
@@ -5776,6 +5951,13 @@
         showIaInfoPopover(event);
         return;
       }
+      const iaDetailBtn = event.target.closest('[data-ia-detail]');
+      if (iaDetailBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        openIaDetailModal(iaDetailBtn.dataset.iaDetail || '');
+        return;
+      }
       const trendBtn = event.target.closest('[data-analysis-trend]');
       if (trendBtn) {
         event.preventDefault();
@@ -5972,6 +6154,10 @@
       showTrendTooltip(event, point);
     });
     $('trendModal').addEventListener('mouseleave', hideTrendTooltip);
+    $('iaDetailModalClose').addEventListener('click', closeIaDetailModal);
+    $('iaDetailModal').addEventListener('click', event => {
+      if (event.target.id === 'iaDetailModal') closeIaDetailModal();
+    });
     $('columnSettingsList').addEventListener('change', event => {
       const input = event.target.closest('[data-analysis-column-toggle]');
       if (!input) return;
