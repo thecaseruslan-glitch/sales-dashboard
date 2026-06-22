@@ -884,7 +884,8 @@
       white-space:nowrap;
     }
     .ia-stack{
-      display:flex;
+      display:grid;
+      grid-template-columns:repeat(3, 38px);
       align-items:center;
       justify-content:flex-end;
       gap:5px;
@@ -892,8 +893,11 @@
     .ia-pill{
       display:inline-flex;
       align-items:center;
+      justify-content:center;
       gap:2px;
-      padding:3px 5px;
+      width:38px;
+      height:22px;
+      padding:0 4px;
       border-radius:8px;
       background:#f3f8ff;
       border:1px solid #dce8f8;
@@ -910,6 +914,68 @@
     .ia-pill.hot{background:#e9f8f0;border-color:#cfead9;color:#167247}
     .ia-pill.warn{background:#fff7ed;border-color:#fed7aa;color:#b45309}
     .ia-pill.low{background:#f1f5f9;border-color:#dbe4ef;color:#64748b}
+    .ia-header{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:5px;
+    }
+    .ia-header .analysis-sort-btn{
+      width:auto;
+      flex:0 0 auto;
+    }
+    .ia-info-btn{
+      width:17px;
+      height:17px;
+      border-radius:999px;
+      border:1px solid #cbdcf3;
+      background:#fff;
+      color:#2f68ef;
+      font-size:11px;
+      font-weight:950;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow:0 2px 6px rgba(47,104,239,.12);
+    }
+    .ia-info-btn:hover{
+      background:#eef4ff;
+      border-color:#9fbaf1;
+    }
+    .ia-info-popover{
+      position:fixed;
+      z-index:10090;
+      width:min(360px, calc(100vw - 28px));
+      padding:14px;
+      border-radius:16px;
+      border:1px solid #d9e6f6;
+      background:#fff;
+      color:#27415f;
+      box-shadow:0 18px 44px rgba(15,23,42,.2);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .ia-info-popover.hidden{display:none}
+    .ia-info-title{
+      color:#1d2c44;
+      font-size:14px;
+      font-weight:950;
+      margin-bottom:6px;
+    }
+    .ia-info-popover p{
+      margin:0 0 8px;
+      font-weight:800;
+    }
+    .ia-info-popover ul{
+      margin:0;
+      padding-left:16px;
+    }
+    .ia-info-popover li{
+      margin:4px 0;
+      font-weight:800;
+    }
     .analysis-product-cell{
       min-width:0;
     }
@@ -1996,6 +2062,16 @@
       <div id="trendModalBody" class="trend-modal-body"></div>
       <div id="trendTooltip" class="trend-tooltip" hidden></div>
     </div>
+  </div>
+  <div id="iaInfoPopover" class="ia-info-popover hidden" role="dialog" aria-label="Пояснення IA">
+    <div class="ia-info-title">IA — індекс актуальності товару</div>
+    <p>Показує, наскільки товар актуальний для закупки та контролю попиту зараз. Шкала: 0–100.</p>
+    <ul>
+      <li><b>М</b> — місячний IA: продажі, відгрузки, регулярність продажів і динаміка до попереднього місяця.</li>
+      <li><b>К</b> — квартальний IA: зважене значення місяців кварталу 20/30/50, з акцентом на останній місяць.</li>
+      <li><b>Р</b> — річний IA: зважене значення кварталів 10/20/30/40, з акцентом на останні квартали.</li>
+      <li>Продажі й відгрузки порівнюються всередині групи товарів, щоб різні категорії не перекошували оцінку.</li>
+    </ul>
   </div>
 
   <div class="page">
@@ -4603,6 +4679,24 @@
       tooltip.hidden = true;
     }
 
+    function showIaInfoPopover(event) {
+      const popover = $('iaInfoPopover');
+      if (!popover) return;
+      popover.classList.remove('hidden');
+      const margin = 14;
+      const rect = popover.getBoundingClientRect();
+      const x = Math.min(window.innerWidth - rect.width - margin, Math.max(margin, event.clientX - rect.width + 18));
+      const y = Math.min(window.innerHeight - rect.height - margin, Math.max(margin, event.clientY + 12));
+      popover.style.left = x + 'px';
+      popover.style.top = y + 'px';
+    }
+
+    function hideIaInfoPopover() {
+      const popover = $('iaInfoPopover');
+      if (!popover) return;
+      popover.classList.add('hidden');
+    }
+
     function statusClass(status) {
       const clean = text(status);
       if (clean === 'Протерміновано в дорозі') return 'overdue';
@@ -4949,6 +5043,19 @@
       '</th>';
     }
 
+    function renderIaSortHeader() {
+      const active = state.analysisSortField === 'actuality_index';
+      const indicator = active ? (state.analysisSortDir === 'desc' ? '↓' : '↑') : '';
+      return '<th class="num" style="width:150px">' +
+        '<div class="ia-header">' +
+          '<button class="analysis-sort-btn" type="button" data-analysis-sort="actuality_index">' +
+            '<span>IA</span><span class="analysis-sort-indicator">' + esc(indicator) + '</span>' +
+          '</button>' +
+          '<button class="ia-info-btn" type="button" data-ia-info title="Що таке IA?">i</button>' +
+        '</div>' +
+      '</th>';
+    }
+
     function renderAnalysisTable(rows) {
       const sortMode = $('sortFilter').value;
       if (sortMode === 'sales_desc' && state.analysisSortField !== 'period_sold_qty') {
@@ -4972,7 +5079,7 @@
           renderAnalysisColumnHeader('available_with_transit_qty', renderAnalysisSortHeader('Доступно', 'available_with_transit_qty', 'num metric-group', 'width:78px')) +
           renderAnalysisColumnHeader('sales_total_all', renderAnalysisSortHeader('За весь час', 'sales_total_all', 'num metric-group metric-end', 'width:96px')) +
           renderAnalysisColumnHeader('period_shipments', renderAnalysisSortHeader('Відгрузок', 'period_shipments', 'num', 'width:78px')) +
-          renderAnalysisColumnHeader('actuality_index', renderAnalysisSortHeader('IA', 'actuality_index', 'num', 'width:132px')) +
+          renderAnalysisColumnHeader('actuality_index', renderIaSortHeader()) +
           renderAnalysisColumnHeader('avg_monthly_qty', renderAnalysisSortHeader('Сер./міс', 'avg_monthly_qty', 'num', 'width:90px')) +
           renderAnalysisColumnHeader('status', renderAnalysisSortHeader('Статус', 'status', 'center', 'width:100px')) +
           renderAnalysisColumnHeader('reorder_enabled', renderAnalysisSortHeader('Закуп.', 'reorder_enabled', 'center', 'width:86px')) +
@@ -5610,6 +5717,13 @@
     $('navBackBtn').addEventListener('click', goDashboardBack);
     $('navForwardBtn').addEventListener('click', goDashboardForward);
     $('ordersList').addEventListener('click', event => {
+      const iaInfoBtn = event.target.closest('[data-ia-info]');
+      if (iaInfoBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        showIaInfoPopover(event);
+        return;
+      }
       const trendBtn = event.target.closest('[data-analysis-trend]');
       if (trendBtn) {
         event.preventDefault();
@@ -5707,6 +5821,7 @@
       renderOrders();
     });
     document.addEventListener('click', event => {
+      if (!event.target.closest('[data-ia-info]') && !event.target.closest('#iaInfoPopover')) hideIaInfoPopover();
       if (!state.openManualMenu) return;
       if (event.target.closest('.choice-menu-wrap')) return;
       closeChoiceMenus();
