@@ -3742,9 +3742,13 @@
       const previousMonth = addMonthsToMonthKey(currentMonth, -1);
       const currentMonthQty = num(monthlyMap[currentMonth]);
       const previousMonthQty = num(monthlyMap[previousMonth]);
-      const monthHasClearGrowth = previousMonthQty > 0
-        ? currentMonthQty >= previousMonthQty * 1.2 && currentMonthQty - previousMonthQty >= 3
-        : currentMonthQty >= 8;
+      const priorHistoryQty = Object.keys(monthlyMap)
+        .filter(month => month < currentMonth)
+        .reduce((sum, month) => sum + num(monthlyMap[month]), 0);
+      const hasComparisonHistory = previousMonthQty > 0 && priorHistoryQty > 0;
+      const monthHasClearGrowth = hasComparisonHistory &&
+        currentMonthQty >= previousMonthQty * 1.2 &&
+        currentMonthQty - previousMonthQty >= 3;
       const currentDemandIsClearlyUp = monthHasClearGrowth && (
         (avgDemand.quarterTrend && avgDemand.quarterTrend.direction === 'up') ||
         quarterAvg >= Math.max(yearAvg * 1.25, yearAvg + 3)
