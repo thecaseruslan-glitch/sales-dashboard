@@ -72,6 +72,43 @@ If manual_order_qty is filled, До замовлення should follow the manua
 - P5 remains the purchase-dashboard rollback baseline.
 - Before changing purchase business logic, inspect purchase_orders, receipts, stock_current, sales_history, purchase_analysis_settings, and PURCHASES_DASHBOARD_RULES in the spreadsheet when relevant.
 
+### P24 Stockout-Aware IA + Graph Markers - 2026-06-25
+
+Request: account for product absence so IA does not drop only because the product was out of stock, and show absence on sales/IA charts with red markers. Push as a new version.
+
+Base version:
+
+- purchase-dashboard/P23.gs
+- purchase-dashboard/P23.html
+
+Changed files:
+
+- purchase-dashboard/P24.gs
+- purchase-dashboard/P24.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Created P24 from P23 as a rollback-safe version.
+- Added stockout_log with fields date, code, product, brand, category, group, stock_qty, in_transit_qty, is_out_of_stock, recorded_at.
+- refreshStockCurrentNow_ now records one stockout row per date+code when stock is 0 or below; duplicate same-day rows are skipped.
+- getPurchasesDashboardData now includes stockout_rows in the payload.
+- Frontend builds a stockout index by product code and month.
+- Monthly IA freezes on the previous valid score when a no-sales month is caused by recorded stockout; quarterly/yearly IA then no longer falls because of stockout-only months.
+- Sales trend and IA charts show red stockout markers with tooltip text.
+- Existing business calculations, purchase recommendations, and manual settings were otherwise left unchanged.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P24.gs.
+- Extracted and syntax-checked 2 P24.html script blocks with new Function.
+- Verified P24 contains stockout_log, stockout_rows, stockout chart dataset, P24 storage keys, and no P23 storage keys.
+- Ran git diff --check -- purchase-dashboard/P24.gs purchase-dashboard/P24.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+
+Rollback note:
+
+- P23 remains the rollback point if stockout-aware IA or chart markers need adjustment.
+
 ### P23 Search Index + Attention Cache - 2026-06-25
 
 Request: P22 still had visible delay when live-search shortened the list; optimize search more deeply.
