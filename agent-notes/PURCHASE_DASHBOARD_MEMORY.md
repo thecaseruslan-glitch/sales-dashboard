@@ -72,6 +72,42 @@ If manual_order_qty is filled, До замовлення should follow the manua
 - P5 remains the purchase-dashboard rollback baseline.
 - Before changing purchase business logic, inspect purchase_orders, receipts, stock_current, sales_history, purchase_analysis_settings, and PURCHASES_DASHBOARD_RULES in the spreadsheet when relevant.
 
+### P23 Search Index + Attention Cache - 2026-06-25
+
+Request: P22 still had visible delay when live-search shortened the list; optimize search more deeply.
+
+Base version:
+
+- purchase-dashboard/P22.gs
+- purchase-dashboard/P22.html
+
+Changed files:
+
+- purchase-dashboard/P23.gs
+- purchase-dashboard/P23.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Created P23 from P22 as a rollback-safe version.
+- Kept backend and business calculations unchanged.
+- Added precomputed lowercase _search_text on normalized in-transit, receipt, archive, and product-analysis rows.
+- Changed filtering to split the query into tokens once and match against the precomputed row search text instead of rebuilding/lowercasing joined fields for every row on every keystroke.
+- Added cached attention-row info so live search in the Analysis tab does not recalculate attention signals repeatedly for the same metric row.
+- Kept the P22 short search render timer.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P23.gs.
+- Extracted and syntax-checked 2 P23.html script blocks with new Function.
+- Verified P23 no longer contains P22 attention storage keys.
+- Verified P23 contains prepared search matching and cached attention functions.
+- Ran git diff --check -- purchase-dashboard/P23.gs purchase-dashboard/P23.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+
+Rollback note:
+
+- P22 remains the rollback point if the prepared search index needs adjustment.
+
 ### P22 Live Search Input Responsiveness - 2026-06-25
 
 Request: live search felt laggy; typed/deleted characters appeared with a 2-3 second delay.
