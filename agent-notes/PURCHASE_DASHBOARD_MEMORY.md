@@ -72,6 +72,40 @@ If manual_order_qty is filled, До замовлення should follow the manua
 - P5 remains the purchase-dashboard rollback baseline.
 - Before changing purchase business logic, inspect purchase_orders, receipts, stock_current, sales_history, purchase_analysis_settings, and PURCHASES_DASHBOARD_RULES in the spreadsheet when relevant.
 
+### P22 Live Search Input Responsiveness - 2026-06-25
+
+Request: live search felt laggy; typed/deleted characters appeared with a 2-3 second delay.
+
+Base version:
+
+- purchase-dashboard/P21.gs
+- purchase-dashboard/P21.html
+
+Changed files:
+
+- purchase-dashboard/P22.gs
+- purchase-dashboard/P22.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Created P22 from P21 as a rollback-safe version.
+- Kept backend logic unchanged.
+- Changed only the search input event path: typing now uses a short 90 ms timer before scheduling the heavy dashboard render, so the browser can show the typed/deleted character immediately.
+- Kept status/carrier/sort filter changes on the existing render schedule.
+- Updated P22 attention local-storage keys so P22 does not reuse P21 attention state.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P22.gs.
+- Extracted and syntax-checked 2 P22.html script blocks with new Function.
+- Verified P22 no longer contains P21 attention storage keys.
+- Ran git diff --check -- purchase-dashboard/P22.gs purchase-dashboard/P22.html agent-notes/PURCHASE_DASHBOARD_MEMORY.md.
+
+Rollback note:
+
+- P21 remains the rollback point if the search debounce feels too delayed or needs a different timing.
+
 ### P21 Five-Digit Product Code Normalization - 2026-06-25
 
 Request: push the leading-zero product-code fix as a new Git version of the purchase dashboard.
