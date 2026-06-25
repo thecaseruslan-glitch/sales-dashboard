@@ -72,6 +72,67 @@ If manual_order_qty is filled, До замовлення should follow the manua
 - P5 remains the purchase-dashboard rollback baseline.
 - Before changing purchase business logic, inspect purchase_orders, receipts, stock_current, sales_history, purchase_analysis_settings, and PURCHASES_DASHBOARD_RULES in the spreadsheet when relevant.
 
+### P21 Five-Digit Product Code Normalization - 2026-06-25
+
+Request: push the leading-zero product-code fix as a new Git version of the purchase dashboard.
+
+Base version:
+
+- purchase-dashboard/P20.gs
+- purchase-dashboard/P20.html
+
+Issue: product codes with leading zeroes could split into separate dashboard rows, for example 09872 and 9872, because some sheet/API paths treated product code as a number and lost the leading zero.
+
+Changed files:
+
+- purchase-dashboard/P21.gs
+- purchase-dashboard/P21.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Added product-code normalization for the product code field: digit-only codes are padded to five characters, so 567 becomes 00567 and 9872 becomes 09872.
+- Applied the normalized product code to sheet reads, sheet writes, stock/manual setting keys, purchase/receipt/sales row keys, analysis setting keys, product analysis rows, and frontend row/key normalization.
+- Left carrier_code, supplier_code, and order_code unchanged so non-product codes are not reformatted.
+- No production spreadsheet data was edited and no Apps Script deployment was performed.
+
+Verification:
+
+- Ran node --check --input-type=commonjs < purchase-dashboard/P20.gs.
+- Extracted and syntax-checked 2 P20.html script blocks with new Function.
+- Ran a small normalization check for 9872 -> 09872, 567 -> 00567, 12345 -> 12345, and non-digit codes unchanged.
+- Ran git diff --check -- purchase-dashboard/P20.gs purchase-dashboard/P20.html.
+
+Rollback note:
+
+- P20 remains the rollback point. Revert P21 or switch back to P20 if the source system later guarantees all product codes are always stored as text with leading zeroes preserved.
+
+### P20 Recommended Order Column Restore - 2026-06-22
+
+Request: Руслан clarified that the removed \`Добрати\` column should be returned, but renamed to \`Реком. до замов.\`
+
+Changed files:
+
+- purchase-dashboard/P20.html
+- agent-notes/PURCHASE_DASHBOARD_MEMORY.md
+
+Implementation:
+
+- Restored the analysis table \`forecast_order_qty\` column in P20.
+- Renamed the visible label from \`Добрати\` to \`Реком. до замов.\`
+- Did not restore the manual correction or final-order columns, because the request specifically named \`Добрати\`.
+- No backend logic or spreadsheet data changed.
+
+Verification:
+
+- Ran \`node --check --input-type=commonjs < purchase-dashboard/P20.gs\`.
+- Extracted and syntax-checked the P20.html script block with \`new Function\`.
+- Ran \`git diff --check -- purchase-dashboard/P20.html\`.
+
+Rollback note:
+
+- Revert this P20.html display change to hide the recommended-order column again.
+
 ## P7 Access Roles - 2026-06-17
 
 Request: create next purchase dashboard version with login/password and role-based access like the sales dashboard, plus Git push.
