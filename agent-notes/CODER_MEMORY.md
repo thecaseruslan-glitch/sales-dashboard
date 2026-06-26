@@ -2,6 +2,39 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D83 Service Tags Dropdown Layer Fix - 2026-06-26
+
+Request: make the Service tags dropdown render above all sticky filter controls because lower-row controls like Без службових, Дані актуальні, and Скинути фільтр visually overlapped the dropdown and blocked selection.
+
+Base version:
+
+- sales-dashboard/D82
+- sales-dashboard/D82.html
+
+Changed files:
+
+- sales-dashboard/D83
+- sales-dashboard/D83.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D83 from D82 as a rollback-safe version.
+- Added an open-state class to the Service tags filter wrapper when its dropdown is open.
+- Raised the open Service tags wrapper and menu above the rest of the sticky-filter controls.
+- Removed the open-state class when clicking outside the Service tags filter.
+- Kept D82 quiet background auto-apply and D81 current-month integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D83.
+- Extracted and syntax-checked 5 non-empty D83.html script blocks with new Function.
+- Reviewed D82.html -> D83.html diff; changes are limited to Service tags dropdown layering.
+
+Rollback note:
+
+- D82 remains unchanged as the rollback point.
+
 ## D82 Quiet Background Auto-Apply - 2026-06-26
 
 Request: stop annoying blocking messages like "Підміняю підготовлені дані" / "Відновлюю вибраний період" during background dashboard data replacement because the dashboard becomes non-clickable.
