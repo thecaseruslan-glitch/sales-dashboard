@@ -2,6 +2,41 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D81 Current Month Integrity Guard - 2026-06-26
+
+Request: investigate a missing sales shipment in the Sales dashboard (iShop (м. Борислав), order 03148, 2026-06-25 12:32, revenue 15) and prevent silent mismatches between source sales sheets and dashboard current-month prepared data.
+
+Base version:
+
+- sales-dashboard/D80
+- sales-dashboard/D80.html
+
+Changed files:
+
+- sales-dashboard/D81
+- sales-dashboard/D81.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D81 from D80 as a rollback-safe version.
+- Added a current-month integrity signature comparing prepared current rows with sales_current_month after the same dashboard preparation step.
+- The guard compares row count, revenue cents, max date, and a stable checksum built from date, order_id, position_id, sku, and revenue.
+- If the prepared current file differs from sales_current_month, the dashboard automatically rebuilds the current prepared file from the sheet and returns the rebuilt rows instead of silently serving stale or mismatched current data.
+- Added the integrity result into server diagnostics as current_integrity.
+- Investigation found the specific order exists in sales_lines_test, sales_current_month, and the downloaded current prepared gzip file; this version protects the prepared-file mismatch class of bugs, while a visible-screen miss may still require checking the exact frontend view/filter.
+- Did not change Google Sheets sales data.
+
+Verification:
+
+- Ran node --check sales-dashboard/D81.
+- Extracted and syntax-checked 5 non-empty D81.html script blocks with new Function.
+- Ran git diff --check on the new D81 files and reviewed D80 -> D81 diff.
+
+Rollback note:
+
+- D80 remains unchanged as the rollback point.
+
 ## D80 Long-Wake Fresh Data Refresh - 2026-06-17
 
 Request: after the MacBook/dashboard tab sleeps overnight or stays inactive for a long pause, refresh the open dashboard with today's prepared data immediately after returning to the dashboard instead of requiring a full close/reopen/login.
