@@ -2,6 +2,40 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D85 Client Dropdown Hover Hitbox Fix - 2026-06-26
+
+Request: in the client dropdown, upper client rows were hard to hover with the mouse; the cursor had to be moved slightly above the row center, while lower rows worked normally.
+
+Base version:
+
+- sales-dashboard/D84
+- sales-dashboard/D84.html
+
+Changed files:
+
+- sales-dashboard/D85
+- sales-dashboard/D85.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D85 from D84 as a rollback-safe version.
+- Found the likely cause: the meta row below the filters shares the sticky controls stacking area and can sit above the visible upper part of the client dropdown, intercepting pointer hover/clicks.
+- Added a dedicated open-state class to the whole preset toolbar while the client dropdown is open.
+- Raised the open client toolbar above the meta row and explicitly kept the client dropdown/options pointer-active.
+- Centralized client dropdown open/close class handling so the elevated layer is removed on selection, outside click, clear input, toggle close, or Escape.
+- Kept D84 client dropdown styling/keyboard selection, D83 Service tags layer fix, D82 quiet auto-apply, and D81 integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D85.
+- Extracted and syntax-checked 5 non-empty D85.html script blocks with new Function.
+- Reviewed D84.html -> D85.html diff; changes are limited to client-dropdown layering and open-state cleanup.
+
+Rollback note:
+
+- D84 remains unchanged as the rollback point.
+
 ## D84 Client Search Dropdown UX - 2026-06-26
 
 Request: make the client search dropdown in filters cleaner, add light row separation and hover feedback, and make keyboard navigation work with Up/Down arrows plus Enter.
