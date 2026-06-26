@@ -2,6 +2,39 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D84 Client Search Dropdown UX - 2026-06-26
+
+Request: make the client search dropdown in filters cleaner, add light row separation and hover feedback, and make keyboard navigation work with Up/Down arrows plus Enter.
+
+Base version:
+
+- sales-dashboard/D83
+- sales-dashboard/D83.html
+
+Changed files:
+
+- sales-dashboard/D84
+- sales-dashboard/D84.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D84 from D83 as a rollback-safe version.
+- Added a higher open-state layer for the client filter dropdown so it stays above nearby filter controls.
+- Added compact client rows with subtle separators, rounded hover state, and a stronger keyboard/selected highlight.
+- Changed client option selection to use the shared click path; mousedown now only preserves focus, so Enter-triggered clicks choose the highlighted client correctly.
+- Kept D83 Service tags layer fix, D82 quiet background auto-apply, and D81 current-month integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D84.
+- Extracted and syntax-checked 5 non-empty D84.html script blocks with new Function.
+- Reviewed D83.html -> D84.html diff; changes are limited to client-filter dropdown UX and keyboard activation.
+
+Rollback note:
+
+- D83 remains unchanged as the rollback point.
+
 ## D83 Service Tags Dropdown Layer Fix - 2026-06-26
 
 Request: make the Service tags dropdown render above all sticky filter controls because lower-row controls like Без службових, Дані актуальні, and Скинути фільтр visually overlapped the dropdown and blocked selection.
