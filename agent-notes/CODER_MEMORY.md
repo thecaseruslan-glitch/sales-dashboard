@@ -2,6 +2,39 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D87 Filter Carets And Service Tags Layer - 2026-06-26
+
+Request: make the right-side dropdown arrows in the three top filters use one visual style, and fix the remaining overlap where controls below still sit over the Service tags dropdown.
+
+Base version:
+
+- sales-dashboard/D86
+- sales-dashboard/D86.html
+
+Changed files:
+
+- sales-dashboard/D87
+- sales-dashboard/D87.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D87 from D86 as a rollback-safe version.
+- Added a shared SVG caret style for the manager select, Service tags trigger, and client search dropdown toggle.
+- Added a Service tags toolbar open-state class, mirroring the client dropdown layer fix, so the whole filter toolbar rises above the meta row while the Service tags menu is open.
+- Centralized Service tags menu open/close handling so the elevated toolbar layer is removed on outside click and main-filter reset.
+- Kept D86 quiet auto-render, D85 client dropdown hitbox fix, D84 client dropdown UX, D83 Service tags base layer fix, D82 quiet auto-apply messages, and D81 integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D87.
+- Extracted and syntax-checked 5 non-empty D87.html script blocks with new Function.
+- Reviewed D86.html -> D87.html diff; changes are limited to dropdown caret styling and Service tags layering.
+
+Rollback note:
+
+- D86 remains unchanged as the rollback point.
+
 ## D86 Quiet Auto-Apply Idle Render - 2026-06-26
 
 Request: after new data auto-applies, the dashboard still becomes non-clickable for about 5 seconds even without visible "Підміняю..." / "Відновлюю..." messages.
