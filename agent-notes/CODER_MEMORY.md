@@ -2,6 +2,39 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D88 Quiet Auto-Apply Loader Fix - 2026-06-26
+
+Request: after auto-applying new data, the Efficiency tab did not finish loading.
+
+Base version:
+
+- sales-dashboard/D87
+- sales-dashboard/D87.html
+
+Changed files:
+
+- sales-dashboard/D88
+- sales-dashboard/D88.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D88 from D87 as a rollback-safe version.
+- Fixed the D86 quiet auto-render regression where setDashboardView(... quietDefer) could show the Clients/Efficiency blocking loader while the real render was intentionally waiting for an idle window.
+- During quiet deferred auto-apply, Clients and Efficiency loaders are explicitly hidden; stale content remains clickable until the delayed render actually starts.
+- Kept the normal/manual tab and filter behavior unchanged.
+- Kept D87 filter caret/layer fix, D86 quiet auto-render, D85 client dropdown hitbox fix, D84 client dropdown UX, D83 Service tags base layer fix, D82 quiet auto-apply messages, and D81 integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D88.
+- Extracted and syntax-checked 5 non-empty D88.html script blocks with new Function.
+- Reviewed D87.html -> D88.html diff; change is limited to suppressing blocking view loaders during quiet deferred auto-apply.
+
+Rollback note:
+
+- D87 remains unchanged as the rollback point.
+
 ## D87 Filter Carets And Service Tags Layer - 2026-06-26
 
 Request: make the right-side dropdown arrows in the three top filters use one visual style, and fix the remaining overlap where controls below still sit over the Service tags dropdown.
