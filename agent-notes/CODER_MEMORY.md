@@ -2,6 +2,40 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D86 Quiet Auto-Apply Idle Render - 2026-06-26
+
+Request: after new data auto-applies, the dashboard still becomes non-clickable for about 5 seconds even without visible "Підміняю..." / "Відновлюю..." messages.
+
+Base version:
+
+- sales-dashboard/D85
+- sales-dashboard/D85.html
+
+Changed files:
+
+- sales-dashboard/D86
+- sales-dashboard/D86.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D86 from D85 as a rollback-safe version.
+- Kept automatic payload replacement quiet, but also stopped it from immediately forcing the heavy active-tab render.
+- Added a quiet auto-render timer that waits until the dashboard is visible, no UI transition is running, auto-apply is finished, and the user has been idle for the existing auto-apply idle window.
+- Added cancellation of the quiet auto-render when a normal/manual render is scheduled or filters are applied manually, so delayed auto work does not run over a user action.
+- Left manual refresh/filter behavior unchanged: manual actions still render immediately and can show normal busy feedback.
+- Kept D85 client dropdown hitbox fix, D84 client dropdown UX, D83 Service tags layer fix, D82 quiet messages, and D81 integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D86.
+- Extracted and syntax-checked 5 non-empty D86.html script blocks with new Function.
+- Reviewed D85.html -> D86.html diff; changes are limited to auto-apply render deferral and timer cleanup.
+
+Rollback note:
+
+- D85 remains unchanged as the rollback point.
+
 ## D85 Client Dropdown Hover Hitbox Fix - 2026-06-26
 
 Request: in the client dropdown, upper client rows were hard to hover with the mouse; the cursor had to be moved slightly above the row center, while lower rows worked normally.
