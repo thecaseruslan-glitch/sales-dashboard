@@ -2,6 +2,40 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D82 Quiet Background Auto-Apply - 2026-06-26
+
+Request: stop annoying blocking messages like "Підміняю підготовлені дані" / "Відновлюю вибраний період" during background dashboard data replacement because the dashboard becomes non-clickable.
+
+Base version:
+
+- sales-dashboard/D81
+- sales-dashboard/D81.html
+
+Changed files:
+
+- sales-dashboard/D82
+- sales-dashboard/D82.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D82 from D81 as a rollback-safe version.
+- Changed automatic pending payload apply to run quietly without the global UI busy indicator and cursor busy badge.
+- Removed visible "Підміняю..." / "Відновлюю..." progress text from automatic background replacement.
+- Kept the manual "Оновити дані" flow blocking/visible, because the user explicitly starts that operation.
+- Moved Clients 360 prewarm and local IndexedDB snapshot write after automatic replacement into a small background timeout, so auto-apply stops waiting on those follow-up tasks.
+- Kept the D81 current-month integrity guard unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D82.
+- Extracted and syntax-checked 5 non-empty D82.html script blocks with new Function.
+- Reviewed D81.html -> D82.html diff; changes are limited to auto-apply UX.
+
+Rollback note:
+
+- D81 remains unchanged as the rollback point.
+
 ## D81 Current Month Integrity Guard - 2026-06-26
 
 Request: investigate a missing sales shipment in the Sales dashboard (iShop (м. Борислав), order 03148, 2026-06-25 12:32, revenue 15) and prevent silent mismatches between source sales sheets and dashboard current-month prepared data.
