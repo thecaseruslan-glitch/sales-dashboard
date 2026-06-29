@@ -2,6 +2,39 @@
 
 This file records dashboard coding work for rollback and continuity.
 
+## D89 Efficiency Repeat Render Guard - 2026-06-29
+
+Request: after new data is applied, the Efficiency tab can fail to load on the second attempt.
+
+Base version:
+
+- sales-dashboard/D88
+- sales-dashboard/D88.html
+
+Changed files:
+
+- sales-dashboard/D89
+- sales-dashboard/D89.html
+- agent-notes/CODER_MEMORY.md
+
+Implementation:
+
+- Created D89 from D88 as a rollback-safe version.
+- Fixed the Efficiency scheduled-render lifecycle so the tab is not marked clean before the queued render actually runs.
+- Added an Efficiency render token and stale-render guard; if a queued render is superseded or the user leaves the Efficiency tab before it runs, the tab remains dirty and the loader is hidden.
+- If Efficiency rendering throws an error, the tab remains dirty and the error is logged, so the next opening can retry instead of staying stuck.
+- Kept D88 quiet auto-apply loader behavior and all Efficiency business calculations unchanged.
+
+Verification:
+
+- Ran node --check sales-dashboard/D89.
+- Extracted and syntax-checked 5 non-empty D89.html script blocks with new Function.
+- Reviewed D88.html -> D89.html diff; change is limited to Efficiency render scheduling state.
+
+Rollback note:
+
+- D88 remains unchanged as the rollback point.
+
 ## D88 Quiet Auto-Apply Loader Fix - 2026-06-26
 
 Request: after auto-applying new data, the Efficiency tab did not finish loading.
