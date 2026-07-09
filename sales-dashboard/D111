@@ -161,6 +161,12 @@ function RUN_31_forceRefreshBulavenkoClientTagNow() {
   return result;
 }
 
+function RUN_32_backfillSalesArchiveStatusesOnly() {
+  const result = backfillSalesArchiveStatusesOnly();
+  Logger.log('RUN_32_backfillSalesArchiveStatusesOnly -> %s', JSON.stringify(result));
+  return result;
+}
+
 function RUN_48_refreshMissingClientTagsFromCurrentNow() {
   const result = refreshMissingClientTagsFromCurrentSourcesNow();
   Logger.log('RUN_48_refreshMissingClientTagsFromCurrentNow -> %s', JSON.stringify(result));
@@ -663,6 +669,9 @@ const DEMAND_FETCH_SLEEP_MS = 1200;
 const COUNTERPARTY_ID_BACKFILL_API_LIMIT_PER_RUN = 250;
 const COUNTERPARTY_ID_BACKFILL_MAX_MILLIS = 270000;
 const COUNTERPARTY_ID_BACKFILL_API_SLEEP_MS = 180;
+const SALES_STATUS_BACKFILL_API_LIMIT_PER_RUN = 250;
+const SALES_STATUS_BACKFILL_MAX_MILLIS = 270000;
+const SALES_STATUS_BACKFILL_API_SLEEP_MS = 180;
 const PAYMENT_LIMIT = 50;
 const COUNTERPARTY_BALANCE_REPORT_LIMIT = 500;
 const COUNTERPARTY_LIMIT = 500;
@@ -8173,6 +8182,164 @@ function backfillSalesCounterpartyIdsNow() {
   };
 }
 
+function fetchDemandStatusByOrderId_(orderId) {
+  const cleanOrderId = normalizeCell(orderId);
+  if (!cleanOrderId) return '';
+
+  const url = getApiBase() + '/entity/demand/' + encodeURIComponent(cleanOrderId);
+  const demand = apiGet(url);
+  return extractDemandStatus(demand);
+}
+
+function writeSalesStatusColumnUpdates_(sheet, updates) {
+  if (!sheet || !Array.isArray(updates) || !updates.length) return 0;
+
+  const statusColumn = HEADERS.indexOf('status') + 1;
+  if (!statusColumn) throw new Error('У HEADERS не знайдено колонку status');
+
+  const sorted = updates
+    .filter(function(update) {
+      return update && Number(update.row) > 1 && normalizeCell(update.value);
+    })
+    .sort(function(a, b) {
+      return Number(a.row) - Number(b.row);
+    });
+
+  if (!sorted.length) return 0;
+
+  let written = 0;
+  let blockStart = Number(sorted[0].row);
+  let blockValues = [[normalizeCell(sorted[0].value)]];
+  let previousRow = blockStart;
+
+  for (var i = 1; i < sorted.length; i++) {
+    const rowNumber = Number(sorted[i].row);
+    const value = normalizeCell(sorted[i].value);
+
+    if (rowNumber === previousRow + 1) {
+      blockValues.push([value]);
+    } else {
+      sheet.getRange(blockStart, statusColumn, blockValues.length, 1).setValues(blockValues);
+      written += blockValues.length;
+      blockStart = rowNumber;
+      blockValues = [[value]];
+    }
+
+    previousRow = rowNumber;
+  }
+
+  sheet.getRange(blockStart, statusColumn, blockValues.length, 1).setValues(blockValues);
+  written += blockValues.length;
+  return written;
+}
+
+function backfillSalesArchiveStatusesOnly() {
+  const startedAt = Date.now();
+  const sheet = getOrCreateSheet(SHEET_ARCHIVE);
+  ensureExactHeaders(sheet, HEADERS);
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return {
+      ok: true,
+      sheet: SHEET_ARCHIVE,
+      scanned_rows: 0,
+      missing_status_rows_before: 0,
+      unique_orders_missing_status: 0,
+      api_orders_checked: 0,
+      written_rows: 0,
+      remaining_rows: 0,
+      ready_archive_rebuilt: false
+    };
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+  const orderIndex = HEADERS.indexOf('order_id');
+  const statusIndex = HEADERS.indexOf('status');
+  const rowsByOrderId = {};
+  let missingRowsBefore = 0;
+
+  values.forEach(function(row, index) {
+    const existingStatus = normalizeCell(row[statusIndex]);
+    if (existingStatus) return;
+
+    const orderId = normalizeCell(row[orderIndex]);
+    if (!orderId) return;
+
+    missingRowsBefore++;
+    if (!rowsByOrderId[orderId]) rowsByOrderId[orderId] = [];
+    rowsByOrderId[orderId].push(index + 2);
+  });
+
+  const orderIds = Object.keys(rowsByOrderId);
+  const updates = [];
+  const orderLimit = Math.max(1, Number(SALES_STATUS_BACKFILL_API_LIMIT_PER_RUN) || 1);
+  const maxMillis = Math.max(30000, Number(SALES_STATUS_BACKFILL_MAX_MILLIS) || 30000);
+  let apiOrdersChecked = 0;
+  let apiErrors = 0;
+  let ordersWithStatus = 0;
+  let ordersWithoutStatus = 0;
+
+  for (var i = 0; i < orderIds.length; i++) {
+    if (apiOrdersChecked >= orderLimit) break;
+    if (Date.now() - startedAt > maxMillis) break;
+
+    const orderId = orderIds[i];
+    let status = '';
+
+    try {
+      status = fetchDemandStatusByOrderId_(orderId);
+      apiOrdersChecked++;
+    } catch (err) {
+      apiErrors++;
+      apiOrdersChecked++;
+      Logger.log(
+        'backfillSalesArchiveStatusesOnly -> failed order ' +
+        orderId + ': ' + (err && err.message ? err.message : err)
+      );
+    }
+
+    if (status) {
+      ordersWithStatus++;
+      rowsByOrderId[orderId].forEach(function(rowNumber) {
+        updates.push({ row: rowNumber, value: status });
+      });
+    } else {
+      ordersWithoutStatus++;
+    }
+
+    Utilities.sleep(SALES_STATUS_BACKFILL_API_SLEEP_MS);
+  }
+
+  const writtenRows = writeSalesStatusColumnUpdates_(sheet, updates);
+  const remainingRows = Math.max(0, missingRowsBefore - writtenRows);
+  let readyArchiveResult = null;
+
+  if (remainingRows === 0 && writtenRows > 0) {
+    readyArchiveResult = rebuildDashboardReadyArchiveNow();
+  } else if (writtenRows > 0) {
+    markDashboardServerSnapshotStale_('sales_archive_status_backfill_partial');
+  }
+
+  return {
+    ok: true,
+    sheet: SHEET_ARCHIVE,
+    scanned_rows: values.length,
+    missing_status_rows_before: missingRowsBefore,
+    unique_orders_missing_status: orderIds.length,
+    api_orders_checked: apiOrdersChecked,
+    api_errors: apiErrors,
+    orders_with_status: ordersWithStatus,
+    orders_without_status: ordersWithoutStatus,
+    written_rows: writtenRows,
+    remaining_rows: remainingRows,
+    batch_limit: orderLimit,
+    ready_archive_rebuilt: !!(readyArchiveResult && readyArchiveResult.ok),
+    ready_archive_finished_at: readyArchiveResult && readyArchiveResult.finished_at ? readyArchiveResult.finished_at : ''
+  };
+}
+
 function fetchSalesPeriodRows(startText, endTextExclusive) {
   const safeStart = clampStartDate(startText);
   const filter = 'moment>=' + safeStart + ';moment<' + endTextExclusive;
@@ -8301,12 +8468,38 @@ function DailyRefreshNow() {
   );
 }
 
+function buildExistingSalesStatusByOrderId_(sheets) {
+  const orderIndex = HEADERS.indexOf('order_id');
+  const statusIndex = HEADERS.indexOf('status');
+  const statusByOrderId = {};
+
+  if (orderIndex < 0 || statusIndex < 0) return statusByOrderId;
+
+  (Array.isArray(sheets) ? sheets : []).forEach(function(sheet) {
+    if (!sheet || sheet.getLastRow() < 2) return;
+
+    const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, HEADERS.length).getValues();
+    values.forEach(function(row) {
+      const orderId = normalizeCell(row[orderIndex]);
+      const status = normalizeCell(row[statusIndex]);
+      if (orderId && status && !statusByOrderId[orderId]) {
+        statusByOrderId[orderId] = status;
+      }
+    });
+  });
+
+  return statusByOrderId;
+}
+
 function rebuildServerCache() {
   const main = ensureMainSheet();
   const archive = getOrCreateSheet(SHEET_ARCHIVE);
   const current = getOrCreateSheet(SHEET_CURRENT);
 
   const data = main.getDataRange().getValues();
+  const existingStatusByOrderId = buildExistingSalesStatusByOrderId_([archive, current]);
+  const orderIndex = HEADERS.indexOf('order_id');
+  const statusIndex = HEADERS.indexOf('status');
 
   archive.clearContents();
   current.clearContents();
@@ -8335,6 +8528,10 @@ function rebuildServerCache() {
     const normalizedRow = normalizeRowWidth_(row, HEADERS.length);
     const date = formatSheetDateValue_(normalizedRow[1], 'yyyy-MM-dd HH:mm:ss');
     normalizedRow[1] = date;
+    if (statusIndex >= 0 && !normalizeCell(normalizedRow[statusIndex]) && orderIndex >= 0) {
+      const preservedStatus = existingStatusByOrderId[normalizeCell(normalizedRow[orderIndex])];
+      if (preservedStatus) normalizedRow[statusIndex] = preservedStatus;
+    }
     if (date.indexOf(monthPrefix) === 0) currentRows.push(normalizedRow);
     else archiveRows.push(normalizedRow);
   });
