@@ -8186,7 +8186,8 @@ function fetchDemandStatusByOrderId_(orderId) {
   const cleanOrderId = normalizeCell(orderId);
   if (!cleanOrderId) return '';
 
-  const url = getApiBase() + '/entity/demand/' + encodeURIComponent(cleanOrderId);
+  const query = buildQuery({ expand: 'state' });
+  const url = getApiBase() + '/entity/demand/' + encodeURIComponent(cleanOrderId) + '?' + query;
   const demand = apiGet(url);
   return extractDemandStatus(demand);
 }
